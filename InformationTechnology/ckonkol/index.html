@@ -2,29 +2,46 @@
 <html>
 <head>
     <title>Morning Briefing</title>
- <style>
-        body { 
-            font-family: sans-serif; 
-            line-height: 1.6; 
-            padding: 20px; 
-        }
-        #report-container { 
-            border: 1px solid #ccc; 
-            padding: 15px; 
-            /* This next line is the fix to preserve your formatting */
-            white-space: pre-wrap; 
-        }
-        #last-updated { 
-            font-style: italic; 
-            color: #555; 
-        }
+<style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+        h1 { margin-bottom: 5px; }
+        h2 { border-bottom: 2px solid #ccc; padding-bottom: 5px; margin-top: 30px; font-size: 1.2em; text-transform: uppercase; color: #333; }
+        .section-content { white-space: pre-wrap; font-size: 0.95em; }
+        #last-updated { font-style: italic; color: #777; font-size: 0.8em; margin-top: 0; }
+        
+        /* Utility to hide elements */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <h1>Morning Briefing</h1>
-    <p id="last-updated">Loading...</p>
-    <div id="report-container">
-        </div>
+<h1 id="report-title">Morning Briefing</h1>
+    <p id="report-subtitle">Loading...</p>
+    <p id="last-updated"></p>
+
+    <div id="container-tasks">
+        <h2>1. Daily Tasks</h2>
+        <div id="content-tasks" class="section-content"></div>
+    </div>
+
+    <div id="container-projects">
+        <h2>2. Active Projects</h2>
+        <div id="content-projects" class="section-content"></div>
+    </div>
+
+    <div id="container-active">
+        <h2>3. Active Tasks</h2>
+        <div id="content-active" class="section-content"></div>
+    </div>
+
+    <div id="container-meetings" class="hidden">
+        <h2>4. This Week's Meetings</h2>
+        <div id="content-meetings" class="section-content"></div>
+    </div>
+
+    <div id="container-emails" class="hidden">
+        <h2>5. Unread Emails (Last 24h)</h2>
+        <div id="content-emails" class="section-content"></div>
+    </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
