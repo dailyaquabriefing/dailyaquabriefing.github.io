@@ -22,7 +22,7 @@ const els = {
 const urlParams = new URLSearchParams(window.location.search);
 const reportId = urlParams.get('report') || 'ckonkol';
 
-// --- 2. Determine Mode (The Fix) ---
+// --- 2. Determine Mode ---
 // If the user specified a 'mode' in the URL, use it.
 // IF NOT: Check if a 'report' ID exists. 
 //    - If yes (e.g. ?report=bob), default to 'daily'.
@@ -52,9 +52,10 @@ db.collection("briefings").doc(reportId)
 
             // --- Update Headers based on Request ---
             if (isDaily) {
-                // EXACT FORMAT REQUESTED: Daily briefing for {reportid} for {Date}
-                els.title.textContent = `Daily briefing for ${reportId} for ${dateStr}`;
-                els.subtitle.style.display = 'none'; // Hide subtitle since title has all info
+                // *** THIS BLOCK IS THE FIX ***
+                els.title.textContent = "Daily Briefing";
+                els.subtitle.style.display = 'block'; // Make sure subtitle is visible
+                els.subtitle.textContent = `Daily briefing for ${reportId} for ${dateStr}`;
             } else {
                 els.title.textContent = "Weekly Report";
                 els.subtitle.style.display = 'block';
