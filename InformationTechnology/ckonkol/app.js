@@ -1,4 +1,3 @@
-// --- NO CONFIG HERE (It is handled in index.html) ---
 const db = firebase.firestore();
 
 // --- Elements ---
@@ -21,15 +20,18 @@ const els = {
 
 // --- 1. Get URL Parameters ---
 const urlParams = new URLSearchParams(window.location.search);
-
-// User ID: Default to 'ckonkol' if not specified
 const reportId = urlParams.get('report') || 'ckonkol';
 
-// Mode: Default to 'weekly' unless 'daily' is requested
-const mode = urlParams.get('mode') || 'weekly';
+// --- 2. Determine Mode (The Fix) ---
+// If the user specified a 'mode' in the URL, use it.
+// IF NOT: Check if a 'report' ID exists. 
+//    - If yes (e.g. ?report=bob), default to 'daily'.
+//    - If no (just index.html), default to 'weekly'.
+let defaultMode = urlParams.has('report') ? 'daily' : 'weekly';
+const mode = urlParams.get('mode') || defaultMode;
 const isDaily = (mode.toLowerCase() === 'daily');
 
-// --- 2. Setup View Logic (Daily vs Weekly) ---
+// --- 3. Setup View Logic ---
 if (isDaily) {
     // DAILY MODE: Show everything
     els.contMeetings.classList.remove("hidden");
@@ -40,7 +42,7 @@ if (isDaily) {
     els.contEmails.classList.add("hidden");
 }
 
-// --- 3. Listen to Firestore ---
+// --- 4. Listen to Firestore ---
 db.collection("briefings").doc(reportId)
     .onSnapshot((doc) => {
         if (doc.exists) {
@@ -48,12 +50,14 @@ db.collection("briefings").doc(reportId)
             const dateStr = data.dateString || "Unknown Date";
             const updateTime = new Date(data.lastUpdated).toLocaleString();
 
-            // --- Update Headers based on Mode ---
+            // --- Update Headers based on Request ---
             if (isDaily) {
-                els.title.textContent = "Morning Briefing";
-                els.subtitle.textContent = `Daily briefing for ${reportId} for ${dateStr}`;
+                // EXACT FORMAT REQUESTED: Daily briefing for {reportid} for {Date}
+                els.title.textContent = `Daily briefing for ${reportId} for ${dateStr}`;
+                els.subtitle.style.display = 'none'; // Hide subtitle since title has all info
             } else {
                 els.title.textContent = "Weekly Report";
+                els.subtitle.style.display = 'block';
                 els.subtitle.textContent = `Weekly Report for ${reportId} for ${dateStr}`;
             }
             els.lastUpdated.textContent = `Last generated: ${updateTime}`;
@@ -63,7 +67,6 @@ db.collection("briefings").doc(reportId)
             els.projects.innerHTML = data.projects    || "<i>No active projects found.</i>";
             els.active.innerHTML   = data.activeTasks || "<i>No active tasks found.</i>";
             
-            // Only populate these if we are showing them
             if (isDaily) {
                 els.meetings.innerHTML = data.meetings || "<i>No meetings found.</i>";
                 els.emails.innerHTML   = data.emails   || "<i>No unread emails.</i>";
