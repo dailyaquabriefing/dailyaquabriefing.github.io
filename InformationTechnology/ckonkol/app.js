@@ -31,18 +31,16 @@ const els = {
 // --- 1. Get URL Parameters ---
 const urlParams = new URLSearchParams(window.location.search);
 
-let reportId = null;
+let reportId = null; // Default to null. No data will load.
 let isDaily = false;
 
 // --- 2. Determine Mode and Report ID ---
 if (urlParams.has('daily')) {
     // --- DAILY MODE ---
-    // URL is index.html?daily={reportid}
     isDaily = true;
     reportId = urlParams.get('daily');
 } else if (urlParams.has('report')) {
     // --- WEEKLY MODE ---
-    // URL is index.html?report={reportid}
     isDaily = false;
     reportId = urlParams.get('report');
 }
@@ -64,8 +62,8 @@ if (reportId) {
     // Start listening to data
     listenToFirestore(reportId, isDaily);
 } else {
-    // No valid parameters found. Do nothing.
-    // The page will just show the default title and message.
+    // --- NO REPORT ID FOUND ---
+    // Do nothing. The page will just show the default title and placeholder.
     els.subtitle.style.display = 'none';
     els.lastUpdated.style.display = 'none';
 }
