@@ -16,27 +16,31 @@ const db = firebase.firestore();
 // --- DOM Elements ---
 const reportContainer = document.getElementById("report-container");
 const lastUpdatedEl = document.getElementById("last-updated");
+const briefingTitle = document.getElementById("briefing-title"); // Assumes you add an <h1 id="briefing-title">
 
-// --- Realtime Listener ---
-// This is the core of the website. It listens for changes
-// to the 'latest' document in the 'briefing' collection.
-db.collection("briefing").doc("latest")
+// --- THIS IS THE CHANGE ---
+// 1. Get the report ID from the URL
+const urlParams = new URLSearchParams(window.location.search);
+const reportId = urlParams.get('report') || 'ckonkol'; // Get 'report' from URL, or use a default
+
+// 2. Update the page title
+if (briefingTitle) {
+    briefingTitle.textContent = `${reportId}'s Morning Briefing`;
+}
+
+// 3. Listen to the correct document in the 'briefings' collection
+db.collection("briefings").doc(reportId)
     .onSnapshot((doc) => {
         if (doc.exists) {
-            // 1. Get the data
+            // ... (rest of the code is the same) ...
             const data = doc.data();
             const reportHtml = data.html;
-            const updateTime = new Date(data.lastUpdated);
-
-            // 2. Put the HTML from AHK directly into the page
+            // ... etc ...
             reportContainer.innerHTML = reportHtml;
-
-            // 3. Update the timestamp
-            lastUpdatedEl.textContent = "Report generated at: " + updateTime.toLocaleString();
+            lastUpdatedEl.textContent = "Report generated at: " + new Date(data.lastUpdated).toLocaleString();
         
         } else {
-            // Show a message if the AHK script hasn't run yet
-            reportContainer.innerHTML = "No briefing has been generated yet. Please run the MorningReport.ahk script.";
+            reportContainer.innerHTML = `No briefing found for report ID: ${reportId}.`;
             lastUpdatedEl.textContent = "Offline";
         }
     }, (error) => {
