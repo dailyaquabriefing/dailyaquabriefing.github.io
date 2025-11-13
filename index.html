@@ -2,113 +2,76 @@
 <html>
 <head>
     <title>Report Viewer</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            line-height: 1.6; 
-            padding: 20px; 
-            max-width: 900px; 
-            margin: 0 auto; 
-            color: #333;
-        }
+<style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+        h1 { margin-bottom: 5px; }
+        h2 { border-bottom: 2px solid #ccc; padding-bottom: 5px; margin-top: 30px; font-size: 1.2em; text-transform: uppercase; color: #333; }
+        .section-content { white-space: pre-wrap; font-size: 0.95em; }
+        #last-updated { font-style: italic; color: #777; font-size: 0.8em; margin-top: 0; }
         
-        /* Header Styling */
-        #header-section {
-            border-bottom: 4px solid #0078D4; /* Outlook Blue */
-            padding-bottom: 10px;
-            margin-bottom: 30px;
-        }
-        #report-title { 
-            margin: 0; 
-            font-size: 2.2em; 
-            color: #2c3e50; 
-        }
-        #report-subtitle { 
-            font-size: 1.1em; 
-            color: #666; 
-            margin: 5px 0 0 0; 
-        }
-        #last-updated { 
-            font-style: italic; 
-            color: #999; 
-            font-size: 0.85em; 
-            margin-top: 5px; 
-        }
-
-        /* Section Styling */
-        h2 { 
-            background-color: #f4f4f4;
-            padding: 10px;
-            border-left: 5px solid #0078D4;
-            margin-top: 30px; 
-            font-size: 1.3em; 
-            text-transform: uppercase; 
-            color: #333; 
-        }
-        
-        /* The content itself - preserves AHK formatting */
-        .section-content { 
-            white-space: pre-wrap; 
-            font-size: 0.95em; 
-            padding: 0 10px;
-        }
-
         /* Utility to hide elements */
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div style="text-align: right; font-size: 0.9em; margin-bottom: 10px;">
-        <a href="?mode=weekly">Weekly View</a> | 
-        <a href="?mode=daily">Daily View</a>
+    <div id="nav-links" class="hidden" style="text-align: right; font-size: 0.9em; margin-bottom: 10px;">
+        <a id="link-weekly" href="#">Weekly View</a> | 
+        <a id="link-daily" href="#">Daily View</a>
     </div>
 
-    <div id="header-section">
-        <h1 id="report-title">Loading...</h1>
-        <p id="report-subtitle"></p>
-        <p id="last-updated"></p>
+    <h1 id="report-title">Briefing Report System</h1>
+    <p id="report-subtitle"></p>
+    <p id="last-updated"></p>
+
+    <div id="default-message">
+        <p style="text-align: center; font-style: italic; color: #777; margin-top: 40px;">
+            Please use a valid link to view a report.
+        </p>
     </div>
 
-    <div id="container-tasks">
-        <h2>1. Daily Tasks</h2>
-        <div id="content-tasks" class="section-content"></div>
+    <div id="report-body" class="hidden">
+        <div id="container-tasks">
+            <h2>1. Daily Tasks</h2>
+            <div id="content-tasks" class="section-content"></div>
+        </div>
+
+        <div id="container-projects">
+            <h2>2. Active Projects</h2>
+            <div id="content-projects" class="section-content"></div>
+        </div>
+
+        <div id="container-active">
+            <h2>3. Active Tasks</h2>
+            <div id="content-active" class="section-content"></div>
+        </div>
+
+        <div id="container-meetings" class="hidden">
+            <h2>4. This Week's Meetings</h2>
+            <div id="content-meetings" class="section-content"></div>
+        </div>
+
+        <div id="container-emails" class="hidden">
+            <h2>5. Unread Emails (Last 24h)</h2>
+            <div id="content-emails" class="section-content"></div>
+        </div>
     </div>
 
-    <div id="container-projects">
-        <h2>2. Active Projects</h2>
-        <div id="content-projects" class="section-content"></div>
-    </div>
-
-    <div id="container-active">
-        <h2>3. Active Tasks</h2>
-        <div id="content-active" class="section-content"></div>
-    </div>
-
-    <div id="container-meetings" class="hidden">
-        <h2>4. This Week's Meetings</h2>
-        <div id="content-meetings" class="section-content"></div>
-    </div>
-
-    <div id="container-emails" class="hidden">
-        <h2>5. Unread Emails (Last 24h)</h2>
-        <div id="content-emails" class="section-content"></div>
-    </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-    
+
     <script>
-      const firebaseConfig = {
-        apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
-        authDomain: "dailybriefing-fe7df.firebaseapp.com",
-        projectId: "dailybriefing-fe7df",
-        storageBucket: "dailybriefing-fe7df.firebasestorage.app",
-        messagingSenderId: "676708745644",
-        appId: "1:676708745644:web:b1848c5edff6f0289eba09",
-        measurementId: "G-QWFFCRMTVQ"
-      };
-      firebase.initializeApp(firebaseConfig);
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+            authDomain: "dailybriefing-fe7df.firebaseapp.com",
+            projectId: "dailybriefing-fe7df",
+            storageBucket: "dailybriefing-fe7df.firebasestorage.app",
+            messagingSenderId: "676708745644",
+            appId: "1:676708745644:web:b1848c5edff6f0289eba09",
+            measurementId: "G-QWFFCRMTVQ"
+        };
+        firebase.initializeApp(firebaseConfig);
     </script>
 
     <script src="app.js"></script>
