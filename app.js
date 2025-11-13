@@ -1,3 +1,15 @@
+// Manually initialize if not using Firebase Hosting
+const firebaseConfig = {
+  apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+  authDomain: "dailybriefing-fe7df.firebaseapp.com",
+  projectId: "dailybriefing-fe7df",
+  storageBucket: "dailybriefing-fe7df.firebasestorage.app",
+  messagingSenderId: "676708745644",
+  appId: "1:676708745644:web:b1848c5edff6f0289eba09",
+  measurementId: "G-QWFFCRMTVQ"
+};
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
 // Initialize Firebase
 const db = firebase.firestore();
 
