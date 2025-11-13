@@ -1,22 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Morning Briefing</title>
-<style>
-        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
-        h1 { margin-bottom: 5px; }
-        h2 { border-bottom: 2px solid #ccc; padding-bottom: 5px; margin-top: 30px; font-size: 1.2em; text-transform: uppercase; color: #333; }
-        .section-content { white-space: pre-wrap; font-size: 0.95em; }
-        #last-updated { font-style: italic; color: #777; font-size: 0.8em; margin-top: 0; }
+    <title>Report Viewer</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; 
+            padding: 20px; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            color: #333;
+        }
         
+        /* Header Styling */
+        #header-section {
+            border-bottom: 4px solid #0078D4; /* Outlook Blue */
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        #report-title { 
+            margin: 0; 
+            font-size: 2.2em; 
+            color: #2c3e50; 
+        }
+        #report-subtitle { 
+            font-size: 1.1em; 
+            color: #666; 
+            margin: 5px 0 0 0; 
+        }
+        #last-updated { 
+            font-style: italic; 
+            color: #999; 
+            font-size: 0.85em; 
+            margin-top: 5px; 
+        }
+
+        /* Section Styling */
+        h2 { 
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-left: 5px solid #0078D4;
+            margin-top: 30px; 
+            font-size: 1.3em; 
+            text-transform: uppercase; 
+            color: #333; 
+        }
+        
+        /* The content itself - preserves AHK formatting */
+        .section-content { 
+            white-space: pre-wrap; 
+            font-size: 0.95em; 
+            padding: 0 10px;
+        }
+
         /* Utility to hide elements */
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
-<h1 id="report-title">Morning Briefing</h1>
-    <p id="report-subtitle">Loading...</p>
-    <p id="last-updated"></p>
+
+    <div id="header-section">
+        <h1 id="report-title">Loading...</h1>
+        <p id="report-subtitle"></p>
+        <p id="last-updated"></p>
+    </div>
 
     <div id="container-tasks">
         <h2>1. Daily Tasks</h2>
@@ -43,12 +90,11 @@
         <div id="content-emails" class="section-content"></div>
     </div>
 
-
-  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-
-<script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    
+    <script>
       const firebaseConfig = {
         apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
         authDomain: "dailybriefing-fe7df.firebaseapp.com",

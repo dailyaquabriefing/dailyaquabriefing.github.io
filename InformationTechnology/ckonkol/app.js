@@ -1,16 +1,4 @@
-// Manually initialize if not using Firebase Hosting
-const firebaseConfig = {
-  apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
-  authDomain: "dailybriefing-fe7df.firebaseapp.com",
-  projectId: "dailybriefing-fe7df",
-  storageBucket: "dailybriefing-fe7df.firebasestorage.app",
-  messagingSenderId: "676708745644",
-  appId: "1:676708745644:web:b1848c5edff6f0289eba09",
-  measurementId: "G-QWFFCRMTVQ"
-};
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-// Initialize Firebase
+// --- NO CONFIG HERE (It is handled in index.html) ---
 const db = firebase.firestore();
 
 // --- Elements ---
@@ -18,6 +6,8 @@ const els = {
     title: document.getElementById("report-title"),
     subtitle: document.getElementById("report-subtitle"),
     lastUpdated: document.getElementById("last-updated"),
+    
+    // Content Sections
     tasks: document.getElementById("content-tasks"),
     projects: document.getElementById("content-projects"),
     active: document.getElementById("content-active"),
@@ -35,18 +25,17 @@ const urlParams = new URLSearchParams(window.location.search);
 // User ID: Default to 'ckonkol' if not specified
 const reportId = urlParams.get('report') || 'ckonkol';
 
-// Mode: Default to 'weekly' if not specified
+// Mode: Default to 'weekly' unless 'daily' is requested
 const mode = urlParams.get('mode') || 'weekly';
+const isDaily = (mode.toLowerCase() === 'daily');
 
 // --- 2. Setup View Logic (Daily vs Weekly) ---
-const isDaily = (mode === 'daily');
-
 if (isDaily) {
-    // DAILY MODE
+    // DAILY MODE: Show everything
     els.contMeetings.classList.remove("hidden");
     els.contEmails.classList.remove("hidden");
 } else {
-    // WEEKLY MODE (Default)
+    // WEEKLY MODE: Hide Meetings & Emails
     els.contMeetings.classList.add("hidden");
     els.contEmails.classList.add("hidden");
 }
@@ -67,24 +56,25 @@ db.collection("briefings").doc(reportId)
                 els.title.textContent = "Weekly Report";
                 els.subtitle.textContent = `Weekly Report for ${reportId} for ${dateStr}`;
             }
-            els.lastUpdated.textContent = `Generated: ${updateTime}`;
+            els.lastUpdated.textContent = `Last generated: ${updateTime}`;
 
             // --- Inject Content ---
-            els.tasks.innerHTML = data.tasks || "No tasks.";
-            els.projects.innerHTML = data.projects || "No projects.";
-            els.active.innerHTML = data.activeTasks || "No active tasks.";
+            els.tasks.innerHTML    = data.tasks       || "<i>No tasks found.</i>";
+            els.projects.innerHTML = data.projects    || "<i>No active projects found.</i>";
+            els.active.innerHTML   = data.activeTasks || "<i>No active tasks found.</i>";
             
-            // Only populate these if we are showing them (optional optimization)
+            // Only populate these if we are showing them
             if (isDaily) {
-                els.meetings.innerHTML = data.meetings || "No meetings.";
-                els.emails.innerHTML = data.emails || "No unread emails.";
+                els.meetings.innerHTML = data.meetings || "<i>No meetings found.</i>";
+                els.emails.innerHTML   = data.emails   || "<i>No unread emails.</i>";
             }
         
         } else {
+            els.title.textContent = "Report Not Found";
             els.subtitle.textContent = `No data found for ID: ${reportId}`;
-            els.lastUpdated.textContent = "Offline";
+            els.lastUpdated.textContent = "Please run the MorningReport.ahk script.";
         }
     }, (error) => {
         console.error("Error:", error);
-        els.subtitle.textContent = "Error loading report.";
+        els.subtitle.textContent = "Error loading report. Check console.";
     });
