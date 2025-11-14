@@ -410,7 +410,7 @@ ReportID=ckonkol</code></pre>
         firebase.initializeApp(firebaseConfig);
     </script>
     
-    <script>
+   <script>
         const db = firebase.firestore();
         const loginContainer = document.getElementById('setup-login');
         const wizardContainer = document.querySelector('.wizard-container');
@@ -418,13 +418,67 @@ ReportID=ckonkol</code></pre>
         const codeInput = document.getElementById('setup-code');
         const errorMsg = document.getElementById('error-message');
 
+        // --- New Rate Limiting Variables ---
+        const MAX_ATTEMPTS = 3;
+        const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+
+        /**
+         * Calculates remaining block time in milliseconds.
+         * @returns {number} Remaining time in MS, or 0 if not blocked.
+         */
+        function getRemainingBlockTime() {
+            const blockUntil = localStorage.getItem('blockUntil') || 0;
+            const remainingTime = blockUntil - Date.now();
+            return (remainingTime > 0) ? remainingTime : 0;
+        }
+
+        /**
+         * Updates the error message text and visibility.
+         * @param {string} message - The message to display.
+         * @param {boolean} [isError=true] - Styles as error (red) or info (gray).
+         */
+        function updateErrorMsg(message, isError = true) {
+            errorMsg.textContent = message;
+            errorMsg.style.color = isError ? "#D8000C" : "#666";
+            errorMsg.style.display = "block";
+        }
+
+        /**
+         * Checks for an active block on page load and updates the UI.
+         */
+        function checkInitialBlock() {
+            const remainingTime = getRemainingBlockTime();
+            if (remainingTime > 0) {
+                const remainingMinutes = Math.ceil(remainingTime / 60000);
+                updateErrorMsg(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`, true);
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Try Again Later";
+            }
+        }
+        
+        /**
+         * Main function to check the entered setup code against Firebase.
+         */
         async function checkSetupCode() {
+            // 1. Check if user is currently blocked
+            const remainingTime = getRemainingBlockTime();
+            if (remainingTime > 0) {
+                const remainingMinutes = Math.ceil(remainingTime / 60000);
+                updateErrorMsg(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`, true);
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Try Again Later";
+                return;
+            }
+
+            // 2. Proceed with check
             const enteredCode = codeInput.value.trim();
             if (!enteredCode) return;
 
             submitBtn.disabled = true;
             submitBtn.textContent = "Checking...";
             errorMsg.style.display = "none";
+            
+            let failedAttempts = parseInt(localStorage.getItem('failedAttempts') || 0);
 
             try {
                 const docRef = db.collection("setup_codes").doc(enteredCode);
@@ -432,6 +486,10 @@ ReportID=ckonkol</code></pre>
 
                 if (doc.exists) {
                     // SUCCESS
+                    // Clear counters on success
+                    localStorage.removeItem('failedAttempts');
+                    localStorage.removeItem('blockUntil');
+                    
                     loginContainer.classList.add("hidden");
                     wizardContainer.classList.remove("hidden");
                 } else {
@@ -439,15 +497,31 @@ ReportID=ckonkol</code></pre>
                     throw new Error("Invalid code");
                 }
             } catch (err) {
+                // 3. Handle Failure
                 console.error("Error checking code:", err);
-                errorMsg.style.display = "block";
-                submitBtn.disabled = false;
-                submitBtn.textContent = "Access Setup";
+                failedAttempts++;
+                localStorage.setItem('failedAttempts', failedAttempts);
+
+                if (failedAttempts >= MAX_ATTEMPTS) {
+                    // Block user
+                    const blockUntil = Date.now() + BLOCK_DURATION_MS;
+                    localStorage.setItem('blockUntil', blockUntil);
+                    updateErrorMsg(`Too many failed attempts. Please try again in ${Math.ceil(BLOCK_DURATION_MS / 60000)} minutes.`, true);
+                    submitBtn.textContent = "Try Again Later";
+                    // Keep button disabled
+                } else {
+                    // Show attempts remaining
+                    const attemptsLeft = MAX_ATTEMPTS - failedAttempts;
+                    updateErrorMsg(`Invalid code. ${attemptsLeft} attempt${attemptsLeft > 1 ? 's' : ''} remaining.`, true);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Access Setup";
+                }
             }
         }
 
         // Add listeners
         submitBtn.addEventListener("click", checkSetupCode);
+        
         // Allow pressing Enter to submit
         codeInput.addEventListener("keyup", function(event) {
             if (event.key === "Enter") {
@@ -455,6 +529,9 @@ ReportID=ckonkol</code></pre>
                 checkSetupCode();
             }
         });
+
+        // Run the block check when the script loads
+        checkInitialBlock();
     </script>
 
 
