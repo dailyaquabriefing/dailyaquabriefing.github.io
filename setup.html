@@ -30,6 +30,9 @@
             padding: 25px 35px;
             border-bottom: 1px solid #eee;
             background-color: #fcfcfc;
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         .wizard-header h1 {
@@ -170,6 +173,11 @@
             transform: scale(1.2);
             cursor: pointer;
         }
+.wizard-logo {
+            max-height: 50px;
+            width: auto;
+            flex-shrink: 0;
+        }
 
     </style>
 </head>
@@ -177,8 +185,11 @@
 
     <div class="wizard-container">
         <div class="wizard-header">
-            <h1>AquaDailyBriefing Setup</h1>
-            <div class="step-indicator" id="stepIndicator">Step 1 of 5</div>
+            <img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems Logo" class="wizard-logo">
+            <div>
+                <h1>AquaDailyBriefing Setup</h1>
+                <div class="step-indicator" id="stepIndicator">Step 1 of 5</div>
+            </div>
         </div>
 
         <div class="wizard-body">
