@@ -376,9 +376,7 @@ ReportID=ckonkol</code></pre>
         function nextPrev(n) {
             // If "Finish" is clicked, you could add a "close" action
             if (currentStep === (steps.length - 1) && n > 0) {
-                // For now, it just stays on the last step, but you could:
-                window.close();
-                // alert("Setup Complete!");
+                alert("Setup is complete! You can now safely close this tab.");
                 return; // Don't go further
             }
 
