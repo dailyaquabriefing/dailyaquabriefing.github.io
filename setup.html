@@ -14,7 +14,69 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
+
+        /* --- New Login Box Styles --- */
+        #setup-login {
+            background: #fff;
+            padding: 40px 50px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e0e0e0;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        #setup-login h2 {
+            margin-top: 0;
+            color: #005a9c;
+        }
+        #setup-login p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        #setup-code {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box; /* Important */
+            margin-top: 20px;
+        }
+        #submit-code-btn {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-top: 15px;
+        }
+        #submit-code-btn:hover {
+            background-color: #005a9c;
+        }
+        #submit-code-btn:disabled {
+            background-color: #b0b0b0;
+            cursor: not-allowed;
+        }
+        #error-message {
+            color: #D8000C; /* Red */
+            font-weight: 600;
+            margin-top: 15px;
+            display: none; /* Hidden by default */
+        }
+        .hidden {
+            display: none !important;
+        }
+        /* --- End Login Box Styles --- */
+
 
         .wizard-container {
             background-color: #ffffff;
@@ -33,6 +95,11 @@
             display: flex;
             align-items: center;
             gap: 20px;
+        }
+        .wizard-logo {
+            max-height: 50px;
+            width: auto;
+            flex-shrink: 0;
         }
 
         .wizard-header h1 {
@@ -173,17 +240,22 @@
             transform: scale(1.2);
             cursor: pointer;
         }
-.wizard-logo {
-            max-height: 50px;
-            width: auto;
-            flex-shrink: 0;
-        }
 
     </style>
 </head>
 <body>
 
-    <div class="wizard-container">
+    <div id="setup-login">
+        <img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems Logo" style="max-height: 50px;">
+        <h2>Setup Wizard</h2>
+        <p>Please enter your unique setup code to begin.</p>
+        <input type="password" id="setup-code" placeholder="Enter code">
+        <button id="submit-code-btn">Access Setup</button>
+        <p id="error-message">Invalid setup code. Please try again.</p>
+    </div>
+
+
+    <div class="wizard-container hidden">
         <div class="wizard-header">
             <img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems Logo" class="wizard-logo">
             <div>
@@ -321,6 +393,71 @@ ReportID=ckonkol</code></pre>
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+            authDomain: "dailybriefing-fe7df.firebaseapp.com",
+            projectId: "dailybriefing-fe7df",
+            storageBucket: "dailybriefing-fe7df.firebasestorage.app",
+            messagingSenderId: "676708745644",
+            appId: "1:676708745644:web:b1848c5edff6f0289eba09",
+            measurementId: "G-QWFFCRMTVQ"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
+    
+    <script>
+        const db = firebase.firestore();
+        const loginContainer = document.getElementById('setup-login');
+        const wizardContainer = document.querySelector('.wizard-container');
+        const submitBtn = document.getElementById('submit-code-btn');
+        const codeInput = document.getElementById('setup-code');
+        const errorMsg = document.getElementById('error-message');
+
+        async function checkSetupCode() {
+            const enteredCode = codeInput.value.trim();
+            if (!enteredCode) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Checking...";
+            errorMsg.style.display = "none";
+
+            try {
+                const docRef = db.collection("setup_codes").doc(enteredCode);
+                const doc = await docRef.get();
+
+                if (doc.exists) {
+                    // SUCCESS
+                    loginContainer.classList.add("hidden");
+                    wizardContainer.classList.remove("hidden");
+                } else {
+                    // FAILURE
+                    throw new Error("Invalid code");
+                }
+            } catch (err) {
+                console.error("Error checking code:", err);
+                errorMsg.style.display = "block";
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Access Setup";
+            }
+        }
+
+        // Add listeners
+        submitBtn.addEventListener("click", checkSetupCode);
+        // Allow pressing Enter to submit
+        codeInput.addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                checkSetupCode();
+            }
+        });
+    </script>
+
+
     <script>
         let currentStep = 0; // Current step is 0
         const steps = document.querySelectorAll(".wizard-step");
@@ -374,7 +511,7 @@ ReportID=ckonkol</code></pre>
 
         // --- Navigation function ---
         function nextPrev(n) {
-            // If "Finish" is clicked, you could add a "close" action
+            // If "Finish" is clicked, show an alert
             if (currentStep === (steps.length - 1) && n > 0) {
                 alert("Setup is complete! You can now safely close this tab.");
                 return; // Don't go further
