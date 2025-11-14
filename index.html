@@ -2,6 +2,8 @@
 <html>
 <head>
     <title>Report Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -50,10 +52,34 @@
             white-space: pre-wrap; 
             font-size: 0.95em; 
             padding: 0 10px;
+            word-wrap: break-word; /* Helps break long text lines */
         }
 
         /* Utility to hide elements */
         .hidden { display: none !important; }
+
+        /* FIX 2: Add Media Query for Mobile Screens 
+        */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px; /* Tighter padding on mobile */
+                max-width: 100%; /* Use full width */
+            }
+            #report-title {
+                font-size: 1.8em; /* Smaller main title */
+            }
+            #report-subtitle {
+                font-size: 1.0em; /* Smaller subtitle */
+            }
+            h2 {
+                font-size: 1.1em; /* Smaller section headers */
+                padding: 8px;
+            }
+            .section-content {
+                font-size: 0.9em; /* Smaller body text */
+                padding: 0 5px;
+            }
+        }
     </style>
 </head>
 <body>
