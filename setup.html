@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaDailyBriefing Setup Wizard</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7fa;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .wizard-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 800px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+
+        .wizard-header {
+            padding: 25px 35px;
+            border-bottom: 1px solid #eee;
+            background-color: #fcfcfc;
+        }
+
+        .wizard-header h1 {
+            margin: 0;
+            color: #005a9c; /* Aqua-themed color */
+        }
+        
+        .step-indicator {
+            font-size: 0.9em;
+            color: #777;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .wizard-body {
+            padding: 35px;
+        }
+
+        .wizard-step {
+            display: none; /* Hidden by default */
+        }
+
+        .wizard-step.active {
+            display: block; /* Shown when active */
+        }
+
+        .wizard-step h2 {
+            color: #005a9c;
+            border-bottom: 2px solid #0078d4;
+            padding-bottom: 5px;
+            margin-top: 0;
+        }
+
+        .wizard-step h3 {
+            color: #333;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        .wizard-nav {
+            padding: 25px 35px;
+            background-color: #f9f9f9;
+            border-top: 1px solid #eee;
+            text-align: right;
+        }
+
+        .wizard-nav button {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .wizard-nav button:hover {
+            background-color: #005a9c;
+        }
+
+        .wizard-nav button:disabled {
+            background-color: #b0b0b0;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        #prevBtn {
+            background-color: #6c757d;
+            margin-right: 10px;
+        }
+
+        #prevBtn:hover {
+            background-color: #5a6268;
+        }
+
+        /* Content Styling */
+        ul, ol {
+            padding-left: 20px;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+
+        code {
+            font-family: "Courier New", Courier, monospace;
+            background-color: #eef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: 0.9em;
+        }
+
+        .download-button {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+        .download-button:hover {
+            background-color: #218838;
+        }
+
+        .confirm-box {
+            margin-top: 30px;
+            background-color: #fff8e1;
+            border: 1px solid #ffecb3;
+            padding: 20px;
+            border-radius: 6px;
+        }
+        .confirm-box label {
+            font-weight: 600;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .confirm-box input {
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="wizard-container">
+        <div class="wizard-header">
+            <h1>AquaDailyBriefing Setup</h1>
+            <div class="step-indicator" id="stepIndicator">Step 1 of 5</div>
+        </div>
+
+        <div class="wizard-body">
+
+            <div class="wizard-step active">
+                <h2>Welcome to the AquaDailyBriefing!</h2>
+                <p>This tool is designed to save you time by automating your morning check-in process.</p>
+                <p>In one simple step, it will:</p>
+                <ul>
+                    <li>Report your defined daily tasks.</li>
+                    <li>Read your <code>Active_Projects.xlsx</code> file.</li>
+                    <li>Get your unread emails from Outlook for the last 24 hours.</li>
+                    <li>Get this week’s meetings (Today–Friday) from Outlook.</li>
+                    <li>Push all this data to a personal, private website for you to view.</li>
+                </ul>
+                <p>This wizard will walk you through the <strong>one-time setup</strong> to get you started.</p>
+            </div>
+
+            <div class="wizard-step">
+                <h2>Step 1: Download & Extract</h2>
+                <p>First, you need to download the application files.</p>
+                
+                <a href="./files/dailybriefing.zip" class="download-button" download>
+                    Download dailybriefing.zip
+                </a>
+
+                <h3 style="margin-top: 25px;">Instructions</h3>
+                <ol>
+                    <li>Click the download button above.</li>
+                    <li>Once downloaded, <strong>extract the contents</strong> of the <code>.zip</code> file directly to the root of your personal <code>G:\</code> drive.</li>
+                </ol>
+                <p>When finished, your <code>G:\</code> drive should have these four files:</p>
+                <ul>
+                    <li><code>G:\AquaDailyBriefing.exe</code></li>
+                    <li><code>G:\Active_Projects.xlsx</code></li>
+                    <li><code>G:\dailybriefingconfig.txt</code></li>
+                    <li><code>G:\DailyTask.txt</code></li>
+                </ul>
+            </div>
+
+            <div class="wizard-step">
+                <h2>Step 2: Configure Your Files</h2>
+                <p>This is the most important part. You must edit <strong>3 files</strong> to personalize the tool. Please complete these actions on your <code>G:\</code> drive.</p>
+
+                <h3>1. Edit <code>dailybriefingconfig.txt</code></h3>
+                <p>This file contains the required settings for the app.</p>
+                <ol>
+                    <li>Open <code>G:\dailybriefingconfig.txt</code> (with Notepad).</li>
+                    <li>Edit the <strong>two lines</strong> indicated below with your information.</li>
+                    <pre><code>; Edit: replace with your email address
+EmailTo=ckonkol@aqua-aerobic.com
+
+; Edit: replace with your aqua userid
+ReportID=ckonkol</code></pre>
+                    <li>Save and close the file.</li>
+                </ol>
+
+                <h3>2. Edit <code>Active_Projects.xlsx</code></h3>
+                <p>This spreadsheet gives a high-level overview of your active projects and tasks for reporting.</p>
+                <ul>
+                    <li>The <strong>Projects</strong> tab is for large, strategic goals.</li>
+                    <li>The <strong>ActiveTasks</strong> tab is for smaller, specific action items.</li>
+                </ul>
+                <ol>
+                    <li>Open <code>G:\Active_Projects.xlsx</code>.</li>
+                    <li>The file has example entries. Delete them.</li>
+                    <li>Add your current projects to the <strong>Projects</strong> tab.</li>
+                    <li>Add your current active tasks to the <strong>ActiveTasks</strong> tab.</li>
+                    <li>Save and close the file.</li>
+                </ol>
+
+                <h3>3. Edit <code>DailyTask.txt</code></h3>
+                <p>This file lists your recurring daily tasks (e.g., "Check PM2 Monitor").</p>
+                <ol>
+                    <li>Open <code>G:\DailyTask.txt</code>.</li>
+                    <li>Edit the file to list your personal daily tasks.</li>
+                    <li>Put only one task per line.</li>
+                    <li>Save and close the file.</li>
+                </ol>
+
+                <div class="confirm-box">
+                    <input type="checkbox" id="configConfirm">
+                    <label for="configConfirm">I have completed all edits to the 3 files as instructed.</label>
+                </div>
+            </div>
+
+            <div class="wizard-step">
+                <h2>Step 3: Your New Daily Process</h2>
+                <p>Great! The one-time setup is finished. Here is how you'll use the tool each day.</p>
+                <ol>
+                    <li>
+                        <strong>Update Your Files (If needed):</strong>
+                        <ul>
+                            <li>Add/remove/update items in <code>G:\Active_Projects.xlsx</code>.</li>
+                            <li>Tweak your <code>G:\DailyTask.txt</code>.</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <strong>Run the App:</strong>
+                        <ul>
+                            <li>Double-click <code>G:\AquaDailyBriefing.exe</code>.</li>
+                        </ul>
+                    </li>
+                </ol>
+                <p>When you run the app, it will automatically:</p>
+                <ol>
+                    <li>Get daily tasks from <code>G:\DailyTask.txt</code>.</li>
+                    <li>Get active projects/tasks from <code>G:\Active_Projects.xlsx</code>.</li>
+                    <li>Get unread emails from Outlook (last 24 hours).</li>
+                    <li>Get your meetings (Today–Friday) from Outlook.</li>
+                    <li>Push all data to the website.</li>
+                </ol>
+                <p>After a few seconds, it will confirm success and ask if you want to view your Daily and Weekly briefing website!</p>
+            </div>
+
+            <div class="wizard-step">
+                <h2>Setup Complete!</h2>
+                <p>Congratulations! You are all set up and ready to use the <strong>AquaDailyBriefing</strong> tool.</p>
+                <p>You can run <code>G:\AquaDailyBriefing.exe</code> right now to see it in action.</p>
+                <p>You can close this setup wizard. Enjoy!</p>
+            </div>
+
+        </div>
+
+        <div class="wizard-nav">
+            <button id="prevBtn" onclick="nextPrev(-1)">Previous</button>
+            <button id="nextBtn" onclick="nextPrev(1)">Next</button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0; // Current step is 0
+        const steps = document.querySelectorAll(".wizard-step");
+        const stepIndicator = document.getElementById("stepIndicator");
+        const prevBtn = document.getElementById("prevBtn");
+        const nextBtn = document.getElementById("nextBtn");
+        const configConfirm = document.getElementById("configConfirm");
+
+        // Show the initial step
+        showStep(currentStep); 
+
+        function showStep(n) {
+            // Hide all steps
+            steps.forEach(step => step.classList.remove("active"));
+            
+            // Show the current step
+            steps[n].classList.add("active");
+
+            // Update step indicator
+            stepIndicator.textContent = `Step ${n + 1} of ${steps.length}`;
+
+            // Update button visibility and text
+            if (n === 0) {
+                prevBtn.style.display = "none";
+            } else {
+                prevBtn.style.display = "inline-block";
+            }
+
+            if (n === (steps.length - 1)) {
+                nextBtn.innerHTML = "Finish";
+            } else {
+                nextBtn.innerHTML = "Next";
+            }
+
+            // --- Special Logic for Step 3 (index 2) ---
+            // This is the "Configure Files" step with the checkbox
+            if (n === 2) {
+                nextBtn.disabled = !configConfirm.checked;
+            } else {
+                nextBtn.disabled = false;
+            }
+        }
+
+        // --- Checkbox logic ---
+        // Add event listener to checkbox to enable/disable Next button
+        configConfirm.addEventListener("change", function() {
+            if (currentStep === 2) { // Only if we are on the config step
+                nextBtn.disabled = !this.checked;
+            }
+        });
+
+        // --- Navigation function ---
+        function nextPrev(n) {
+            // If "Finish" is clicked, you could add a "close" action
+            if (currentStep === (steps.length - 1) && n > 0) {
+                // For now, it just stays on the last step, but you could:
+                // window.close();
+                // alert("Setup Complete!");
+                return; // Don't go further
+            }
+
+            // Update current step
+            currentStep += n;
+
+            // Show the new step
+            showStep(currentStep);
+        }
+    </script>
+
+</body>
+</html>
