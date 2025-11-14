@@ -17,6 +17,13 @@ const els = {
     defaultMessage: document.getElementById("default-message"),
     reportBody: document.getElementById("report-body"),
     
+    // Section Headers (NEW)
+    headerTasks: document.getElementById("header-tasks"),
+    headerProjects: document.getElementById("header-projects"),
+    headerActive: document.getElementById("header-active"),
+    headerMeetings: document.getElementById("header-meetings"),
+    headerEmails: document.getElementById("header-emails"),
+
     // Content Sections
     tasks: document.getElementById("content-tasks"),
     projects: document.getElementById("content-projects"),
@@ -104,12 +111,22 @@ function listenToFirestore(reportId, isDaily) {
                 }
                 els.lastUpdated.textContent = `Last generated: ${updateTime}`;
 
+                // --- Update Section Headers with Counts (NEW) ---
+                els.headerTasks.textContent    = `1. Daily Tasks (${data.tasks_count || 0})`;
+                els.headerProjects.textContent = `2. Active Projects (${data.projects_count || 0})`;
+                els.headerActive.textContent   = `3. Active Tasks (${data.activeTasks_count || 0})`;
+
                 // --- Inject Content ---
                 els.tasks.innerHTML    = data.tasks       || "<i>No tasks found.</i>";
                 els.projects.innerHTML = data.projects    || "<i>No active projects found.</i>";
                 els.active.innerHTML   = data.activeTasks || "<i>No active tasks found.</i>";
                 
                 if (isDaily) {
+                    // --- Update Headers for Daily Sections (NEW) ---
+                    els.headerMeetings.textContent = `4. This Week's Meetings (${data.meetings_count || 0})`;
+                    els.headerEmails.textContent   = `5. Unread Emails (Last 24h) (${data.emails_count || 0})`;
+                    
+                    // --- Inject Daily Content ---
                     els.meetings.innerHTML = data.meetings || "<i>No meetings found.</i>";
                     els.emails.innerHTML   = data.emails   || "<i>No unread emails.</i>";
                 }
