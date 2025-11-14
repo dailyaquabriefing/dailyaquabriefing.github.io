@@ -1,0 +1,107 @@
+
+Create setup wizard page that walks user the purpose of the AquaDailyBriefing along with
+how to get started using this great tool! 
+
+
+AquaDailyBriefing
+
+1. Reports daily tasks
+2. Reads an Active Projects
+3. Gets unread emails from Outlook for the last 24 hours.
+4. Gets this week’s meetings (Today–Friday) from Outlook.
+5. Pushes all data to website.
+
+All the files needed for this wizard will be found in 'files' folder.
+
+Here are the steps
+
+1) Download the below files to the root of your personal G:\ drive
+
+./files/AquaDailyBriefing.exe
+./files/Active_Projects.xlsx
+./files/dailybriefingconfig.txt
+./files/DailyTask.txt
+
+2) Instruct users to edit the following files once downloaded
+
+./files/dailybriefingconfig.txt
+Purpose: Required configuration file for AquaDailyBriefing
+
+Contents:
+Contains vital data needed for AquaDailyBriefing
+
+Action:
+1) Open G:\dailybriefingconfig.txt
+2) Edit below lines:
+; Edit: replace with your email address
+EmailTo=ckonkol@aqua-aerobic.com
+; Edit: replace with your aqua userid
+ReportID=ckonkol
+
+3) Save file
+
+./files/Active_Projects.xlsx
+Purpose: The Active_Projects spreadsheet is designed to give high level overview of your active projects & tasks for daily and weekly reporting purposes. 
+It was not designed to contain detailed information. 
+
+Projects: a project is a temporary and specific strategic goal that has a defined start and end. Example: creating process & procedures for new product line. 
+
+Task: A task is a single, specific action. Example: updating a spreadsheet for team member
+
+The Active_Projects spreadsheet comes with one default test project.
+
+Contents:
+Tab: Projects
+Description of columns
+TaskName: name of project
+Status: On Track, Completed, Delayed, On-Hold, Followup
+Priority: Low, Medium, High
+Next Milestone: Describe what is being worked on
+Notes: Important information about project 
+
+Tab: ActiveTasks
+Description of columns
+TaskName: name of task
+Status: On Track, Completed, Delayed, On-Hold, Followup
+Priority: Low, Medium, High
+Next Milestone: Describe what is being worked on
+Notes: Important information about project 
+
+Action: 
+1) Open G:\Active_Projects.xlsx
+2) Add your current active project(s) in Projects tab
+3) Add your current active task(s) in ActiveTasks tab
+4) Save when completed
+
+./files/DailyTask.txt
+Purpose: List your daily tasks
+
+Contents:
+There is one task per line.
+
+Action: 
+1) Open G:\DailyTask.txt
+2) Edit existing or add one task per line.
+4) Save when completed
+
+3) Instruct users to confirm above items have been completed
+4) If not completed, direct users to complete before continuing setup wizard
+5) Describe to users the daily process of using this system
+   - 1) Edit projects & tasks G:\Active_Projects.xlsx, if needed
+   - 2) Edit G:\DailyTask.txt. if needed
+   - 3) Run G:\AquaDailyBriefing.exe
+        - This app will:
+          1. Get daily tasks from G:\DailyTask.txt file.
+          2. Get Active Projects from G:\Active_Projects.xlsx
+          3. Gets unread emails from your Outlook inbox for the last 24 hours.
+          4. Gets your meetings (Today–Friday) from Outlook.
+          5. Pushes above data for website to use.
+   		- Confirms success!
+       		- Ask if you want to View Daily and Weekly briefings website 
+
+6) You have completed setup! Enjoy!
+
+
+
+   
+
