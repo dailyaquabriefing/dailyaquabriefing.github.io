@@ -1,3 +1,66 @@
+/**
+ * Escapes HTML special characters in a string.
+ * @param {string} str The string to escape.
+ * @returns {string} The escaped string.
+ */
+function escapeHTML(str) {
+    if (!str) return "";
+    return str.replace(/[&<>"']/g, function(match) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[match];
+    });
+}
+
+/**
+ * Converts URLs and emails in a plain text string to clickable HTML links.
+ * This function also escapes the text to prevent XSS.
+ * @param {string} plainText The raw plain text to convert.
+ * @returns {string} HTML string with links.
+ */
+function linkify(plainText) {
+    if (!plainText) return "";
+
+    // 1. Escape the entire string to make it safe for .innerHTML
+    let escapedText = escapeHTML(plainText);
+
+    // 2. Define patterns
+    // URL Pattern: Finds http, https, and www links.
+    // It specifically looks for &amp; which is the escaped form of &
+    const urlPattern = /(\b(https?:\/\/[-\w+&@#\/%?=~_|!:,.;&amp;]*[-\w+&@#\/%=~_|])|(\bwww\.[-\w+&@#\/%?=~_|!:,.;&amp;]*[-\w+&@#\/%=~_|]))/gi;
+    
+    // Email Pattern
+    const emailPattern = /(\b[\w.-]+@[\w.-]+\.\w{2,4}\b)/gi;
+
+    // 3. Replace URLs
+    escapedText = escapedText.replace(urlPattern, function(match) {
+        let url = match; // This is the escaped URL (e.g., "example.com?a=1&amp;b=2")
+        let href = url;
+
+        // Create the unescaped href attribute
+        if (url.startsWith('www.')) {
+            href = 'http://' + url.replace(/&amp;/g, '&');
+        } else {
+            href = url.replace(/&amp;/g, '&');
+        }
+        
+        // The link text 'url' is already escaped. The href must be unescaped.
+        return '<a href="' + href.replace(/"/g, '&quot;') + '" target="_blank">' + url + '</a>';
+    });
+
+    // 4. Replace Emails
+    escapedText = escapedText.replace(emailPattern, '<a href="mailto:$1">$1</a>');
+
+    return escapedText;
+}
+
+
+// --- Your existing code begins below ---
+
 const db = firebase.firestore();
 
 
@@ -117,9 +180,10 @@ function listenToFirestore(reportId, isDaily) {
                 els.headerActive.textContent   = `3. Active Tasks (${data.activeTasks_count || 0})`;
 
                 // --- Inject Content ---
-                els.tasks.innerHTML    = data.tasks       || "<i>No tasks found.</i>";
-                els.projects.innerHTML = data.projects    || "<i>No active projects found.</i>";
-                els.active.innerHTML   = data.activeTasks || "<i>No active tasks found.</i>";
+                // UPDATED: Now calls linkify()
+                els.tasks.innerHTML    = linkify(data.tasks)       || "<i>No tasks found.</i>";
+                els.projects.innerHTML = linkify(data.projects)    || "<i>No active projects found.</i>";
+                els.active.innerHTML   = linkify(data.activeTasks) || "<i>No active tasks found.</i>";
                 
                 if (isDaily) {
                     // --- Update Headers for Daily Sections (NEW) ---
@@ -127,8 +191,9 @@ function listenToFirestore(reportId, isDaily) {
                     els.headerEmails.textContent   = `5. Unread Emails (Last 24h) (${data.emails_count || 0})`;
                     
                     // --- Inject Daily Content ---
-                    els.meetings.innerHTML = data.meetings || "<i>No meetings found.</i>";
-                    els.emails.innerHTML   = data.emails   || "<i>No unread emails.</i>";
+                    // UPDATED: Now calls linkify()
+                    els.meetings.innerHTML = linkify(data.meetings) || "<i>No meetings found.</i>";
+                    els.emails.innerHTML   = linkify(data.emails)   || "<i>No unread emails.</i>";
                 }
             
             } else {
