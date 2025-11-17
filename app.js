@@ -1,3 +1,51 @@
+/**
+ * Converts URLs and emails in an HTML string to clickable HTML links.
+ * WARNING: This function trusts the incoming HTML and does not escape it.
+ * It's safe for your internal tool but not for user-generated public content.
+ * @param {string} htmlContent The raw HTML content from Firestore.
+ * @returns {string} HTML string with new links added.
+ */
+function linkify(htmlContent) {
+    if (!htmlContent) return "";
+
+    // Do NOT escape the content. Work directly on the HTML.
+    let newText = htmlContent;
+
+    // 1. Define patterns
+    // URL Pattern: Finds http, https, and www links.
+    const urlPattern = /(\b(https?:\/\/[-\w+&@#\/%?=~_|!:,.;&amp;]*[-\w+&@#\/%=~_|])|(\bwww\.[-\w+&@#\/%?=~_|!:,.;&amp;]*[-\w+&@#\/%=~_|]))/gi;
+    
+    // Email Pattern
+    const emailPattern = /(\b[\w.-]+@[\w.-]+\.\w{2,4}\b)/gi;
+
+    // 2. Replace URLs
+    // We assume the AHK script is not already creating <a> tags.
+    // This simple replace will add <a> tags around plain text URLs.
+    newText = newText.replace(urlPattern, function(match) {
+        // 'match' is the URL found, e.g., "www.google.com"
+        // 'href' is the link we want to create
+        
+        let href = match.replace(/&amp;/g, '&'); // Un-escape for the href attribute
+        
+        if (match.startsWith('www.')) {
+            href = 'http://' + href;
+        }
+        
+        // Return the HTML <a> tag
+        // 'match' is used as the link text (it keeps &amp; etc. for display)
+        // 'href' is used for the link (it has & etc. for function)
+        return '<a href="' + href.replace(/"/g, '&quot;') + '" target="_blank">' + match + '</a>';
+    });
+
+    // 3. Replace Emails
+    newText = newText.replace(emailPattern, '<a href="mailto:$1">$1</a>');
+
+    return newText;
+}
+
+
+// --- Your existing code begins below ---
+
 const db = firebase.firestore();
 
 
@@ -117,9 +165,10 @@ function listenToFirestore(reportId, isDaily) {
                 els.headerActive.textContent   = `3. Active Tasks (${data.activeTasks_count || 0})`;
 
                 // --- Inject Content ---
-                els.tasks.innerHTML    = data.tasks       || "<i>No tasks found.</i>";
-                els.projects.innerHTML = data.projects    || "<i>No active projects found.</i>";
-                els.active.innerHTML   = data.activeTasks || "<i>No active tasks found.</i>";
+                // This now correctly uses the new linkify function
+                els.tasks.innerHTML    = linkify(data.tasks)       || "<i>No tasks found.</i>";
+                els.projects.innerHTML = linkify(data.projects)    || "<i>No active projects found.</i>";
+                els.active.innerHTML   = linkify(data.activeTasks) || "<i>No active tasks found.</i>";
                 
                 if (isDaily) {
                     // --- Update Headers for Daily Sections (NEW) ---
@@ -127,8 +176,9 @@ function listenToFirestore(reportId, isDaily) {
                     els.headerEmails.textContent   = `5. Unread Emails (Last 24h) (${data.emails_count || 0})`;
                     
                     // --- Inject Daily Content ---
-                    els.meetings.innerHTML = data.meetings || "<i>No meetings found.</i>";
-                    els.emails.innerHTML   = data.emails   || "<i>No unread emails.</i>";
+                    // This now correctly uses the new linkify function
+                    els.meetings.innerHTML = linkify(data.meetings) || "<i>No meetings found.</i>";
+                    els.emails.innerHTML   = linkify(data.emails)   || "<i>No unread emails.</i>";
                 }
             
             } else {
