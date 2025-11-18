@@ -131,6 +131,19 @@
         .btn-danger { background: #dc3545; color: white; padding: 6px 12px; font-size: 12px;}
         .btn-edit { background: #ffc107; color: #333; padding: 6px 12px; font-size: 12px; margin-right: 5px;}
 
+        /* Setup Link Button */
+        .setup-link {
+            margin-top: 25px;
+            display: inline-block;
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+            width: 100%;
+            padding-top: 15px;
+        }
+        .setup-link:hover { color: #0078D4; text-decoration: underline; }
+
         /* Modal */
         .modal {
             display: none;
@@ -206,6 +219,9 @@
             <div style="display: flex; gap: 10px;">
                 <button class="btn btn-primary w-full" onclick="loginWithEmail()">Sign In</button>
             </div>
+            
+            <!-- New Setup Link -->
+            <a href="setup.html" class="setup-link">First Time User? <b>Setup Here</b></a>
         </div>
     </div>
 
