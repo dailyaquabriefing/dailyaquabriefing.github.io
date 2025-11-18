@@ -35,83 +35,98 @@
         }
         #report-subtitle { 
             font-size: 1.1em; 
-            color: #666; 
-            margin: 5px 0 0 0; 
-        }
-        #last-updated { 
-            font-style: italic; 
-            color: #999; 
-            font-size: 0.85em; 
-            margin-top: 5px; 
+            color: #7f8c8d; 
+            margin: 0;
+            font-weight: normal;
         }
 
-        /* Section Styling */
-        h2 { 
-            background-color: #f4f4f4;
+        /* Navigation */
+        #nav-links {
+            margin-bottom: 20px;
             padding: 10px;
-            border-left: 5px solid #0078D4;
-            margin-top: 30px; 
-            font-size: 1.3em; 
-            text-transform: uppercase; 
-            color: #333; 
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        #nav-links a {
+            color: #0078D4;
+            text-decoration: none;
+            margin: 0 5px;
+            font-weight: 500;
+        }
+        #nav-links a:hover { text-decoration: underline; }
+        
+        /* Sections */
+        .hidden { display: none; }
+        
+        h2 {
+            color: #0078D4;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+            margin-top: 30px;
         }
         
-        .section-content { 
-            white-space: pre-wrap; 
-            font-size: 0.95em; 
-            padding: 0 10px;
-            word-wrap: break-word; /* Helps break long text lines */
+        .section-content {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            min-height: 50px;
         }
 
-        /* Utility to hide elements */
-        .hidden { display: none !important; }
-
-        /* FIX 2: Add Media Query for Mobile Screens 
-        */
-      @media (max-width: 768px) {
-            /* ... (existing mobile rules) ... */
-
-            /* Add these: */
-            #header-section {
-                flex-direction: column; /* Stack logo on top of text */
-                align-items: flex-start; /* Align to the left */
-                gap: 10px;
-            }
-            #logo {
-                max-height: 40px; /* Smaller logo on mobile */
-            }
-            
-            /* ... (existing mobile rules) ... */
+        /* Footer */
+        #last-updated {
+            margin-top: 40px;
+            font-size: 0.85em;
+            color: #999;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
         }
+
+        /* Message Box */
+        .message-box {
+            text-align: center;
+            padding: 40px;
+            background: #f0f4f8;
+            border-radius: 8px;
+            color: #555;
+        }
+
     </style>
 </head>
 <body>
-<div style="text-align: right; margin-bottom: 10px;">
-        <a href="setup.html" target="_blank" style="font-size: 0.9em; color: #666; text-decoration: none;">
-            &#9881; Setup
-        </a>
-    </div>
-    <div id="nav-links" class="hidden" style="text-align: right; font-size: 0.9em; margin-bottom: 10px;">
-        <a id="link-weekly" href="#">Weekly View</a> | 
-        <a id="link-daily" href="#">Daily View</a>
-    </div>
 
     <div id="header-section">
-        <img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems Logo" id="logo">
+         <!-- Replace with your actual logo URL or file -->
+        <img id="logo" src="https://www.aqua-aerobic.com/wp-content/uploads/2020/02/Aqua-Aerobic-Systems-Logo.png" alt="Company Logo">
         <div>
-            <h1 id="report-title">Aqua Briefing Report System</h1>
-            <p id="report-subtitle"></p>
-            <p id="last-updated"></p>
+            <h1 id="report-title">Daily Briefing</h1>
+            <h3 id="report-subtitle">Loading...</h3>
         </div>
     </div>
 
-    <div id="default-message">
-        <p style="text-align: center; font-style: italic; color: #aaa; margin-top: 50px; font-size: 1.1em; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 30px 0;">
-            [ No report data to show! ]
-        </p>
+    <!-- Navigation Links -->
+    <div id="nav-links" class="hidden">
+        <a href="#" id="link-weekly">Weekly Report</a> | 
+        <a href="#" id="link-daily">Daily Briefing</a> |
+        <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a> | 
+        <a href="setup.html" target="_blank">Setup Wizard</a> |
+        <a href="howtouse.html" target="_blank">How to Use</a>
     </div>
 
-   <div id="report-body" class="hidden">
+    <div id="default-message" class="message-box">
+        <h2>Welcome to Aqua Briefing</h2>
+        <p>Please use the link provided by your automation script, or enter a User ID in the URL.</p>
+        <p>Example: <code>?daily=jdoe</code></p>
+        <br>
+        <a href="admin.html" style="text-decoration:none;">
+            <button style="padding:10px 20px; cursor:pointer; background:#0078D4; color:white; border:none; border-radius:4px;">Log In to Dashboard</button>
+        </a>
+    </div>
+
+    <div id="report-body" class="hidden">
+        
         <div id="container-tasks">
             <h2 id="header-tasks">1. Daily Tasks</h2>
             <div id="content-tasks" class="section-content"></div>
@@ -138,13 +153,15 @@
         </div>
     </div>
 
+    <div id="last-updated"></div>
 
+    <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 
     <script>
-        const firebaseConfig = {
+       const firebaseConfig = {
             apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
             authDomain: "dailybriefing-fe7df.firebaseapp.com",
             projectId: "dailybriefing-fe7df",
@@ -153,8 +170,11 @@
             appId: "1:676708745644:web:b1848c5edff6f0289eba09",
             measurementId: "G-QWFFCRMTVQ"
         };
+
         firebase.initializeApp(firebaseConfig);
     </script>
+
+    <!-- Load your app logic AFTER Firebase is initialized -->
     <script src="app.js"></script>
 </body>
 </html>

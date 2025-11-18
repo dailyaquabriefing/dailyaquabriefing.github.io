@@ -18,589 +18,266 @@
             box-sizing: border-box;
         }
 
-        /* --- New Login Box Styles --- */
-        #setup-login {
+        #setup-box {
             background: #fff;
             padding: 40px 50px;
             border-radius: 12px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
             border: 1px solid #e0e0e0;
             width: 100%;
-            max-width: 450px;
-            text-align: center;
-        }
-        #setup-login h2 {
-            margin-top: 0;
-            color: #005a9c;
-        }
-        #setup-login p {
-            color: #666;
-            font-size: 0.95em;
-        }
-        #setup-code {
-            width: 100%;
-            padding: 12px;
-            font-size: 1.1em;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box; /* Important */
-            margin-top: 20px;
-        }
-        #submit-code-btn {
-            background-color: #0078d4;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            width: 100%;
-            margin-top: 15px;
-        }
-        #submit-code-btn:hover {
-            background-color: #005a9c;
-        }
-        #submit-code-btn:disabled {
-            background-color: #b0b0b0;
-            cursor: not-allowed;
-        }
-        #error-message {
-            color: #D8000C; /* Red */
-            font-weight: 600;
-            margin-top: 15px;
-            display: none; /* Hidden by default */
-        }
-        .hidden {
-            display: none !important;
-        }
-        /* --- End Login Box Styles --- */
-
-
-        .wizard-container {
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-            width: 100%;
-            max-width: 800px;
-            overflow: hidden;
-            border: 1px solid #e0e0e0;
+            max-width: 600px;
+            position: relative;
         }
 
-        .wizard-header {
-            padding: 25px 35px;
-            border-bottom: 1px solid #eee;
-            background-color: #fcfcfc;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .wizard-logo {
-            max-height: 50px;
-            width: auto;
-            flex-shrink: 0;
-        }
-
-        .wizard-header h1 {
-            margin: 0;
-            color: #005a9c; /* Aqua-themed color */
-        }
+        h1 { margin-top: 0; color: #005a9c; font-size: 1.8em; }
+        h3 { margin-bottom: 10px; color: #333; }
         
+        /* Tabs (Steps) */
+        .tab { display: none; }
+        
+        /* Step Indicators */
         .step-indicator {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #999;
             font-size: 0.9em;
-            color: #777;
-            font-weight: 600;
-            margin-top: 5px;
         }
-
-        .wizard-body {
-            padding: 35px;
+        .step-dot {
+            height: 10px;
+            width: 10px;
+            margin: 0 4px;
+            background-color: #ddd;
+            border-radius: 50%;
+            display: inline-block;
         }
+        .step-dot.active { background-color: #005a9c; }
 
-        .wizard-step {
-            display: none; /* Hidden by default */
-        }
-
-        .wizard-step.active {
-            display: block; /* Shown when active */
-        }
-
-        .wizard-step h2 {
-            color: #005a9c;
-            border-bottom: 2px solid #0078d4;
-            padding-bottom: 5px;
-            margin-top: 0;
-        }
-
-        .wizard-step h3 {
-            color: #333;
-            margin-top: 25px;
-            margin-bottom: 10px;
-        }
-
-        .wizard-nav {
-            padding: 25px 35px;
-            background-color: #f9f9f9;
+        /* Navigation Buttons */
+        .buttons {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
             border-top: 1px solid #eee;
-            text-align: right;
-        }
-
-        .wizard-nav button {
-            background-color: #0078d4;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .wizard-nav button:hover {
-            background-color: #005a9c;
-        }
-
-        .wizard-nav button:disabled {
-            background-color: #b0b0b0;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        #prevBtn {
-            background-color: #6c757d;
-            margin-right: 10px;
-        }
-
-        #prevBtn:hover {
-            background-color: #5a6268;
-        }
-
-        /* Content Styling */
-        ul, ol {
-            padding-left: 20px;
+            padding-top: 20px;
         }
         
-        li {
-            margin-bottom: 10px;
+        button {
+            background-color: #005a9c;
+            color: #ffffff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s;
         }
+        button:hover { background-color: #004a80; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        button.secondary { background-color: #fff; color: #555; border: 1px solid #ccc; }
+        button.secondary:hover { background-color: #f9f9f9; }
 
+        /* Lists and Code */
         code {
-            font-family: "Courier New", Courier, monospace;
-            background-color: #eef;
+            background: #f1f1f1;
             padding: 2px 6px;
             border-radius: 4px;
-            font-size: 0.95em;
+            color: #d63384;
+            font-family: Consolas, monospace;
         }
-
-        pre {
-            background-color: #f4f4f4;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 15px;
-            overflow-x: auto;
-        }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; }
         
-        pre code {
-            background-color: transparent;
-            padding: 0;
-            border-radius: 0;
-            font-size: 0.9em;
+        .highlight-box {
+            background: #eef7ff;
+            border-left: 4px solid #005a9c;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
         }
-
-        .download-button {
-            display: inline-block;
-            background-color: #28a745;
+        .btn-admin {
+            display: block;
+            text-align: center;
+            width: 100%;
+            background: #28a745;
             color: white;
-            padding: 12px 25px;
+            padding: 15px;
             text-decoration: none;
             border-radius: 6px;
-            font-weight: 600;
+            font-weight: bold;
             font-size: 1.1em;
-            margin-top: 10px;
+            margin-top: 15px;
+            box-sizing: border-box;
+            transition: background 0.2s;
         }
-        .download-button:hover {
-            background-color: #218838;
-        }
+        .btn-admin:hover { background: #218838; }
 
-        .confirm-box {
-            margin-top: 30px;
-            background-color: #fff8e1;
-            border: 1px solid #ffecb3;
-            padding: 20px;
-            border-radius: 6px;
+        /* Top Right Link */
+        .top-link {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 0.85em;
+            color: #999;
+            text-decoration: none;
         }
-        .confirm-box label {
-            font-weight: 600;
-            margin-left: 10px;
-            cursor: pointer;
-        }
-        .confirm-box input {
-            transform: scale(1.2);
-            cursor: pointer;
-        }
+        .top-link:hover { text-decoration: underline; color: #005a9c; }
 
     </style>
 </head>
 <body>
 
-    <div id="setup-login">
-        <img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems Logo" style="max-height: 50px;">
-        <h2>Setup Wizard</h2>
-        <p>Please enter your unique setup code to begin.</p>
-        <input type="password" id="setup-code" placeholder="Enter code">
-        <button id="submit-code-btn">Access Setup</button>
-        <p id="error-message">Invalid setup code. Please try again.</p>
-    </div>
+    <div id="setup-box">
+        <a href="index.html" class="top-link">Back to Viewer</a>
 
-
-    <div class="wizard-container hidden">
-        <div class="wizard-header">
-            <img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems Logo" class="wizard-logo">
-            <div>
-                <h1>AquaDailyBriefing Setup</h1>
-                <div class="step-indicator" id="stepIndicator">Step 1 of 5</div>
-            </div>
+        <div class="step-indicator">
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
+            <span class="step-dot"></span>
         </div>
 
-        <div class="wizard-body">
-
-            <div class="wizard-step active">
-                <h2>Welcome to the AquaDailyBriefing!</h2>
-                <p>This tool is designed to save you time by automating daily & weekly briefing reports of your active projects, daily tasks, emails, and meetings.</p>
-                <p>AquaDailyBriefing will:</p>
-                <ul>
-                    <li>Get and report active daily tasks.</li>
-                    <li>Get and report active projects/tasks.</li>
-                    <li>Get and report unread emails for the last 24 hours.</li>
-                    <li>Get and report schedules meetings (Today–Friday) from Outlook.</li>
-                    <li>Push above data to a personal, report website for you to view or share.</li>
-                </ul>
-                <p>This wizard will walk you through the <strong>one-time setup</strong> to get you started.</p>
+        <form id="setupForm" onsubmit="return false;">
+            
+            <!-- STEP 1: Welcome -->
+            <div class="tab">
+                <h1>Welcome</h1>
+                <p>The <strong>Aqua Daily Briefing</strong> system helps you organize your day by combining your Outlook data with a web-based task list.</p>
+                <div class="highlight-box">
+                    <strong>How it works:</strong>
+                    <ul>
+                        <li><strong>Web Dashboard:</strong> You manage your Daily Tasks and Projects online.</li>
+                        <li><strong>Outlook Agent:</strong> A small program runs on your PC to sync your emails and meetings automatically.</li>
+                    </ul>
+                </div>
+                <p>Click <strong>Next</strong> to get started.</p>
             </div>
 
-            <div class="wizard-step">
-                <h2>Step 1: Download & Extract</h2>
-                <p>First, you need to download the application files.</p>
+            <!-- STEP 2: Download -->
+            <div class="tab">
+                <h1>1. Download Agent</h1>
+                <p>You need to copy the sync agent to your computer.</p>
+                <p>Copy these <strong>2 files</strong> from <code>Q:\Support\MorningBriefing\</code> to your <code>G:\</code> drive:</p>
+                <ul>
+                    <li><code>AquaDailyBriefing.exe</code></li>
+                    <li><code>dailybriefingconfig.txt</code></li>
+                </ul>
+                <p style="color: #666; font-size: 0.9em;">
+                    <i>(Ensure you copy them to the main folder of your G: drive).</i>
+                </p>
+                <label style="display:block; margin-top:20px; cursor:pointer;">
+                    <input type="checkbox" id="confirmDownload"> I have copied the 2 files to my G: drive.
+                </label>
+            </div>
+
+            <!-- STEP 3: Admin Dashboard -->
+            <div class="tab">
+                <h1>2. Dashboard</h1>
+                <p>This is where you manage your content online.</p>
                 
-                <a href="./files/dailybriefing.zip" class="download-button" download>
-                    Download dailybriefing.zip
-                </a>
-
-                <h3 style="margin-top: 25px;">Instructions</h3>
+                <div class="highlight-box" style="text-align:center;">
+                    <p style="margin:0 0 10px 0;">Click below to open the dashboard:</p>
+                    <a href="admin.html" target="_blank" class="btn-admin">Launch Dashboard</a>
+                </div>
+                
+                <p><strong>Instructions:</strong></p>
                 <ol>
-                    <li>Click the download button above.</li>
-                    <li>Once downloaded, <strong>extract the contents</strong> of the <code>.zip</code> file directly to the root of your personal <code>G:\</code> drive.</li>
+                    <li>Log in using the <strong>Email/Password provided by IT</strong>.</li>
+                    <li>Link your account to your <strong>Aqua Network ID</strong> (e.g., <code>jdoe</code>).</li>
+                    <li>Add a test task to verify it works.</li>
                 </ol>
-                <p>When finished, your <code>G:\</code> drive should have these four files:</p>
-                <ul>
-                    <li><code>G:\AquaDailyBriefing.exe</code></li>
-                    <li><code>G:\Active_Projects.xlsx</code></li>
-                    <li><code>G:\dailybriefingconfig.txt</code></li>
-                    <li><code>G:\DailyTask.txt</code></li>
-                </ul>
+                <p style="font-size:0.9em; color:#666;">Come back here and click Next once you are done.</p>
             </div>
 
-            <div class="wizard-step">
-                <h2>Step 2: Configure Your Files</h2>
-                <p>This is the most important part. You must edit <strong>3 files</strong> to personalize the tool. Please complete these actions on your <code>G:\</code> drive.</p>
-
-                <h3>1. Edit <code>dailybriefingconfig.txt</code></h3>
-                <p>This file contains the required settings for the app.</p>
+            <!-- STEP 4: Configure -->
+            <div class="tab">
+                <h1>3. Configure Agent</h1>
+                <p>Tell the Outlook Agent who you are.</p>
                 <ol>
-                    <li>Open <code>G:\dailybriefingconfig.txt</code> (with Notepad).</li>
-                    <li>Edit the <strong>two lines</strong> indicated below with your information.</li>
-                    <pre><code>; Edit: replace with your email address.  example: jdoe@aqua-aerobic.com
-EmailTo=jdoe@aqua-aerobic.com
-
-; Edit: replace with your aqua userid
-ReportID=jdoe</code></pre>
+                    <li>Open <code>G:\dailybriefingconfig.txt</code>.</li>
+                    <li>Change <code>ReportID=default</code> to your Network ID (e.g., <code>jdoe</code>).</li>
+                    <li>Ensure <code>Prompt=Yes</code>.</li>
                     <li>Save and close the file.</li>
                 </ol>
-
-                <h3>2. Edit <code>Active_Projects.xlsx</code></h3>
-                <p>This spreadsheet gives a high-level overview of your active projects and tasks for reporting.</p>
-                <ul>
-                    <li>The <strong>Projects</strong> tab is for large, strategic goals.</li>
-                    <li>The <strong>ActiveTasks</strong> tab is for smaller, specific action items.</li>
-                </ul>
-                <ol>
-                    <li>Open <code>G:\Active_Projects.xlsx</code>.</li>
-                    <li>The file has example entries. Delete them.</li>
-                    <li>Add your current projects to the <strong>Projects</strong> tab.</li>
-                    <li>Add your current active tasks to the <strong>ActiveTasks</strong> tab.</li>
-                    <li>Save and close the file.</li>
-                </ol>
-
-                <h3>3. Edit <code>DailyTask.txt</code></h3>
-                <p>This file lists your recurring daily tasks (e.g., "Prepare notes for upcoming meetings").</p>
-                <ol>
-                    <li>Open <code>G:\DailyTask.txt</code>.</li>
-                    <li>Edit the file to list your personal daily tasks.</li>
-                    <li>Put only one task per line.</li>
-                    <li>Save and close the file.</li>
-                </ol>
-
-                <div class="confirm-box">
-                    <input type="checkbox" id="configConfirm">
-                    <label for="configConfirm">I have completed all edits to the 3 files as instructed.</label>
+                <div class="highlight-box">
+                    Example: <code>ReportID=jdoe</code>
                 </div>
             </div>
 
-            <div class="wizard-step">
-                <h2>Step 3: Your New Daily Process</h2>
-                <p>Great! The one-time setup is finished. Here is how you'll use the tool each day.</p>
+            <!-- STEP 5: Run & Finish -->
+            <div class="tab">
+                <h1>4. Run & Sync</h1>
+                <p>You are fully set up!</p>
                 <ol>
-                    <li>
-                        <strong>Update Your Files (If needed):</strong>
-                        <ul>
-                            <li>Add/remove/update items in <code>G:\Active_Projects.xlsx</code>.</li>
-                            <li>Tweak your <code>G:\DailyTask.txt</code>.</li>
-                        </ul>
-                    </li>
-                    <li>
-                        <strong>Run the App:</strong>
-                        <ul>
-                            <li>Double-click <code>G:\AquaDailyBriefing.exe</code>.</li>
-                        </ul>
-                    </li>
+                    <li>Double-click <code>G:\AquaDailyBriefing.exe</code>.</li>
+                    <li>It will read your Outlook Emails & Meetings.</li>
+                    <li>It will push them to the cloud and combine them with your web tasks.</li>
                 </ol>
-                <p>When you run the app, it will automatically:</p>
-                <ol>
-                    <li>Get daily tasks from <code>G:\DailyTask.txt</code>.</li>
-                    <li>Get active projects/tasks from <code>G:\Active_Projects.xlsx</code>.</li>
-                    <li>Get unread emails from Outlook (last 24 hours).</li>
-                    <li>Get your meetings (Today–Friday) from Outlook.</li>
-                    <li>Push all data to the website.</li>
-                </ol>
-                <p>After a few seconds, it will confirm success and ask if you want to view your personal Daily and Weekly briefing website!</p>
+                <div class="highlight-box" style="border-color:#28a745; background:#e8f5e9;">
+                    <strong>Success!</strong> You can now view your complete Daily Briefing.
+                </div>
             </div>
 
-            <div class="wizard-step">
-                <h2>Setup Complete!</h2>
-                <p>Congratulations! You are all set up and ready to use the <strong>AquaDailyBriefing</strong> tool.</p>
-                <p>You can run <code>G:\AquaDailyBriefing.exe</code> right now to see it in action.</p>
-                (Upon opening the first time you will be prompted to trust <code>AquaDailyBriefing.exe</code> from the internet.)
-                <p>You can close this setup wizard. Enjoy!</p>
+            <!-- Navigation -->
+            <div class="buttons">
+                <button type="button" id="prevBtn" class="secondary" onclick="nextPrev(-1)">Previous</button>
+                <button type="button" id="nextBtn" onclick="nextPrev(1)">Next</button>
             </div>
-
-        </div>
-
-        <div class="wizard-nav">
-            <button id="prevBtn" onclick="nextPrev(-1)">Previous</button>
-            <button id="nextBtn" onclick="nextPrev(1)">Next</button>
-        </div>
+        </form>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
-
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
-            authDomain: "dailybriefing-fe7df.firebaseapp.com",
-            projectId: "dailybriefing-fe7df",
-            storageBucket: "dailybriefing-fe7df.firebasestorage.app",
-            messagingSenderId: "676708745644",
-            appId: "1:676708745644:web:b1848c5edff6f0289eba09",
-            measurementId: "G-QWFFCRMTVQ"
-        };
-        firebase.initializeApp(firebaseConfig);
-    </script>
-    
-   <script>
-        const db = firebase.firestore();
-        const loginContainer = document.getElementById('setup-login');
-        const wizardContainer = document.querySelector('.wizard-container');
-        const submitBtn = document.getElementById('submit-code-btn');
-        const codeInput = document.getElementById('setup-code');
-        const errorMsg = document.getElementById('error-message');
-
-        // --- New Rate Limiting Variables ---
-        const MAX_ATTEMPTS = 3;
-        const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes
-
-        /**
-         * Calculates remaining block time in milliseconds.
-         * @returns {number} Remaining time in MS, or 0 if not blocked.
-         */
-        function getRemainingBlockTime() {
-            const blockUntil = localStorage.getItem('blockUntil') || 0;
-            const remainingTime = blockUntil - Date.now();
-            return (remainingTime > 0) ? remainingTime : 0;
-        }
-
-        /**
-         * Updates the error message text and visibility.
-         * @param {string} message - The message to display.
-         * @param {boolean} [isError=true] - Styles as error (red) or info (gray).
-         */
-        function updateErrorMsg(message, isError = true) {
-            errorMsg.textContent = message;
-            errorMsg.style.color = isError ? "#D8000C" : "#666";
-            errorMsg.style.display = "block";
-        }
-
-        /**
-         * Checks for an active block on page load and updates the UI.
-         */
-        function checkInitialBlock() {
-            const remainingTime = getRemainingBlockTime();
-            if (remainingTime > 0) {
-                const remainingMinutes = Math.ceil(remainingTime / 60000);
-                updateErrorMsg(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`, true);
-                submitBtn.disabled = true;
-                submitBtn.textContent = "Try Again Later";
-            }
-        }
-        
-        /**
-         * Main function to check the entered setup code against Firebase.
-         */
-        async function checkSetupCode() {
-            // 1. Check if user is currently blocked
-            const remainingTime = getRemainingBlockTime();
-            if (remainingTime > 0) {
-                const remainingMinutes = Math.ceil(remainingTime / 60000);
-                updateErrorMsg(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`, true);
-                submitBtn.disabled = true;
-                submitBtn.textContent = "Try Again Later";
-                return;
-            }
-
-            // 2. Proceed with check
-            const enteredCode = codeInput.value.trim();
-            if (!enteredCode) return;
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = "Checking...";
-            errorMsg.style.display = "none";
-            
-            let failedAttempts = parseInt(localStorage.getItem('failedAttempts') || 0);
-
-            try {
-                const docRef = db.collection("setup_codes").doc(enteredCode);
-                const doc = await docRef.get();
-
-                if (doc.exists) {
-                    // SUCCESS
-                    // Clear counters on success
-                    localStorage.removeItem('failedAttempts');
-                    localStorage.removeItem('blockUntil');
-                    
-                    loginContainer.classList.add("hidden");
-                    wizardContainer.classList.remove("hidden");
-                } else {
-                    // FAILURE
-                    throw new Error("Invalid code");
-                }
-            } catch (err) {
-                // 3. Handle Failure
-                console.error("Error checking code:", err);
-                failedAttempts++;
-                localStorage.setItem('failedAttempts', failedAttempts);
-
-                if (failedAttempts >= MAX_ATTEMPTS) {
-                    // Block user
-                    const blockUntil = Date.now() + BLOCK_DURATION_MS;
-                    localStorage.setItem('blockUntil', blockUntil);
-                    updateErrorMsg(`Too many failed attempts. Please try again in ${Math.ceil(BLOCK_DURATION_MS / 60000)} minutes.`, true);
-                    submitBtn.textContent = "Try Again Later";
-                    // Keep button disabled
-                } else {
-                    // Show attempts remaining
-                    const attemptsLeft = MAX_ATTEMPTS - failedAttempts;
-                    updateErrorMsg(`Invalid code. ${attemptsLeft} attempt${attemptsLeft > 1 ? 's' : ''} remaining.`, true);
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = "Access Setup";
-                }
-            }
-        }
-
-        // Add listeners
-        submitBtn.addEventListener("click", checkSetupCode);
-        
-        // Allow pressing Enter to submit
-        codeInput.addEventListener("keyup", function(event) {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                checkSetupCode();
-            }
-        });
-
-        // Run the block check when the script loads
-        checkInitialBlock();
-    </script>
-
-
-    <script>
-        let currentStep = 0; // Current step is 0
-        const steps = document.querySelectorAll(".wizard-step");
-        const stepIndicator = document.getElementById("stepIndicator");
-        const prevBtn = document.getElementById("prevBtn");
-        const nextBtn = document.getElementById("nextBtn");
-        const configConfirm = document.getElementById("configConfirm");
-
-        // Show the initial step
-        showStep(currentStep); 
+        let currentStep = 0;
+        showStep(currentStep);
 
         function showStep(n) {
-            // Hide all steps
-            steps.forEach(step => step.classList.remove("active"));
+            let tabs = document.getElementsByClassName("tab");
+            tabs[n].style.display = "block";
             
-            // Show the current step
-            steps[n].classList.add("active");
-
-            // Update step indicator
-            stepIndicator.textContent = `Step ${n + 1} of ${steps.length}`;
-
-            // Update button visibility and text
-            if (n === 0) {
-                prevBtn.style.display = "none";
-            } else {
-                prevBtn.style.display = "inline-block";
+            // Update dots
+            let dots = document.getElementsByClassName("step-dot");
+            for (i = 0; i < dots.length; i++) {
+                dots[i].className = dots[i].className.replace(" active", "");
             }
+            dots[n].className += " active";
 
-            if (n === (steps.length - 1)) {
+            // Buttons
+            if (n == 0) {
+                document.getElementById("prevBtn").style.display = "none";
+            } else {
+                document.getElementById("prevBtn").style.display = "inline";
+            }
+            
+            let nextBtn = document.getElementById("nextBtn");
+            if (n == (tabs.length - 1)) {
                 nextBtn.innerHTML = "Finish";
             } else {
                 nextBtn.innerHTML = "Next";
             }
 
-            // --- Special Logic for Step 3 (index 2) ---
-            // This is the "Configure Files" step with the checkbox
-            if (n === 2) {
-                nextBtn.disabled = !configConfirm.checked;
+            // Logic for Step 2 Checkbox
+            if (n == 1) {
+                let chk = document.getElementById("confirmDownload");
+                nextBtn.disabled = !chk.checked;
+                chk.onclick = function() { nextBtn.disabled = !this.checked; };
             } else {
                 nextBtn.disabled = false;
             }
         }
 
-        // --- Checkbox logic ---
-        // Add event listener to checkbox to enable/disable Next button
-        configConfirm.addEventListener("change", function() {
-            if (currentStep === 2) { // Only if we are on the config step
-                nextBtn.disabled = !this.checked;
-            }
-        });
-
-        // --- Navigation function ---
         function nextPrev(n) {
-            // If "Finish" is clicked, show an alert
-            if (currentStep === (steps.length - 1) && n > 0) {
-                alert("Setup is complete! You can now safely close this tab.");
-                return; // Don't go further
+            let tabs = document.getElementsByClassName("tab");
+            
+            // If finished
+            if (currentStep == (tabs.length - 1) && n == 1) {
+                window.location.href = "index.html"; // Redirect to main viewer on finish
+                return;
             }
 
-            // Update current step
-            currentStep += n;
-
-            // Show the new step
+            tabs[currentStep].style.display = "none";
+            currentStep = currentStep + n;
             showStep(currentStep);
         }
     </script>
-
 </body>
 </html>
