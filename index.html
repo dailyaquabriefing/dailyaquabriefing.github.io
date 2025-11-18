@@ -110,6 +110,20 @@
         .btn-secondary { background: #fff; color: #0078D4; border: 2px solid #0078D4; }
         .btn-secondary:hover { background: #eef7ff; }
 
+        /* User ID Input Styling */
+        .userid-input {
+            padding: 12px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+            margin-right: 10px;
+        }
+        .userid-input:focus {
+            border-color: #0078D4;
+            outline: none;
+        }
+
     </style>
 </head>
 <body>
@@ -134,14 +148,20 @@
 
     <div id="default-message" class="message-box">
         <h2>Welcome to Aqua Briefing</h2>
-        <p>Please use the link provided by your automation script, or enter a User ID in the URL.</p>
-        <p>Example: <code>?daily=jdoe</code></p>
-        <br>
+        <p>Enter your <strong>Aqua User ID</strong> below to view your report.</p>
+        
+        <!-- NEW: Input Section -->
+        <div style="margin: 25px 0;">
+            <input type="text" id="userid-input" class="userid-input" placeholder="e.g. jdoe" autofocus>
+            <button onclick="viewReport()" class="action-btn btn-primary">View Briefing</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 30px auto; width: 60%;">
         
         <div style="margin-top: 20px;">
             <!-- Login Button -->
             <a href="admin.html" style="text-decoration:none;">
-                <button class="action-btn btn-primary">Log In to Dashboard</button>
+                <button class="action-btn btn-secondary">Log In to Dashboard</button>
             </a>
 
             <!-- New Setup Button -->
@@ -196,6 +216,26 @@
             appId: ""
         };
         firebase.initializeApp(firebaseConfig);
+
+        // --- Input Logic ---
+        function viewReport() {
+            const input = document.getElementById('userid-input');
+            const val = input.value.trim();
+            if (val) {
+                // Redirect to the same page with the query param
+                window.location.href = "?daily=" + encodeURIComponent(val);
+            } else {
+                alert("Please enter a User ID.");
+                input.focus();
+            }
+        }
+
+        // Allow "Enter" key to submit
+        document.getElementById('userid-input').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                viewReport();
+            }
+        });
     </script>
 
     <!-- Load your app logic AFTER Firebase is initialized -->
