@@ -53,11 +53,12 @@
             text-decoration: none;
             margin: 0 5px;
             font-weight: 500;
+            cursor: pointer;
         }
         #nav-links a:hover { text-decoration: underline; }
         
         /* Sections */
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         
         h2 {
             color: #0078D4;
@@ -124,33 +125,60 @@
             outline: none;
         }
 
+        /* Lock Screen Styling */
+        #lock-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #f4f7fa;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .lock-box {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 300px;
+        }
+
     </style>
 </head>
 <body>
 
+    <div id="lock-screen" class="hidden">
+        <div class="lock-box">
+            <h2 style="color: #0078D4; margin-top:0;">Protected Report</h2>
+            <p style="margin-bottom: 20px;">Please enter passcode to view.</p>
+            <input type="password" id="unlock-pass" class="userid-input" style="width: 100%; box-sizing: border-box; margin-bottom: 15px;" placeholder="Passcode">
+            <button onclick="attemptUnlock()" class="action-btn btn-primary" style="width:100%">Unlock</button>
+            <p id="unlock-error" style="color: red; font-size: 0.9em; display: none; margin-top:10px;">Incorrect Passcode</p>
+        </div>
+    </div>
+
     <div id="header-section">
-         <!-- Replace with your actual logo URL or file -->
-        <img id="logo" src="aqua-aerobics-logo.png" alt="Company Logo">
+         <img id="logo" src="aqua-aerobics-logo.png" alt="Company Logo">
         <div>
             <h1 id="report-title">Daily Briefing</h1>
             <h3 id="report-subtitle">Loading...</h3>
         </div>
     </div>
 
-    <!-- Navigation Links (Report Page) -->
     <div id="nav-links" class="hidden">
-        <a href="#" id="link-weekly">Weekly Report</a> | 
-        <a href="#" id="link-daily">Daily Briefing</a> |
+        <a id="link-weekly" href="#">Weekly Report</a> | 
+        <a id="link-daily" href="#">Daily Briefing</a> |
         <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a> | 
         <a href="howtouse.html" target="_blank">How to Use</a>
     </div>
 
-    <!-- Default Home Message (Landing Page) -->
     <div id="default-message" class="message-box">
         <h2>Welcome to Aqua Briefing</h2>
         <p>Enter your <strong>Aqua User ID</strong> below to view your report.</p>
         
-        <!-- Input Section -->
         <div style="margin: 25px 0;">
             <input type="text" id="userid-input" class="userid-input" placeholder="e.g. jdoe" autofocus>
             <button onclick="viewReport()" class="action-btn btn-primary">View Briefing</button>
@@ -159,12 +187,10 @@
         <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 30px auto; width: 60%;">
         
         <div style="margin-top: 20px;">
-            <!-- Login Button -->
             <a href="admin.html" style="text-decoration:none;">
                 <button class="action-btn btn-secondary">Log In to Dashboard</button>
             </a>
 
-            <!-- First Time Setup Button (Only visible on Home Page) -->
             <a href="setup.html" style="text-decoration:none;">
                 <button class="action-btn btn-secondary">First Time User? Setup Here</button>
             </a>
@@ -201,7 +227,6 @@
 
     <div id="last-updated"></div>
 
-    <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
@@ -217,30 +242,135 @@
         };
         firebase.initializeApp(firebaseConfig);
 
+        // --- VARIABLES ---
+        let pendingData = null; // Holds the data while waiting for unlock
+
         // --- Input Logic ---
         function viewReport() {
             const input = document.getElementById('userid-input');
             const val = input.value.trim();
-
             if (val) {
-                // Redirect to the same page with the query param
-                
-                window.location.href = "?report=" + encodeURIComponent(val);
+                // Defaulting to ?daily= (Protected) for the main button
+                window.location.href = "?daily=" + encodeURIComponent(val);
             } else {
                 alert("Please enter a User ID.");
                 input.focus();
             }
         }
 
-        // Allow "Enter" key to submit
+        // Allow "Enter" key to submit inputs
         document.getElementById('userid-input').addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                viewReport();
-            }
+            if (event.key === "Enter") viewReport();
         });
-    </script>
+        
+        document.getElementById('unlock-pass').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") attemptUnlock();
+        });
 
-    <!-- Load your app logic AFTER Firebase is initialized -->
-    <script src="app.js"></script>
+        // --- LOAD LOGIC ---
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        const dailyId = urlParams.get('daily');
+        const reportId = urlParams.get('report');
+
+        // Determine which ID to load and which mode we are in
+        const targetId = dailyId || reportId;
+        const isDailyMode = !!dailyId; // True if ?daily= is used
+
+        if (targetId) {
+            // 1. Setup Links so they point to the correct URLs for THIS user
+            document.getElementById('link-weekly').href = "?report=" + encodeURIComponent(targetId);
+            document.getElementById('link-daily').href = "?daily=" + encodeURIComponent(targetId);
+
+            // 2. Fetch Data
+            const db = firebase.firestore();
+            db.collection('briefings').doc(targetId).get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    
+                    if (isDailyMode) {
+                        // --- DAILY BRIEFING MODE (Protected) ---
+                        document.getElementById('report-title').textContent = "Daily Briefing";
+                        
+                        // Check Passcode
+                        if (data.passcode && data.passcode.trim() !== "") {
+                            pendingData = data; 
+                            document.getElementById('default-message').classList.add('hidden');
+                            document.getElementById('lock-screen').classList.remove('hidden');
+                            document.getElementById('report-subtitle').textContent = "Protected";
+                        } else {
+                            renderReport(data);
+                        }
+                    } else {
+                        // --- WEEKLY REPORT MODE (Public) ---
+                        document.getElementById('report-title').textContent = "Weekly Report";
+                        // No passcode check for Weekly Report
+                        renderReport(data);
+                    }
+
+                } else {
+                    document.getElementById('report-subtitle').innerText = "Report ID not found.";
+                    alert("Report ID '" + targetId + "' not found.");
+                }
+            }).catch(error => {
+                console.error("Error getting document:", error);
+            });
+        } else {
+            // On Home Page
+            document.getElementById('report-subtitle').textContent = "Please enter ID below";
+        }
+
+        // --- UNLOCK LOGIC ---
+        function attemptUnlock() {
+            const entered = document.getElementById('unlock-pass').value;
+            if (entered === pendingData.passcode) {
+                document.getElementById('lock-screen').classList.add('hidden');
+                renderReport(pendingData);
+            } else {
+                document.getElementById('unlock-error').style.display = 'block';
+            }
+        }
+
+        // --- RENDER LOGIC ---
+        function renderReport(data) {
+            // Hide landing & lock elements
+            document.getElementById('default-message').classList.add('hidden');
+            document.getElementById('lock-screen').classList.add('hidden');
+            
+            // Show Report elements
+            document.getElementById('nav-links').classList.remove('hidden');
+            document.getElementById('report-body').classList.remove('hidden');
+            
+            // Header Info
+            document.getElementById('report-subtitle').textContent = "Report: " + data.reportId;
+            document.getElementById('last-updated').textContent = "Last Updated: " + new Date(data.lastUpdated).toLocaleString();
+
+            // Helper to render list
+            const renderList = (id, items) => {
+                const el = document.getElementById(id);
+                if (!items || !items.length) { el.innerHTML = "<em>No items.</em>"; return; }
+                
+                let html = '<ul style="padding-left:20px;">';
+                items.forEach(item => {
+                    if (typeof item === 'string') {
+                        html += `<li>${item}</li>`;
+                    } else {
+                        // For objects (projects/active tasks)
+                        const color = item.status === 'On Track' ? 'green' : (item.status==='Delayed'?'red':'grey');
+                        html += `<li style="margin-bottom:10px;">
+                            <strong>${item.name}</strong> 
+                            <span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px;">${item.status}</span>
+                            <br><small style="color:#666">${item.notes || ''}</small>
+                        </li>`;
+                    }
+                });
+                el.innerHTML = html + '</ul>';
+            };
+
+            renderList('content-tasks', data.structuredDailyTasks);
+            renderList('content-projects', data.structuredProjects);
+            renderList('content-active', data.structuredActiveTasks);
+        }
+    </script>
 </body>
 </html>
