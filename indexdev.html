@@ -399,7 +399,8 @@
             // Helper to render list
             const renderList = (id, items) => {
                 const el = document.getElementById(id);
-                if (!items || !items.length) { 
+                // FIX: Check if items is null/undefined before checking length or calling forEach
+                if (!Array.isArray(items) || !items.length) { 
                     el.innerHTML = "<em>No items.</em>"; 
                     return; 
                 }
@@ -422,12 +423,12 @@
             };
 
             // Render Main Sections
-            renderList('content-tasks', data.structuredDailyTasks);
-            renderList('content-projects', data.structuredProjects);
-            renderList('content-active', data.structuredActiveTasks);
+            // FIX APPLIED HERE: Use || [] to guarantee an array is passed to renderList
+            renderList('content-tasks', data.structuredDailyTasks || []);
+            renderList('content-projects', data.structuredProjects || []);
+            renderList('content-active', data.structuredActiveTasks || []);
             
             // Render Daily Sections (If data exists, otherwise standard "No items")
-            // Note: Since Admin doesn't manage these, they will likely show "No items" unless pushed by external script
             if (isDailyMode) {
                 renderList('content-meetings', data.meetings || []); 
                 renderList('content-emails', data.emails || []);
