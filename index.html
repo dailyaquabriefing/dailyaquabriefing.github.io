@@ -4,140 +4,52 @@
     <title>Report Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            line-height: 1.6; 
-            padding: 20px; 
-            max-width: 900px; 
-            margin: 0 auto; 
-            color: #333;
-        }
+    <style>
+        /* --- YOUR EXISTING STYLES --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; padding: 20px; max-width: 900px; margin: 0 auto; color: #333; }
+        #header-section { display: flex; align-items: center; gap: 20px; border-bottom: 4px solid #0078D4; padding-bottom: 10px; margin-bottom: 30px; }
+        #logo { max-height: 60px; width: auto; flex-shrink: 0; }
+        #report-title { margin: 0; font-size: 2.2em; color: #2c3e50; }
+        #report-subtitle { font-size: 1.1em; color: #7f8c8d; margin: 0; font-weight: normal; }
         
-       /* Header Styling */
-        #header-section {
-            display: flex; /* Use flexbox */
-            align-items: center; /* Vertically center logo and text */
-            gap: 20px; /* Space between logo and text */
-            border-bottom: 4px solid #0078D4;
-            padding-bottom: 10px;
-            margin-bottom: 30px;
-        }
-        #logo {
-            max-height: 60px; /* Adjust height as needed */
-            width: auto;      /* Maintain aspect ratio */
-            flex-shrink: 0; /* Prevents logo from shrinking */
-        }
-        #report-title { 
-            margin: 0; 
-            font-size: 2.2em; 
-            color: #2c3e50; 
-        }
-        #report-subtitle { 
-            font-size: 1.1em; 
-            color: #7f8c8d; 
-            margin: 0;
-            font-weight: normal;
-        }
-
-        /* Navigation */
-        #nav-links {
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
-            font-size: 0.95em;
-        }
-        #nav-links a {
-            color: #0078D4;
-            text-decoration: none;
-            margin: 0 5px;
-            font-weight: 500;
-        }
+        /* Nav & Sections */
+        #nav-links { margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 0.95em; }
+        #nav-links a { color: #0078D4; text-decoration: none; margin: 0 5px; font-weight: 500; }
         #nav-links a:hover { text-decoration: underline; }
+        .hidden { display: none !important; }
         
-        /* Sections */
-        .hidden { display: none; }
-        
-        h2 {
-            color: #0078D4;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 8px;
-            margin-top: 30px;
-        }
-        
-        .section-content {
-            background: #fff;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            min-height: 50px;
-        }
+        h2 { color: #0078D4; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-top: 30px; }
+        .section-content { background: #fff; padding: 15px; border: 1px solid #e0e0e0; border-radius: 4px; min-height: 50px; }
+        #last-updated { margin-top: 40px; font-size: 0.85em; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
 
-        /* Footer */
-        #last-updated {
-            margin-top: 40px;
-            font-size: 0.85em;
-            color: #999;
-            text-align: center;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        }
-
-        /* Message Box */
-        .message-box {
-            text-align: center;
-            padding: 40px;
-            background: #f0f4f8;
-            border-radius: 8px;
-            color: #555;
-        }
-
-        /* Buttons in Message Box */
-        .action-btn {
-            padding: 12px 24px; 
-            cursor: pointer; 
-            border: none; 
-            border-radius: 4px;
-            font-size: 1rem;
-            font-weight: 600;
-            margin: 5px;
-            transition: background 0.2s;
-        }
+        /* Boxes & Buttons */
+        .message-box { text-align: center; padding: 40px; background: #f0f4f8; border-radius: 8px; color: #555; }
+        .action-btn { padding: 12px 24px; cursor: pointer; border: none; border-radius: 4px; font-size: 1rem; font-weight: 600; margin: 5px; transition: background 0.2s; }
         .btn-primary { background: #0078D4; color: white; }
         .btn-primary:hover { background: #005a9e; }
-        
         .btn-secondary { background: #fff; color: #0078D4; border: 2px solid #0078D4; }
-        .btn-secondary:hover { background: #eef7ff; }
-
-        /* User ID Input Styling */
-        .userid-input {
-            padding: 12px;
-            font-size: 1rem;
-            border: 2px solid #ddd;
-            border-radius: 4px;
-            width: 200px;
-            margin-right: 10px;
-        }
-        .userid-input:focus {
-            border-color: #0078D4;
-            outline: none;
-        }
-
+        
+        .userid-input { padding: 12px; font-size: 1rem; border: 2px solid #ddd; border-radius: 4px; width: 200px; margin-right: 10px; }
+        
+        /* --- LOGIN SPECIFIC STYLES --- */
+        #login-container { max-width: 400px; margin: 50px auto; padding: 30px; border: 1px solid #ccc; border-radius: 8px; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        .login-input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+        .error-msg { color: red; font-size: 0.9em; display: none; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div id="header-section">
-         <!-- Replace with your actual logo URL or file -->
         <img id="logo" src="aqua-aerobics-logo.png" alt="Company Logo">
         <div>
             <h1 id="report-title">Daily Briefing</h1>
             <h3 id="report-subtitle">Loading...</h3>
         </div>
+        <div style="margin-left: auto;">
+            <button id="btn-logout" class="action-btn btn-secondary hidden" onclick="logout()">Log Out</button>
+        </div>
     </div>
 
-    <!-- Navigation Links (Report Page) -->
     <div id="nav-links" class="hidden">
         <a href="#" id="link-weekly">Weekly Report</a> | 
         <a href="#" id="link-daily">Daily Briefing</a> |
@@ -145,63 +57,49 @@
         <a href="howtouse.html" target="_blank">How to Use</a>
     </div>
 
-    <!-- Default Home Message (Landing Page) -->
-    <div id="default-message" class="message-box">
+    <div id="default-message" class="message-box hidden">
         <h2>Welcome to Aqua Briefing</h2>
-        <p>Enter your <strong>Aqua User ID</strong> below to view your report.</p>
-        
-        <!-- Input Section -->
+        <p>Enter your <strong>Aqua User ID</strong> below.</p>
         <div style="margin: 25px 0;">
             <input type="text" id="userid-input" class="userid-input" placeholder="e.g. jdoe" autofocus>
-            <button onclick="viewReport()" class="action-btn btn-primary">View Briefing</button>
+            <button onclick="goToReport()" class="action-btn btn-primary">View Report</button>
         </div>
+        <p style="font-size:0.9em; color:#777;">(Default loads public report. Use ?daily= for sensitive data)</p>
+    </div>
 
-        <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 30px auto; width: 60%;">
+    <div id="login-container" class="hidden">
+        <h2 style="margin-top:0; border:none;">Restricted Access</h2>
+        <p>Authentication required for Daily Briefing.</p>
+        <p id="login-error" class="error-msg"></p>
+
+        <input type="email" id="login-email" class="login-input" placeholder="Email Address">
+        <input type="password" id="login-password" class="login-input" placeholder="Password">
         
-        <div style="margin-top: 20px;">
-            <!-- Login Button -->
-            <a href="admin.html" style="text-decoration:none;">
-                <button class="action-btn btn-secondary">Log In to Dashboard</button>
-            </a>
-
-            <!-- First Time Setup Button (Only visible on Home Page) -->
-            <a href="setup.html" style="text-decoration:none;">
-                <button class="action-btn btn-secondary">First Time User? Setup Here</button>
-            </a>
-        </div>
+        <button onclick="performLogin()" class="action-btn btn-primary" style="width:100%">Sign In</button>
     </div>
 
     <div id="report-body" class="hidden">
-        
         <div id="container-tasks">
             <h2 id="header-tasks">1. Daily Tasks</h2>
-            <div id="content-tasks" class="section-content"></div>
+            <div id="content-tasks" class="section-content">Loading...</div>
         </div>
-
         <div id="container-projects">
             <h2 id="header-projects">2. Active Projects</h2>
-            <div id="content-projects" class="section-content"></div>
-        </div>
-
-        <div id="container-active">
-            <h2 id="header-active">3. Active Tasks</h2>
-            <div id="content-active" class="section-content"></div>
+            <div id="content-projects" class="section-content">Loading...</div>
         </div>
 
         <div id="container-meetings" class="hidden">
-            <h2 id="header-meetings">4. This Week's Meetings</h2>
+            <h2 id="header-meetings">🔒 This Week's Meetings</h2>
             <div id="content-meetings" class="section-content"></div>
         </div>
-
         <div id="container-emails" class="hidden">
-            <h2 id="header-emails">5. Unread Emails (Last 24h)</h2>
+            <h2 id="header-emails">🔒 Unread Emails</h2>
             <div id="content-emails" class="section-content"></div>
         </div>
     </div>
 
     <div id="last-updated"></div>
 
-    <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
@@ -215,32 +113,127 @@
             messagingSenderId: "",
             appId: ""
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
-        // --- Input Logic ---
-        function viewReport() {
-            const input = document.getElementById('userid-input');
-            const val = input.value.trim();
+        // --- HYBRID ROUTING LOGIC ---
 
-            if (val) {
-                // Redirect to the same page with the query param
-                
-                window.location.href = "?report=" + encodeURIComponent(val);
-            } else {
-                alert("Please enter a User ID.");
-                input.focus();
-            }
+        const urlParams = new URLSearchParams(window.location.search);
+        const publicUser = urlParams.get('report'); // Open
+        const sensitiveUser = urlParams.get('daily'); // Protected
+
+        const ui = {
+            home: document.getElementById('default-message'),
+            login: document.getElementById('login-container'),
+            report: document.getElementById('report-body'),
+            nav: document.getElementById('nav-links'),
+            subtitle: document.getElementById('report-subtitle'),
+            logoutBtn: document.getElementById('btn-logout'),
+            // Sensitive Containers
+            meetings: document.getElementById('container-meetings'),
+            emails: document.getElementById('container-emails')
+        };
+
+        // ROUTER
+        if (sensitiveUser) {
+            // --- CASE A: SENSITIVE (Login Required) ---
+            console.log("Mode: Sensitive/Daily");
+            handleSensitiveMode(sensitiveUser);
+        } 
+        else if (publicUser) {
+            // --- CASE B: PUBLIC (Open) ---
+            console.log("Mode: Public/Report");
+            loadPublicView(publicUser);
+        } 
+        else {
+            // --- CASE C: HOME ---
+            ui.home.classList.remove('hidden');
+            ui.subtitle.innerText = "Home";
         }
 
-        // Allow "Enter" key to submit
-        document.getElementById('userid-input').addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                viewReport();
-            }
-        });
-    </script>
+        // --- FUNCTIONS ---
 
-    <!-- Load your app logic AFTER Firebase is initialized -->
+        function handleSensitiveMode(userId) {
+            // Check if user is already logged in
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    // 1. User is logged in -> Show Report
+                    ui.login.classList.add('hidden');
+                    ui.logoutBtn.classList.remove('hidden');
+                    
+                    // Reveal Body
+                    ui.nav.classList.remove('hidden');
+                    ui.report.classList.remove('hidden');
+                    
+                    // Reveal Sensitive Containers
+                    ui.meetings.classList.remove('hidden');
+                    ui.emails.classList.remove('hidden');
+
+                    ui.subtitle.innerText = "Authenticated Briefing: " + userId;
+                    
+                    // Update Links
+                    document.getElementById('link-weekly').href = "?daily=" + userId + "&type=weekly"; // Keep them in protected mode
+                    document.getElementById('link-daily').href = "?daily=" + userId;
+
+                    // Trigger Data Load (Your app.js logic)
+                    // window.loadData(userId, true); 
+                } else {
+                    // 2. User is NOT logged in -> Show Login Form
+                    ui.home.classList.add('hidden');
+                    ui.report.classList.add('hidden');
+                    ui.login.classList.remove('hidden');
+                    ui.subtitle.innerText = "Login Required";
+                }
+            });
+        }
+
+        function loadPublicView(userId) {
+            // No Auth Check needed. Just show the div.
+            ui.home.classList.add('hidden');
+            ui.login.classList.add('hidden');
+            
+            ui.nav.classList.remove('hidden');
+            ui.report.classList.remove('hidden');
+
+            // HIDE Sensitive Containers (Just in case)
+            ui.meetings.classList.add('hidden');
+            ui.emails.classList.add('hidden');
+
+            ui.subtitle.innerText = "Public Report: " + userId;
+            
+            // Update Links
+            document.getElementById('link-weekly').href = "?report=" + userId + "&type=weekly";
+            document.getElementById('link-daily').href = "?report=" + userId; // Switch to public link
+        }
+
+        // --- ACTION HANDLERS ---
+
+        function goToReport() {
+            const val = document.getElementById('userid-input').value.trim();
+            if (val) window.location.href = "?report=" + encodeURIComponent(val);
+        }
+
+        function performLogin() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            
+            firebase.auth().signInWithEmailAndPassword(email, pass)
+                .catch((error) => {
+                    const errDiv = document.getElementById('login-error');
+                    errDiv.innerText = error.message;
+                    errDiv.style.display = 'block';
+                });
+        }
+
+        function logout() {
+            firebase.auth().signOut().then(() => window.location.reload());
+        }
+
+        // Enter Key Support
+        document.getElementById('userid-input').addEventListener("keypress", (e) => { if(e.key==="Enter") goToReport() });
+        document.getElementById('login-password').addEventListener("keypress", (e) => { if(e.key==="Enter") performLogin() });
+
+    </script>
+    
     <script src="app.js"></script>
 </body>
 </html>
