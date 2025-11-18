@@ -93,13 +93,30 @@
             color: #555;
         }
 
+        /* Buttons in Message Box */
+        .action-btn {
+            padding: 12px 24px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        .btn-primary { background: #0078D4; color: white; }
+        .btn-primary:hover { background: #005a9e; }
+        
+        .btn-secondary { background: #fff; color: #0078D4; border: 2px solid #0078D4; }
+        .btn-secondary:hover { background: #eef7ff; }
+
     </style>
 </head>
 <body>
 
     <div id="header-section">
          <!-- Replace with your actual logo URL or file -->
-        <img id="logo" src="aqua-aerobics-logo.png" alt="Company Logo">
+        <img id="logo" src="https://www.aqua-aerobic.com/wp-content/uploads/2020/02/Aqua-Aerobic-Systems-Logo.png" alt="Company Logo">
         <div>
             <h1 id="report-title">Daily Briefing</h1>
             <h3 id="report-subtitle">Loading...</h3>
@@ -120,9 +137,18 @@
         <p>Please use the link provided by your automation script, or enter a User ID in the URL.</p>
         <p>Example: <code>?daily=jdoe</code></p>
         <br>
-        <a href="admin.html" style="text-decoration:none;">
-            <button style="padding:10px 20px; cursor:pointer; background:#0078D4; color:white; border:none; border-radius:4px;">Log In to Dashboard</button>
-        </a>
+        
+        <div style="margin-top: 20px;">
+            <!-- Login Button -->
+            <a href="admin.html" style="text-decoration:none;">
+                <button class="action-btn btn-primary">Log In to Dashboard</button>
+            </a>
+
+            <!-- New Setup Button -->
+            <a href="setup.html" style="text-decoration:none;">
+                <button class="action-btn btn-secondary">First Time User? Setup Here</button>
+            </a>
+        </div>
     </div>
 
     <div id="report-body" class="hidden">
@@ -161,16 +187,14 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 
     <script>
-       const firebaseConfig = {
-            apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU", 
             authDomain: "dailybriefing-fe7df.firebaseapp.com",
             projectId: "dailybriefing-fe7df",
-            storageBucket: "dailybriefing-fe7df.firebasestorage.app",
-            messagingSenderId: "676708745644",
-            appId: "1:676708745644:web:b1848c5edff6f0289eba09",
-            measurementId: "G-QWFFCRMTVQ"
+            storageBucket: "dailybriefing-fe7df.appspot.com",
+            messagingSenderId: "",
+            appId: ""
         };
-
         firebase.initializeApp(firebaseConfig);
     </script>
 
