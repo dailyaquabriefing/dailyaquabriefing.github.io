@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* ... (CSS remains unchanged) ... */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; 
+            padding: 20px; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            color: #333;
+        }
+        
+       /* Header Styling */
+        #header-section {
+            display: flex; 
+            align-items: center; 
+            gap: 20px; 
+            border-bottom: 4px solid #0078D4;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        #logo {
+            max-height: 60px; 
+            width: auto;      
+            flex-shrink: 0; 
+        }
+        #report-title { 
+            margin: 0; 
+            font-size: 2.2em; 
+            color: #2c3e50; 
+        }
+        #report-subtitle { 
+            font-size: 1.1em; 
+            color: #7f8c8d; 
+            margin: 0;
+            font-weight: normal;
+        }
+
+        /* Navigation */
+        #nav-links {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+        #nav-links a {
+            color: #0078D4;
+            text-decoration: none;
+            margin: 0 5px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        #nav-links a:hover { text-decoration: underline; }
+        
+        /* Sections */
+        .hidden { display: none !important; }
+        
+        h2 {
+            color: #0078D4;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+            margin-top: 30px;
+        }
+        
+        .section-content {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            min-height: 50px;
+        }
+
+        /* Footer */
+        #last-updated {
+            margin-top: 40px;
+            font-size: 0.85em;
+            color: #999;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        /* Message Box */
+        .message-box {
+            text-align: center;
+            padding: 40px;
+            background: #f0f4f8;
+            border-radius: 8px;
+            color: #555;
+        }
+
+        /* Buttons in Message Box */
+        .action-btn {
+            padding: 12px 24px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        .btn-primary { background: #0078D4; color: white; }
+        .btn-primary:hover { background: #005a9e; }
+        
+        .btn-secondary { background: #fff; color: #0078D4; border: 2px solid #0078D4; }
+        .btn-secondary:hover { background: #eef7ff; }
+
+        /* User ID Input Styling */
+        .userid-input {
+            padding: 12px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+            margin-right: 10px;
+        }
+        .userid-input:focus {
+            border-color: #0078D4;
+            outline: none;
+        }
+
+        /* Lock Screen Styling */
+        #lock-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #f4f7fa;
+            z-index: 9998;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .lock-box {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 300px;
+        }
+
+        /* LOADING OVERLAY */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #ffffff;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #0078D4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            font-size: 1.5rem;
+            color: #0078D4;
+            font-weight: bold;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">  <div class="spinner"></div>
+    <div class="loading-text">Loading Report...</div>
+</div>
+
+    <div id="lock-screen" class="hidden">
+        <div class="lock-box">
+            <h2 style="color: #0078D4; margin-top:0;">Protected Report</h2>
+            <p style="margin-bottom: 20px;">Please enter passcode to view.</p>
+            <input type="password" id="unlock-pass" class="userid-input" style="width: 100%; box-sizing: border-box; margin-bottom: 15px;" placeholder="Passcode">
+            <button onclick="attemptUnlock()" class="action-btn btn-primary" style="width:100%">Unlock</button>
+            <p id="unlock-error" style="color: red; font-size: 0.9em; display: none; margin-top:10px;">Incorrect Passcode</p>
+        </div>
+    </div>
+
+    <div id="header-section">
+         <img id="logo" src="aqua-aerobics-logo.png" alt="Company Logo">
+        <div>
+            <h1 id="report-title">Daily Briefing</h1>
+            <h3 id="report-subtitle">...</h3>
+        </div>
+    </div>
+
+    <div id="nav-links" class="hidden">
+        <a id="link-weekly" href="#">Weekly Report</a> | 
+        <a id="link-daily" href="#">Daily Briefing</a> |
+        <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a> | 
+        <a href="howtouse.html" target="_blank">How to Use</a>
+    </div>
+
+    <div id="default-message" class="message-box">
+        <h2>Welcome to Aqua Briefing</h2>
+        <p>Enter your <strong>Aqua User ID</strong> below to view your report.</p>
+        
+        <div style="margin: 25px 0;">
+            <input type="text" id="userid-input" class="userid-input" placeholder="e.g. jdoe" autofocus>
+            <button onclick="viewReport()" class="action-btn btn-primary">View Briefing</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 30px auto; width: 60%;">
+        
+        <div style="margin-top: 20px;">
+            <a href="admin.html" style="text-decoration:none;">
+                <button class="action-btn btn-secondary">Log In to Dashboard</button>
+            </a>
+            <a href="setup.html" style="text-decoration:none;">
+                <button class="action-btn btn-secondary">First Time User? Setup Here</button>
+            </a>
+        </div>
+    </div>
+
+    <div id="report-body" class="hidden">
+        
+        <div id="container-tasks">
+            <h2 id="header-tasks">1. Daily Tasks</h2>
+            <div id="content-tasks" class="section-content"></div>
+        </div>
+
+        <div id="container-projects">
+            <h2 id="header-projects">2. Active Projects</h2>
+            <div id="content-projects" class="section-content"></div>
+        </div>
+
+        <div id="container-active">
+            <h2 id="header-active">3. Active Tasks</h2>
+            <div id="content-active" class="section-content"></div>
+        </div>
+
+        <div id="container-meetings" class="hidden">
+            <h2 id="header-meetings">4. This Week's Meetings</h2>
+            <div id="content-meetings" class="section-content"></div>
+        </div>
+
+        <div id="container-emails" class="hidden">
+            <h2 id="header-emails">5. Unread Emails (Last 24h)</h2>
+            <div id="content-emails" class="section-content"></div>
+        </div>
+    </div>
+
+    <div id="last-updated"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>
