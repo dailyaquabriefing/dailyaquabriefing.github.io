@@ -338,8 +338,8 @@
                             document.getElementById('lock-screen').classList.remove('hidden');
                             document.getElementById('report-subtitle').textContent = "Protected";
                         } else {
-                            // FIX: If passcode is EMPTY, render the report immediately
-                            renderReport(data, true); // true = isDailyMode
+                            // If passcode is EMPTY, render the report immediately
+                            renderReport(data, true); 
                         }
                     } else {
                         // --- WEEKLY REPORT MODE (Public) ---
@@ -400,7 +400,7 @@
             // Helper to render list
             const renderList = (id, items) => {
                 const el = document.getElementById(id);
-                // FIX: Check if items is null/undefined before checking length or calling forEach
+                // FIX: Checking if items is a non-empty array
                 if (!Array.isArray(items) || !items.length) { 
                     el.innerHTML = "<em>No items.</em>"; 
                     return; 
@@ -422,12 +422,18 @@
                 });
                 el.innerHTML = html + '</ul>';
             };
+            
+            // --- DATA FALLBACK LOGIC ---
+            // Check for 'structured...' fields first, then fallback to simpler names if data is missing.
+            const dailyTasksData = data.structuredDailyTasks || data.dailyTasks;
+            const projectsData = data.structuredProjects || data.projects;
+            const activeData = data.structuredActiveTasks || data.activeTasks;
+
 
             // Render Main Sections
-            // FIX APPLIED HERE: Use || [] to guarantee an array is passed to renderList
-            renderList('content-tasks', data.structuredDailyTasks || []);
-            renderList('content-projects', data.structuredProjects || []);
-            renderList('content-active', data.structuredActiveTasks || []);
+            renderList('content-tasks', dailyTasksData || []);
+            renderList('content-projects', projectsData || []);
+            renderList('content-active', activeData || []);
             
             // Render Daily Sections (If data exists, otherwise standard "No items")
             if (isDailyMode) {
