@@ -139,6 +139,7 @@
             background: rgba(0,0,0,0.5);
             justify-content: center;
             align-items: center;
+            z-index: 1000;
         }
         .modal-content {
             background: white;
@@ -216,7 +217,7 @@
         <header>
             <div>
                 <h1>Dashboard</h1>
-                <small id="user-email">Loading...</small>
+                <small id="current-report-id" style="font-weight:bold; color:rgba(255,255,255,0.8); display:block;">...</small>
             </div>
             <button class="logout-btn" onclick="logout()">Logout</button>
         </header>
@@ -252,6 +253,22 @@
             <div id="active-task-list">
                 <!-- Active Tasks injected here -->
             </div>
+        </div>
+    </div>
+
+    <!-- Setup Profile Modal -->
+    <div id="setup-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <h3 style="color: var(--primary); margin-top:0;">Link Your Report ID</h3>
+            <p>Please enter the Network User ID you want to manage (e.g., <b>jdoe</b>).</p>
+            <p style="font-size:0.9em; color:#666;">This must match the "ReportID" in your local G:\dailybriefingconfig.txt file.</p>
+            
+            <div class="form-group" style="text-align:left; margin-top:20px;">
+                <label>Report ID / Network ID</label>
+                <input type="text" id="setup-report-id" class="w-full" placeholder="e.g. jdoe">
+            </div>
+            
+            <button class="btn btn-primary w-full" onclick="saveReportId()">Save & Continue</button>
         </div>
     </div>
 
@@ -314,7 +331,6 @@
 
     <script>
         // --- CONFIGURATION ---
-        // REPLACE WITH YOUR ACTUAL CONFIG OBJECT FROM FIREBASE CONSOLE
         const firebaseConfig = {
             apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
             authDomain: "dailybriefing-fe7df.firebaseapp.com",
@@ -326,12 +342,17 @@
         };
 
 
+        if (!firebaseConfig.apiKey) {
+            alert("CRITICAL ERROR: API Key is missing in admin.html!\nPlease edit the file and paste your API Key from index.html.");
+        }
+
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
         // --- STATE ---
         let currentUser = null;
+        let managedReportId = null; // This is the "jdoe" ID
         let localData = {
             dailyTasks: [],
             projects: [],
@@ -343,15 +364,56 @@
             if (user) {
                 currentUser = user;
                 document.getElementById('login-container').style.display = 'none';
-                document.getElementById('app-container').style.display = 'block';
-                document.getElementById('user-email').textContent = user.email;
-                loadData();
+                
+                // Check if this user has a mapped ReportID
+                checkUserMapping();
+
             } else {
                 currentUser = null;
+                managedReportId = null;
                 document.getElementById('login-container').style.display = 'flex';
                 document.getElementById('app-container').style.display = 'none';
             }
         });
+
+        function checkUserMapping() {
+            // Look in 'user_prefs' collection for this Auth UID
+            db.collection('user_prefs').doc(currentUser.uid).get()
+            .then(doc => {
+                if (doc.exists && doc.data().reportId) {
+                    // Mapping exists!
+                    managedReportId = doc.data().reportId;
+                    initializeDashboard();
+                } else {
+                    // No mapping found. Ask user.
+                    document.getElementById('setup-modal').style.display = 'flex';
+                }
+            });
+        }
+
+        function saveReportId() {
+            const input = document.getElementById('setup-report-id');
+            const val = input.value.trim();
+            if (!val) { alert("Please enter an ID."); return; }
+            
+            // Save mapping
+            db.collection('user_prefs').doc(currentUser.uid).set({
+                reportId: val,
+                email: currentUser.email
+            })
+            .then(() => {
+                managedReportId = val;
+                document.getElementById('setup-modal').style.display = 'none';
+                initializeDashboard();
+            })
+            .catch(e => alert("Error saving ID: " + e.message));
+        }
+
+        function initializeDashboard() {
+            document.getElementById('app-container').style.display = 'block';
+            document.getElementById('current-report-id').textContent = "Managing: " + managedReportId;
+            loadData();
+        }
 
         function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
@@ -363,13 +425,11 @@
             const pass = document.getElementById('login-password').value;
             const errEl = document.getElementById('login-error');
             errEl.style.display = 'none';
-
             if(!email || !pass) {
                 errEl.textContent = "Please enter email and password";
                 errEl.style.display = 'block';
                 return;
             }
-
             auth.signInWithEmailAndPassword(email, pass)
                 .catch(error => {
                     errEl.textContent = error.message;
@@ -382,13 +442,11 @@
             const pass = document.getElementById('login-password').value;
             const errEl = document.getElementById('login-error');
             errEl.style.display = 'none';
-
             if(!email || !pass) {
                 errEl.textContent = "Please enter email and password";
                 errEl.style.display = 'block';
                 return;
             }
-
             auth.createUserWithEmailAndPassword(email, pass)
                 .catch(error => {
                     errEl.textContent = error.message;
@@ -402,15 +460,16 @@
 
         // --- DATA LOGIC ---
         function loadData() {
-            // We now store everything in the 'briefings' collection under the User ID
-            db.collection('briefings').doc(currentUser.uid).onSnapshot(doc => {
+            if (!managedReportId) return;
+
+            // Load data from 'briefings/{managedReportId}' (e.g., briefings/jdoe)
+            db.collection('briefings').doc(managedReportId).onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data();
                     localData.dailyTasks = data.structuredDailyTasks || [];
                     localData.projects = data.structuredProjects || [];
                     localData.activeTasks = data.structuredActiveTasks || [];
                 } else {
-                    // Initialize if new user
                     localData = { dailyTasks: [], projects: [], activeTasks: [] };
                 }
                 renderAll();
@@ -418,19 +477,17 @@
         }
 
         function pushData() {
-            if (!currentUser) return;
+            if (!managedReportId) return;
             
-            db.collection('briefings').doc(currentUser.uid).set({
-                // The structured data for this Admin Tool
+            // Save to 'briefings/{managedReportId}' (e.g., briefings/jdoe)
+            db.collection('briefings').doc(managedReportId).set({
                 structuredDailyTasks: localData.dailyTasks,
                 structuredProjects: localData.projects,
                 structuredActiveTasks: localData.activeTasks,
                 
-                // Metadata
                 lastUpdated: new Date().toISOString(),
-                reportId: currentUser.uid, 
+                reportId: managedReportId, 
                 
-                // Counts for the Viewer
                 tasks_count: localData.dailyTasks.length,
                 projects_count: localData.projects.length,
                 activeTasks_count: localData.activeTasks.length
@@ -462,16 +519,12 @@
         function renderItems(type, dataArray, containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
-            
             if (dataArray.length === 0) {
                 container.innerHTML = '<p style="color:#999; padding:10px; text-align:center;">No items found.</p>';
                 return;
             }
-
             dataArray.forEach((item, index) => {
-                // Helper to format class name
                 const statusClass = 'st-' + item.status.toLowerCase().replace(' ', '-');
-                
                 const div = document.createElement('div');
                 div.className = 'item-row';
                 div.innerHTML = `
@@ -495,7 +548,7 @@
             });
         }
 
-        // --- ACTIONS: DAILY TASKS ---
+        // --- ACTIONS ---
         function addDailyTask() {
             const input = document.getElementById('new-task-input');
             const val = input.value.trim();
@@ -511,22 +564,14 @@
             pushData();
         }
 
-        // --- ACTIONS: PROJECTS & ACTIVE TASKS ---
         let editIndex = -1;
-
         function openModal(type, index = -1) {
             const modal = document.getElementById('edit-modal');
             document.getElementById('modal-type').value = type;
-            
             const isNew = index === -1;
             editIndex = index;
-            
-            document.getElementById('modal-title').textContent = isNew ? 
-                (type === 'project' ? 'Add Project' : 'Add Active Task') : 
-                'Edit Item';
-
+            document.getElementById('modal-title').textContent = isNew ? (type === 'project' ? 'Add Project' : 'Add Active Task') : 'Edit Item';
             if (!isNew) {
-                // Load Data
                 const list = type === 'project' ? localData.projects : localData.activeTasks;
                 const item = list[index];
                 document.getElementById('m-name').value = item.name;
@@ -535,20 +580,16 @@
                 document.getElementById('m-milestone').value = item.milestone;
                 document.getElementById('m-notes').value = item.notes;
             } else {
-                // Clear Data
                 document.getElementById('m-name').value = '';
                 document.getElementById('m-status').value = 'On Track';
                 document.getElementById('m-priority').value = 'High';
                 document.getElementById('m-milestone').value = '';
                 document.getElementById('m-notes').value = '';
             }
-            
             modal.style.display = 'flex';
         }
 
-        function closeModal() {
-            document.getElementById('edit-modal').style.display = 'none';
-        }
+        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
 
         function saveModalItem() {
             const type = document.getElementById('modal-type').value;
@@ -559,17 +600,9 @@
                 milestone: document.getElementById('m-milestone').value,
                 notes: document.getElementById('m-notes').value
             };
-
             if (!newItem.name) { alert("Name is required"); return; }
-
             const list = type === 'project' ? localData.projects : localData.activeTasks;
-
-            if (editIndex === -1) {
-                list.push(newItem);
-            } else {
-                list[editIndex] = newItem;
-            }
-
+            if (editIndex === -1) { list.push(newItem); } else { list[editIndex] = newItem; }
             closeModal();
             pushData();
         }
@@ -581,16 +614,12 @@
             pushData();
         }
 
-        function editItem(type, index) {
-            openModal(type, index);
-        }
+        function editItem(type, index) { openModal(type, index); }
 
-        // Tab Logic
         function openTab(tabName) {
             const tabs = document.getElementsByClassName('tab-content');
             for (let t of tabs) t.classList.remove('active');
             document.getElementById('tab-' + tabName).classList.add('active');
-
             const btns = document.getElementsByClassName('tab-btn');
             for (let b of btns) b.classList.remove('active');
             event.currentTarget.classList.add('active');
