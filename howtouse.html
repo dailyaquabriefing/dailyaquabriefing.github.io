@@ -1,7 +1,3 @@
-Excellent ideas. Adding automation tips makes the page much more helpful by showing how to keep the briefing fresh all day.
-Here is the updated code for how-to-use.html.
-I've added a new "Pro-Tips for Automation" section near the bottom with instructions for both the desktop shortcut and the Task Scheduler setup.
-You can replace the entire content of your existing how-to-use.html with this:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,7 +16,7 @@ You can replace the entire content of your existing how-to-use.html with this:
         }
         .container {
             background: #ffffff;
-            padding: 30px;
+            padding: 40px;
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
@@ -30,96 +26,119 @@ You can replace the entire content of your existing how-to-use.html with this:
             padding-bottom: 10px;
         }
         h2 {
-            color: #0078d4;
+            color: #0078D4;
             margin-top: 30px;
         }
         h3 {
-            color: #005a9e;
-            margin-top: 25px;
+            color: #444;
+            margin-top: 20px;
+        }
+        p, li {
+            color: #555;
+            font-size: 1.05em;
         }
         code {
-            background: #eef;
-            padding: 3px 6px;
-            border-radius: 5px;
-            font-family: "Consolas", "Courier New", monospace;
-            font-size: 0.95em;
-        }
-        ul, ol {
-            padding-left: 20px;
-        }
-        li {
-            margin-bottom: 10px;
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: Consolas, monospace;
+            color: #d63384;
         }
         .back-link {
-            margin-top: 30px;
             display: inline-block;
+            margin-top: 30px;
             text-decoration: none;
-            color: #0078d4;
+            color: #005a9e;
             font-weight: bold;
         }
-        .back-link:hover {
-            text-decoration: underline;
+        .back-link:hover { text-decoration: underline; }
+        
+        .step-box {
+            background: #f8f9fa;
+            border-left: 4px solid #0078D4;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>How to Use Your AquaDailyBriefing</h1>
-        <p>Here is your simple, two-step daily process to get your briefing.</p>
-
-        <h2>1. Update Your Files (If Needed)</h2>
-        <p>Before you run the app, you can quickly make any changes to:</p>
-        <ul>
-            <li>Your projects and tasks: <code>G:\Active_Projects.xlsx</code></li>
-            <li>Your recurring daily goals: <code>G:\DailyTask.txt</code></li>
-        </ul>
-        <p>This step is optional. If everything is current, just skip to step 2.</p>
-
-        <h2>2. Run the App</h2>
-        <p>Just double-click the application: <code>G:\AquaDailyBriefing.exe</code></p>
+        <a href="index.html" class="back-link">&larr; Back to Report</a>
         
-        <h3>What Happens Automatically</h3>
-        <p>When you run the app, it instantly does all the gathering work for you:</p>
-        <ul>
-            <li>Gets daily tasks from <code>G:\DailyTask.txt</code>.</li>
-            <li>Gets active projects from <code>G:\Active_Projects.xlsx</code>.</li>
-            <li>Gets unread emails from Outlook (from the last 24 hours).</li>
-            <li>Gets your meetings (from Today through Friday) from Outlook.</li>
-            <li>Pushes all this fresh data to your briefing website.</li>
-        </ul>
-        <p>After a few seconds, the app will confirm success and ask if you want to view your briefing!</p>
+        <h1>How to Use Aqua Daily Briefing</h1>
+        <p>The Daily Briefing system combines your <strong>Outlook Data</strong> (Emails & Meetings) with your <strong>Daily Priorities</strong> into a single, easy-to-read report.</p>
 
-        <h2>Pro-Tips for Automation</h2>
-        <p>Make your daily sync even easier with these optional steps.</p>
-
-        <h3>Create a Desktop Shortcut</h3>
-        <p>For fast manual syncing, create a shortcut to the app right on your desktop:</p>
+        <h2>The Two-Part System</h2>
+        <p>The system consists of two parts working together:</p>
         <ol>
-            <li>Navigate to <code>G:\</code> in File Explorer.</li>
-            <li>Right-click on <code>AquaDailyBriefing.exe</code>.</li>
-            <li>Select <strong>Send to</strong> &gt; <strong>Desktop (create shortcut)</strong>.</li>
+            <li><strong>The Web Dashboard:</strong> Where you manually type your tasks and project updates.</li>
+            <li><strong>The Outlook Agent:</strong> A small program on your PC that automatically grabs your emails and calendar.</li>
         </ol>
-        <p>Now you can run the sync anytime without opening the G: drive.</p>
 
-        <h3>Run Automatically with Task Scheduler</h3>
-        <p>Set Windows to run the sync for you automatically, so your briefing is always up-to-date during the day.</p>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+
+        <h2>Step 1: Manage Tasks (Web Dashboard)</h2>
+        <p>You no longer need to edit text files or Excel sheets. Everything is done online.</p>
+        <div class="step-box">
+            <ol>
+                <li>Go to the <a href="admin.html" target="_blank"><strong>Admin Dashboard</strong></a>.</li>
+                <li>Log in with your email and password.</li>
+                <li><strong>Daily Tasks:</strong> Add your top 3-5 priorities for the day.</li>
+                <li><strong>Projects:</strong> Update the status (e.g., "On Track", "Delayed") of your active projects.</li>
+            </ol>
+        </div>
+        <p class="note"><strong>Tip:</strong> You can do this from home or your phone! The data saves to the cloud instantly.</p>
+
+        <h2>Step 2: Sync Outlook (The Agent)</h2>
+        <p>Since the web cannot see your local Outlook, you must run the "Agent" to sync that data.</p>
+        <div class="step-box">
+            <ol>
+                <li>Ensure <strong>Microsoft Outlook</strong> is open on your computer.</li>
+                <li>Double-click <code>G:\AquaDailyBriefing.exe</code>.</li>
+                <li>Wait a few seconds for the confirmation popup.</li>
+            </ol>
+        </div>
+        <p>This uploads your <strong>Unread Emails (Last 24h)</strong> and <strong>Upcoming Meetings (Today-Friday)</strong> to the report.</p>
+
+        <h2>Step 3: View Your Report</h2>
+        <p>Once both steps are done, simply open the viewer link.</p>
+        <p>Usually: <code>https://dailyaquabriefing.github.io/?daily=YOUR_ID</code></p>
+        <p>You will see your Web Tasks and your Outlook Data combined into one view.</p>
+
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+
+        <h2>Pro-Tip: Automate the Outlook Sync</h2>
+        <p>Don't want to manually run the Agent every morning? Set it to run automatically!</p>
+        
+        <h3>Option A: Startup Folder (Runs once at login)</h3>
         <ol>
-            <li>Open the <strong>Task Scheduler</strong> app (search for it in the Start Menu).</li>
-            <li>In the "Actions" pane, click <strong>Create Basic Task...</strong>.</li>
-            <li>Follow the wizard:
-                <ul>
-                    <li><strong>Trigger:</strong> Select "Daily" and set a start time, like <code>7:00 AM</code>.</li>
-                    <li><strong>Action:</strong> Select "Start a program" and browse to <code>G:\AquaDailyBriefing.exe</code>.</li>
-                </ul>
-            </li>
-            <li>After creating the task, find it in the "Task Scheduler Library", right-click it, and go to <strong>Properties</strong>.</li>
-            <li>Go to the <strong>Triggers</strong> tab and click <strong>Edit...</strong>.</li>
-            <li>Under "Advanced settings", check <strong>Repeat task every:</strong> and set it to <code>1 hour</code> (or your preferred frequency).</li>
-            <li>Set <strong>for a duration of:</strong> to <code>10 hours</code> (to cover 7 AM to 5 PM).</li>
+            <li>Press <code>Win + R</code> on your keyboard.</li>
+            <li>Type <code>shell:startup</code> and press Enter.</li>
+            <li>Right-click inside the folder and select <strong>New > Shortcut</strong>.</li>
+            <li>Browse to <code>G:\AquaDailyBriefing.exe</code> and click Finish.</li>
         </ol>
-        <p>This will automatically refresh your data all day without you having to do anything!</p>
-        <a href="index.html" class="back-link">&larr; Back to Your Dashboard</a>
+
+        <h3>Option B: Task Scheduler (Runs hourly)</h3>
+        <p>This keeps your email list fresh all day.</p>
+        <ol>
+            <li>Open the <strong>Task Scheduler</strong> app.</li>
+            <li>Click <strong>Create Basic Task...</strong>.</li>
+            <li>Name it "Briefing Sync".</li>
+            <li><strong>Trigger:</strong> Select "Daily" at "7:00 AM".</li>
+            <li><strong>Action:</strong> "Start a program" -> Browse to <code>G:\AquaDailyBriefing.exe</code>.</li>
+            <li>Finish. Then right-click the task > <strong>Properties</strong> > <strong>Triggers</strong> > <strong>Edit</strong>.</li>
+            <li>Check <strong>Repeat task every:</strong> <code>1 hour</code> for a duration of <code>10 hours</code>.</li>
+        </ol>
+        
+        <p class="note">Note: If running automatically, you might want to open <code>G:\dailybriefingconfig.txt</code> and change <code>Prompt=Yes</code> to <code>Prompt=No</code> so it runs silently in the background.</p>
+
+        <br>
+        <a href="index.html" class="back-link">&larr; Back to Report</a>
     </div>
 </body>
 </html>
-
