@@ -7,257 +7,236 @@ const firebaseConfig = {
     messagingSenderId: "",
     appId: ""
 };
+
+if (!firebaseConfig.apiKey) {
+    alert("CRITICAL ERROR: API Key is missing in app.js!\nPlease edit the file and paste your API Key from index.html.");
+}
+
 firebase.initializeApp(firebaseConfig);
-
-// --- GLOBAL VARIABLES ---
 const db = firebase.firestore();
-let pendingData = null; 
-let targetId = null; // Stored user ID after detection
 
-// --- HELPER FUNCTIONS ---
+// --- STATE ---
+let currentReportId = null; // The User ID (e.g., jdoe)
+let currentData = null;
+let currentMode = 'default'; // 'default', 'daily', or 'report'
 
-/**
- * Converts URLs and emails in an HTML string to clickable HTML links.
- */
-function linkify(htmlContent) {
-    if (!htmlContent) return "";
-    let newText = htmlContent;
-    const urlPattern = /(\b(https?:\/\/[-\w+&@#\/%?=~_|!:,.;&amp;]*[-\w+&@#\/%=~_|])|(\bwww\.[-\w+&@#\/%?=~_|!:,.;&amp;]*[-\w+&@#\/%=~_|]))/gi;
-    const emailPattern = /(\b[\w.-]+@[\w.-]+\.\w{2,4}\b)/gi;
-
-    newText = newText.replace(urlPattern, function(match) {
-        let href = match.replace(/&amp;/g, '&');
-        if (match.startsWith('www.')) { href = 'http://' + href; }
-        return '<a href="' + href.replace(/"/g, '&quot;') + '" target="_blank">' + match + '</a>';
-    });
-
-    newText = newText.replace(emailPattern, '<a href="mailto:$1">$1</a>');
-    return newText;
-}
-
-/**
- * Helper to render structured/array content lists.
- */
-const renderList = (id, items) => {
-    const el = document.getElementById(id);
-    // Check if items is a non-empty array
-    if (!Array.isArray(items) || !items.length) { 
-        el.innerHTML = "<em>No items.</em>"; 
-        return; 
-    }
-    
-    let html = '<ul style="padding-left:20px;">';
-    items.forEach(item => {
-        if (typeof item === 'string') {
-            html += `<li>${item}</li>`;
-        } else {
-            // Determine Color based on Status (including new Completed status)
-            let color;
-            switch (item.status) {
-                case 'On Track': color = 'green'; break;
-                case 'Delayed': color = 'red'; break;
-                case 'On-Hold': color = 'grey'; break;
-                case 'Completed': color = '#800080'; break; // Purple for Completed
-                default: color = 'grey';
-            }
-
-            // For objects (projects/active tasks)
-            html += `<li style="margin-bottom:10px;">
-                <strong>${item.name}</strong> 
-                <span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px;">${item.status}</span>
-                <br><small style="color:#666">${item.notes || ''}</small>`;
-            
-            // Add Next Milestone on a new line with different style (small font, color #999)
-            if (item.milestone) {
-                html += `<br><small style="color:#999; font-size:0.8em;">Next Milestone: ${item.milestone}</small>`;
-            }
-            
-            html += `</li>`;
-        }
-    });
-    el.innerHTML = linkify(html + '</ul>'); // Apply linkify to the final HTML
-};
-
-
-// --- OUTLOOK DATA LOADER ---
-function loadOutlookData(reportId) {
-    const outlookDocId = reportId + "_outlook";
-    
-    // Listen for changes on the dedicated Outlook document
-    db.collection("briefings").doc(outlookDocId).onSnapshot((doc) => {
-        const headerMeetings = document.getElementById('header-meetings');
-        const headerEmails = document.getElementById('header-emails');
-        const meetingsContent = document.getElementById('content-meetings');
-        const emailsContent = document.getElementById('content-emails');
-
-        if (doc.exists) {
-            const data = doc.data();
-
-            // Update Headers with Counts
-            headerMeetings.textContent = `4. This Week's Meetings (${data.meetings_count || 0})`;
-            headerEmails.textContent   = `5. Unread Emails (Last 24h) (${data.emails_count || 0})`;
-            
-            // Update Content using original app.js logic (Linkify data)
-            meetingsContent.innerHTML = linkify(data.meetings || "") || "<i>No meetings found.</i>";
-            emailsContent.innerHTML   = linkify(data.emails || "")   || "<i>No unread emails.</i>";
-        } else {
-            // Show placeholders if the outlook doc doesn't exist yet
-            headerMeetings.textContent = `4. This Week's Meetings (0)`;
-            headerEmails.textContent   = `5. Unread Emails (0)`;
-            meetingsContent.innerHTML = "<i>Waiting for Outlook Sync...</i>";
-            emailsContent.innerHTML   = "<i>Waiting for Outlook Sync...</i>";
-        }
-    }, (error) => {
-         console.error("Error Outlook Sync:", error);
-         document.getElementById('content-meetings').innerHTML = "<i>Error loading meetings.</i>";
-         document.getElementById('content-emails').innerHTML = "<i>Error loading emails.</i>";
-    });
-}
-
-
-// --- CORE RENDER FUNCTION ---
-function renderReport(data, isDailyMode) {
-    // Hide overlays
-    document.getElementById('default-message').classList.add('hidden');
-    document.getElementById('lock-screen').classList.add('hidden');
-    document.getElementById('loading-overlay').classList.add('hidden'); // HIDE LOADING OVERLAY
-    
-    // Show Report elements
-    document.getElementById('nav-links').classList.remove('hidden');
-    document.getElementById('report-body').classList.remove('hidden');
-    
-    // Header Info
-    document.getElementById('report-subtitle').textContent = "Report: " + data.reportId;
-    
-    // Handle Timestamp formatting
-    let updateTime = "Unknown";
-    if (data.lastUpdated) {
-        const dateObj = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated);
-        if (!isNaN(dateObj)) {
-            updateTime = dateObj.toLocaleString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric', 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-        } else {
-            updateTime = data.lastUpdated;
-        }
-    }
-    document.getElementById('last-updated').textContent = `Last generated: ${updateTime}`;
-
-
-    // Handle Visibility of Daily Sections (Meetings & Emails)
-    if (isDailyMode) {
-        document.getElementById('container-meetings').classList.remove('hidden');
-        document.getElementById('container-emails').classList.remove('hidden');
-    } else {
-        document.getElementById('container-meetings').classList.add('hidden');
-        document.getElementById('container-emails').classList.add('hidden');
-    }
-
-    // --- DATA FALLBACK LOGIC ---
-    const dailyTasksData = data.structuredDailyTasks || data.dailyTasks;
-    const projectsData = data.structuredProjects || data.projects;
-    const activeData = data.structuredActiveTasks || data.activeTasks;
-
-    // Render Main Sections
-    renderList('content-tasks', dailyTasksData || []);
-    renderList('content-projects', projectsData || []);
-    renderList('content-active', activeData || []);
-}
-
-
-// --- CORE APPLICATION LOGIC (Initialization) ---
-
-/**
- * Function called from the main input button
- */
-function viewReport() {
-    const input = document.getElementById('userid-input');
-    const val = input.value.trim();
-    if (val) {
-        window.location.href = "?daily=" + encodeURIComponent(val);
-    } else {
-        alert("Please enter a User ID.");
-        input.focus();
-    }
-}
-
-/**
- * Function called when user enters correct passcode
- */
-function attemptUnlock() {
-    const entered = document.getElementById('unlock-pass').value;
-    if (entered === pendingData.passcode) {
-        document.getElementById('lock-screen').classList.add('hidden');
-        renderReport(pendingData, true); // Unlock into Daily Mode
-        loadOutlookData(targetId); // Start loading Outlook data after unlock
-    } else {
-        document.getElementById('unlock-error').style.display = 'block';
-    }
-}
-
-// --- INITIAL PAGE LOAD AND ROUTING ---
-
+// --- INIT & URL PARSING ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Event listeners attached to DOM elements now that the file is loaded
-    document.getElementById('userid-input').addEventListener("keypress", function(event) {
-        if (event.key === "Enter") viewReport();
-    });
+    // Hide loading overlay once Firebase is ready
+    document.getElementById('loading-overlay').style.display = 'none';
+
+    // 1. Get query parameters
+    const params = new URLSearchParams(window.location.search);
     
-    const urlParams = new URLSearchParams(window.location.search);
-    const dailyId = urlParams.get('daily');
-    const reportId = urlParams.get('report');
-
-    targetId = dailyId || reportId;
-    const isDailyMode = !!dailyId; 
-
-    if (targetId) {
-        // Setup Links
-        document.getElementById('link-weekly').href = "?report=" + encodeURIComponent(targetId);
-        document.getElementById('link-daily').href = "?daily=" + encodeURIComponent(targetId);
-
-        // Fetch Data
-        db.collection('briefings').doc(targetId).get().then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-                
-                if (isDailyMode) {
-                    // --- DAILY BRIEFING MODE (Protected) ---
-                    document.getElementById('report-title').textContent = "Daily Briefing";
-                    
-                    if (data.passcode && data.passcode.trim() !== "") {
-                        pendingData = data; 
-                        document.getElementById('loading-overlay').classList.add('hidden');
-                        document.getElementById('lock-screen').classList.remove('hidden');
-                        document.getElementById('report-subtitle').textContent = "Protected";
-                    } else {
-                        // If passcode is EMPTY, render the report immediately
-                        renderReport(data, true); 
-                        loadOutlookData(targetId); // Load Outlook data immediately
-                    }
-                } else {
-                    // --- WEEKLY REPORT MODE (Public) ---
-                    document.getElementById('report-title').textContent = "Weekly Report";
-                    renderReport(data, false); // false = isWeeklyMode
-                }
-            } else {
-                document.getElementById('loading-overlay').classList.add('hidden');
-                document.getElementById('default-message').classList.remove('hidden');
-                document.getElementById('report-subtitle').innerText = "ID not found";
-            }
-        }).catch(error => {
-            console.error("Error getting document:", error);
-            document.getElementById('loading-overlay').classList.add('hidden');
-            document.getElementById('default-message').classList.remove('hidden');
-        });
+    if (params.has('daily')) {
+        currentReportId = params.get('daily').trim().toLowerCase();
+        currentMode = 'daily';
+        
+    } else if (params.has('report')) {
+        currentReportId = params.get('report').trim().toLowerCase();
+        currentMode = 'report';
+        
     } else {
-        // --- LANDING PAGE ---
-        document.getElementById('report-subtitle').textContent = "Please enter ID below";
-        // ONLY HIDE the loading overlay if we are on the landing page
-        document.getElementById('loading-overlay').classList.add('hidden'); 
-        document.getElementById('default-message').classList.remove('hidden');
+        // Default View: Show input box
+        document.getElementById('default-message').style.display = 'block';
+        document.getElementById('report-body').classList.add('hidden');
+        document.getElementById('nav-links').classList.add('hidden');
+        return;
+    }
+
+    // 2. Report ID found in URL: Initialize
+    if (currentReportId) {
+        document.getElementById('report-subtitle').textContent = `Report for: ${currentReportId}`;
+        
+        // Hide default screen
+        document.getElementById('default-message').style.display = 'none';
+        
+        // Setup navigation links
+        document.getElementById('nav-links').classList.remove('hidden');
+        document.getElementById('link-daily').href = `?daily=${currentReportId}`;
+        document.getElementById('link-weekly').href = `?report=${currentReportId}`;
+
+        loadData();
     }
 });
+
+
+// --- AUTH & DATA LOADING ---
+function viewReport() {
+    const input = document.getElementById('userid-input');
+    const id = input.value.trim().toLowerCase();
+    if (id) {
+        // Redirect to the URL with the Report ID
+        window.location.href = `?daily=${id}`;
+    }
+}
+
+function loadData() {
+    // Listen for real-time updates on the briefing document
+    db.collection('briefings').doc(currentReportId).onSnapshot(doc => {
+        if (doc.exists) {
+            currentData = doc.data();
+            
+            // SECURITY CHECK: If in 'daily' mode and passcode is set
+            if (currentMode === 'daily' && currentData.passcode) {
+                document.getElementById('lock-screen').classList.remove('hidden');
+                document.getElementById('report-body').classList.add('hidden');
+            } else {
+                // No passcode needed or in 'report' mode
+                document.getElementById('lock-screen').classList.add('hidden');
+                document.getElementById('report-body').classList.remove('hidden');
+                renderData(currentData);
+            }
+            
+        } else {
+            // Document not found - show error/default view
+            alert("Error: Report ID not found. Please check the ID or complete the setup process.");
+            window.location.search = ''; // Go back to default view
+        }
+    }, error => {
+        console.error("Error loading data:", error);
+        alert("A critical error occurred while fetching data.");
+    });
+}
+
+function attemptUnlock() {
+    const enteredPass = document.getElementById('unlock-pass').value.trim();
+    const storedPass = currentData.passcode;
+    const errorEl = document.getElementById('unlock-error');
+    
+    if (enteredPass === storedPass) {
+        document.getElementById('lock-screen').classList.add('hidden');
+        document.getElementById('report-body').classList.remove('hidden');
+        errorEl.style.display = 'none';
+        renderData(currentData);
+    } else {
+        errorEl.style.display = 'block';
+    }
+}
+
+
+// --- RENDERING ---
+function renderData(data) {
+    // 1. Render Daily Tasks (Always Visible)
+    renderList('content-tasks', data.structuredDailyTasks);
+    
+    // 2. Render Projects (Always Visible)
+    renderItems('content-projects', data.structuredProjects, 'No active projects found.');
+    
+    // 3. Render Active Tasks (Always Visible)
+    renderItems('content-active', data.structuredActiveTasks, 'No active tasks found.');
+    
+    // 4. Render Meetings (Daily Mode Only)
+    renderOutlookContent('container-meetings', 'content-meetings', currentMode === 'daily', data.rawMeetings, 'No meetings scheduled for this week.');
+
+    // 5. Render Emails (Daily Mode Only)
+    renderOutlookContent('container-emails', 'content-emails', currentMode === 'daily', data.rawEmails, 'No unread emails from the last 24 hours.');
+
+    // 6. Update Last Updated/Generated Timestamp
+    let updateEl = document.getElementById('report-generated'); // UPDATED ID
+    
+    // Prioritize agentLastRun (from AHK) over lastUpdated (from Admin Page)
+    let timeSource = data.agentLastRun || data.lastUpdated; 
+    
+    // Change the label to "Report generated"
+    if (timeSource) {
+        updateEl.textContent = 'Report generated: ' + formatTime(timeSource); // UPDATED TEXT
+    } else {
+        updateEl.textContent = 'Report generated: Never'; // UPDATED TEXT
+    }
+}
+
+function renderList(containerId, dataArray) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    if (!dataArray || dataArray.length === 0) {
+        container.innerHTML = '<p style="color:#999;">No daily tasks entered.</p>';
+        return;
+    }
+    const ul = document.createElement('ul');
+    ul.style.listStyle = 'decimal';
+    ul.style.paddingLeft = '20px';
+    dataArray.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        ul.appendChild(li);
+    });
+    container.appendChild(ul);
+}
+
+function renderItems(containerId, dataArray, emptyMessage) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    if (!dataArray || dataArray.length === 0) {
+        container.innerHTML = `<p style="color:#999; text-align:center;">${emptyMessage}</p>`;
+        return;
+    }
+    
+    dataArray.forEach(item => {
+        const statusClass = 'st-' + item.status.toLowerCase().replace(' ', '-');
+        const itemDiv = document.createElement('div');
+        itemDiv.style.borderBottom = '1px solid #eee';
+        itemDiv.style.padding = '10px 0';
+
+        itemDiv.innerHTML = `
+            <div style="font-weight:bold; font-size:1.05em; color:#0078D4;">${item.name}</div>
+            <div style="font-size:0.9em; margin-top:5px; display:flex; align-items:center; gap:10px;">
+                <span style="padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white;" class="badge ${statusClass}">${item.status}</span>
+                <span style="color:#666;">Priority: ${item.priority}</span>
+            </div>
+            <div style="font-size:0.85em; color:#555; margin-top:8px;">
+                <strong>Next Milestone:</strong> ${item.milestone || 'N/A'}
+            </div>
+            <div style="font-size:0.85em; color:#555; margin-top:4px;">
+                <strong>Notes:</strong> ${item.notes || 'No notes.'}
+            </div>
+        `;
+        container.appendChild(itemDiv);
+    });
+}
+
+function renderOutlookContent(containerId, contentId, isVisible, rawContent, emptyMessage) {
+    const container = document.getElementById(containerId);
+    const content = document.getElementById(contentId);
+    
+    if (isVisible) {
+        container.classList.remove('hidden');
+        if (rawContent && rawContent.trim()) {
+            // Format raw content (e.g., from AHK) as pre-formatted text
+            const pre = document.createElement('pre');
+            pre.textContent = rawContent.trim();
+            pre.style.whiteSpace = 'pre-wrap';
+            pre.style.wordWrap = 'break-word';
+            pre.style.backgroundColor = '#f4f4f4';
+            pre.style.padding = '10px';
+            pre.style.borderRadius = '4px';
+            content.innerHTML = '';
+            content.appendChild(pre);
+        } else {
+            content.innerHTML = `<p style="color:#999; text-align:center;">${emptyMessage}</p>`;
+        }
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
+
+// --- UTILITY ---
+function formatTime(isoString) {
+    try {
+        const date = new Date(isoString);
+        // Date options for display: e.g., November 18, 2025
+        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+        // Time options for display: e.g., 2:19 PM
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
+        
+        // Use local time zone for display
+        const formattedDate = date.toLocaleDateString(undefined, dateOptions);
+        const formattedTime = date.toLocaleTimeString(undefined, timeOptions);
+        
+        return `${formattedDate} at ${formattedTime}`;
+    } catch (e) {
+        console.error("Error formatting date:", e);
+        return 'Invalid Date';
+    }
+}
