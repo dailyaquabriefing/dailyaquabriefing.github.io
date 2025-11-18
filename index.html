@@ -53,6 +53,7 @@
             text-decoration: none;
             margin: 0 5px;
             font-weight: 500;
+            cursor: pointer;
         }
         #nav-links a:hover { text-decoration: underline; }
         
@@ -168,8 +169,8 @@
     </div>
 
     <div id="nav-links" class="hidden">
-        <a href="#" id="link-weekly">Weekly Report</a> | 
-        <a href="#" id="link-daily">Daily Briefing</a> |
+        <a id="link-weekly">Weekly Report</a> | 
+        <a id="link-daily">Daily Briefing</a> |
         <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a> | 
         <a href="howtouse.html" target="_blank">How to Use</a>
     </div>
@@ -249,7 +250,8 @@
             const input = document.getElementById('userid-input');
             const val = input.value.trim();
             if (val) {
-                window.location.href = "?report=" + encodeURIComponent(val);
+                // NOW USES ?daily=
+                window.location.href = "?daily=" + encodeURIComponent(val);
             } else {
                 alert("Please enter a User ID.");
                 input.focus();
@@ -267,7 +269,8 @@
 
         // --- LOAD LOGIC ---
         const urlParams = new URLSearchParams(window.location.search);
-        const reportId = urlParams.get('report');
+        // LOOK FOR 'daily' PARAMETER NOW
+        const reportId = urlParams.get('daily');
 
         if (reportId) {
             const db = firebase.firestore();
@@ -309,6 +312,15 @@
                 document.getElementById('unlock-error').style.display = 'block';
             }
         }
+
+        // --- UI TOGGLES ---
+        // Logic to toggle title when links are clicked
+        document.getElementById('link-weekly').onclick = function() {
+            document.getElementById('report-title').textContent = "Weekly Report";
+        };
+        document.getElementById('link-daily').onclick = function() {
+            document.getElementById('report-title').textContent = "Daily Briefing";
+        };
 
         // --- RENDER LOGIC ---
         function renderReport(data) {
