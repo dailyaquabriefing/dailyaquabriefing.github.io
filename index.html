@@ -131,7 +131,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             background: #f4f7fa;
-            z-index: 9998; /* Below loading, above content */
+            z-index: 9998;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -146,13 +146,13 @@
             width: 300px;
         }
 
-        /* NEW LOADING OVERLAY */
+        /* LOADING OVERLAY */
         #loading-overlay {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             background: #ffffff;
-            z-index: 9999; /* Highest priority */
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -227,7 +227,6 @@
             <a href="admin.html" style="text-decoration:none;">
                 <button class="action-btn btn-secondary">Log In to Dashboard</button>
             </a>
-
             <a href="setup.html" style="text-decoration:none;">
                 <button class="action-btn btn-secondary">First Time User? Setup Here</button>
             </a>
@@ -270,7 +269,6 @@
 
     <script>
         // --- 1. IMMEDIATE UI CHECK (Prevents Flicker) ---
-        // This runs before Firebase initializes to hide the default welcome screen immediately
         const urlParamsCheck = new URLSearchParams(window.location.search);
         if (urlParamsCheck.has('daily') || urlParamsCheck.has('report')) {
             document.getElementById('default-message').classList.add('hidden');
@@ -289,14 +287,30 @@
         firebase.initializeApp(firebaseConfig);
 
         // --- VARIABLES ---
-        let pendingData = null; // Holds the data while waiting for unlock
+        let pendingData = null; 
+
+        // --- Helper: Linkify (from original app.js) ---
+        function linkify(htmlContent) {
+            if (!htmlContent) return "";
+            let newText = htmlContent;
+            const urlPattern = /(\b(https?:\/\/[-\w+&@#\/%?=~_|!:,.;&amp;]*[-\w+&@#\/%=~_|])|(\bwww\.[-\w+&@#\/%?=~_|!:,.;&amp;]*[-\w+&@#\/%=~_|]))/gi;
+            const emailPattern = /(\b[\w.-]+@[\w.-]+\.\w{2,4}\b)/gi;
+
+            newText = newText.replace(urlPattern, function(match) {
+                let href = match.replace(/&amp;/g, '&');
+                if (match.startsWith('www.')) { href = 'http://' + href; }
+                return '<a href="' + href.replace(/"/g, '&quot;') + '" target="_blank">' + match + '</a>';
+            });
+
+            newText = newText.replace(emailPattern, '<a href="mailto:$1">$1</a>');
+            return newText;
+        }
 
         // --- Input Logic ---
         function viewReport() {
             const input = document.getElementById('userid-input');
             const val = input.value.trim();
             if (val) {
-                // Defaulting to ?daily= (Protected) for the main button
                 window.location.href = "?daily=" + encodeURIComponent(val);
             } else {
                 alert("Please enter a User ID.");
@@ -304,7 +318,6 @@
             }
         }
 
-        // Allow "Enter" key to submit inputs
         document.getElementById('userid-input').addEventListener("keypress", function(event) {
             if (event.key === "Enter") viewReport();
         });
@@ -315,20 +328,18 @@
 
         // --- LOAD LOGIC ---
         const urlParams = new URLSearchParams(window.location.search);
-        
         const dailyId = urlParams.get('daily');
         const reportId = urlParams.get('report');
 
-        // Determine which ID to load and which mode we are in
         const targetId = dailyId || reportId;
-        const isDailyMode = !!dailyId; // True if ?daily= is used
+        const isDailyMode = !!dailyId; 
 
         if (targetId) {
-            // 1. Setup Links so they point to the correct URLs for THIS user
+            // Setup Links
             document.getElementById('link-weekly').href = "?report=" + encodeURIComponent(targetId);
             document.getElementById('link-daily').href = "?daily=" + encodeURIComponent(targetId);
 
-            // 2. Fetch Data
+            // Fetch Data
             const db = firebase.firestore();
             db.collection('briefings').doc(targetId).get().then(doc => {
                 if (doc.exists) {
@@ -338,27 +349,30 @@
                         // --- DAILY BRIEFING MODE (Protected) ---
                         document.getElementById('report-title').textContent = "Daily Briefing";
                         
-                        // Check Passcode
                         if (data.passcode && data.passcode.trim() !== "") {
                             pendingData = data; 
-                            // Hide Loader, Show Lock Screen
                             document.getElementById('loading-overlay').classList.add('hidden');
                             document.getElementById('lock-screen').classList.remove('hidden');
                             document.getElementById('report-subtitle').textContent = "Protected";
                         } else {
-                            // No Passcode
-                            renderReport(data);
+                            // If passcode is EMPTY, render the report immediately
+                            renderReport(data, true); 
                         }
                     } else {
                         // --- WEEKLY REPORT MODE (Public) ---
                         document.getElementById('report-title').textContent = "Weekly Report";
-                        // No passcode check for Weekly Report
-                        renderReport(data);
+                        renderReport(data, false); // false = isWeeklyMode
                     }
+                    
+                    // Start async Outlook load if in Daily Mode
+                    if (isDailyMode) {
+                        loadOutlookData(targetId);
+                    }
+
 
                 } else {
                     document.getElementById('loading-overlay').classList.add('hidden');
-                    document.getElementById('default-message').classList.remove('hidden'); // Show default so they can try again
+                    document.getElementById('default-message').classList.remove('hidden');
                     document.getElementById('report-subtitle').innerText = "ID not found";
                     alert("Report ID '" + targetId + "' not found.");
                 }
@@ -368,8 +382,43 @@
                 document.getElementById('default-message').classList.remove('hidden');
             });
         } else {
-            // On Home Page
             document.getElementById('report-subtitle').textContent = "Please enter ID below";
+        }
+
+        // --- OUTLOOK DATA LOADER (REINTEGRATED) ---
+        function loadOutlookData(reportId) {
+            const db = firebase.firestore();
+            const outlookDocId = reportId + "_outlook";
+            
+            // Listen for changes on the dedicated Outlook document
+            db.collection("briefings").doc(outlookDocId).onSnapshot((doc) => {
+                const headerMeetings = document.getElementById('header-meetings');
+                const headerEmails = document.getElementById('header-emails');
+                const meetingsContent = document.getElementById('content-meetings');
+                const emailsContent = document.getElementById('content-emails');
+
+                if (doc.exists) {
+                    const data = doc.data();
+
+                    // Update Headers with Counts
+                    headerMeetings.textContent = `4. This Week's Meetings (${data.meetings_count || 0})`;
+                    headerEmails.textContent   = `5. Unread Emails (Last 24h) (${data.emails_count || 0})`;
+                    
+                    // Update Content using original app.js logic (Linkify data)
+                    meetingsContent.innerHTML = linkify(data.meetings || "") || "<i>No meetings found.</i>";
+                    emailsContent.innerHTML   = linkify(data.emails || "")   || "<i>No unread emails.</i>";
+                } else {
+                    // Show placeholders if the outlook doc doesn't exist yet
+                    headerMeetings.textContent = `4. This Week's Meetings (0)`;
+                    headerEmails.textContent   = `5. Unread Emails (0)`;
+                    meetingsContent.innerHTML = "<i>Waiting for Outlook Sync...</i>";
+                    emailsContent.innerHTML   = "<i>Waiting for Outlook Sync...</i>";
+                }
+            }, (error) => {
+                 console.error("Error Outlook Sync:", error);
+                 document.getElementById('content-meetings').innerHTML = "<i>Error loading meetings.</i>";
+                 document.getElementById('content-emails').innerHTML = "<i>Error loading emails.</i>";
+            });
         }
 
         // --- UNLOCK LOGIC ---
@@ -377,15 +426,16 @@
             const entered = document.getElementById('unlock-pass').value;
             if (entered === pendingData.passcode) {
                 document.getElementById('lock-screen').classList.add('hidden');
-                renderReport(pendingData);
+                renderReport(pendingData, true); // Unlock into Daily Mode
+                loadOutlookData(targetId); // Start loading Outlook data after unlock
             } else {
                 document.getElementById('unlock-error').style.display = 'block';
             }
         }
 
         // --- RENDER LOGIC ---
-        function renderReport(data) {
-            // Hide landing, lock & loader
+        function renderReport(data, isDailyMode) {
+            // Hide overlays
             document.getElementById('default-message').classList.add('hidden');
             document.getElementById('lock-screen').classList.add('hidden');
             document.getElementById('loading-overlay').classList.add('hidden');
@@ -396,33 +446,87 @@
             
             // Header Info
             document.getElementById('report-subtitle').textContent = "Report: " + data.reportId;
-            document.getElementById('last-updated').textContent = "Last Updated: " + new Date(data.lastUpdated).toLocaleString();
+            // Handle Timestamp formatting (from original app.js logic)
+            let updateTime = "Unknown";
+            if (data.lastUpdated) {
+                const dateObj = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated);
+                if (!isNaN(dateObj)) {
+                    updateTime = dateObj.toLocaleString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                } else {
+                    updateTime = data.lastUpdated;
+                }
+            }
+            document.getElementById('last-updated').textContent = `Last generated: ${updateTime}`;
+
+
+            // Handle Visibility of Daily Sections (Meetings & Emails)
+            if (isDailyMode) {
+                document.getElementById('container-meetings').classList.remove('hidden');
+                document.getElementById('container-emails').classList.remove('hidden');
+                // The actual rendering of meetings/emails is handled by loadOutlookData
+            } else {
+                document.getElementById('container-meetings').classList.add('hidden');
+                document.getElementById('container-emails').classList.add('hidden');
+            }
 
             // Helper to render list
             const renderList = (id, items) => {
                 const el = document.getElementById(id);
-                if (!items || !items.length) { el.innerHTML = "<em>No items.</em>"; return; }
+                // Check if items is a non-empty array
+                if (!Array.isArray(items) || !items.length) { 
+                    el.innerHTML = "<em>No items.</em>"; 
+                    return; 
+                }
                 
                 let html = '<ul style="padding-left:20px;">';
                 items.forEach(item => {
                     if (typeof item === 'string') {
                         html += `<li>${item}</li>`;
                     } else {
+                        // Determine Color based on Status (includes new Completed status)
+                        let color;
+                        switch (item.status) {
+                            case 'On Track': color = 'green'; break;
+                            case 'Delayed': color = 'red'; break;
+                            case 'On-Hold': color = 'grey'; break;
+                            case 'Completed': color = '#800080'; break; // Purple for Completed
+                            default: color = 'grey';
+                        }
+
                         // For objects (projects/active tasks)
-                        const color = item.status === 'On Track' ? 'green' : (item.status==='Delayed'?'red':'grey');
                         html += `<li style="margin-bottom:10px;">
                             <strong>${item.name}</strong> 
                             <span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px;">${item.status}</span>
-                            <br><small style="color:#666">${item.notes || ''}</small>
-                        </li>`;
+                            <br><small style="color:#666">${item.notes || ''}</small>`;
+                        
+                        // Add Next Milestone on a new line with different style (small font, color #999)
+                        if (item.milestone) {
+                            html += `<br><small style="color:#999; font-size:0.8em;">Next Milestone: ${item.milestone}</small>`;
+                        }
+                        
+                        html += `</li>`;
                     }
                 });
-                el.innerHTML = html + '</ul>';
+                el.innerHTML = linkify(html + '</ul>'); // Apply linkify to the final HTML
             };
 
-            renderList('content-tasks', data.structuredDailyTasks);
-            renderList('content-projects', data.structuredProjects);
-            renderList('content-active', data.structuredActiveTasks);
+            // --- DATA FALLBACK LOGIC (Fixes "No items" when old data keys are present) ---
+            // Check for 'structured...' fields first, then fallback to simpler names.
+            const dailyTasksData = data.structuredDailyTasks || data.dailyTasks;
+            const projectsData = data.structuredProjects || data.projects;
+            const activeData = data.structuredActiveTasks || data.activeTasks;
+
+
+            // Render Main Sections (using fallback data)
+            renderList('content-tasks', dailyTasksData || []);
+            renderList('content-projects', projectsData || []);
+            renderList('content-active', activeData || []);
         }
     </script>
 </body>
