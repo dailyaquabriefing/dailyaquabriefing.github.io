@@ -137,20 +137,20 @@
         </div>
     </div>
 
-    <!-- Navigation Links -->
+    <!-- Navigation Links (Report Page) -->
     <div id="nav-links" class="hidden">
         <a href="#" id="link-weekly">Weekly Report</a> | 
         <a href="#" id="link-daily">Daily Briefing</a> |
         <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a> | 
-        <a href="setup.html" target="_blank">Setup Wizard</a> |
         <a href="howtouse.html" target="_blank">How to Use</a>
     </div>
 
+    <!-- Default Home Message (Landing Page) -->
     <div id="default-message" class="message-box">
         <h2>Welcome to Aqua Briefing</h2>
         <p>Enter your <strong>Aqua User ID</strong> below to view your report.</p>
         
-        <!-- NEW: Input Section -->
+        <!-- Input Section -->
         <div style="margin: 25px 0;">
             <input type="text" id="userid-input" class="userid-input" placeholder="e.g. jdoe" autofocus>
             <button onclick="viewReport()" class="action-btn btn-primary">View Briefing</button>
@@ -159,9 +159,14 @@
         <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 30px auto; width: 60%;">
         
         <div style="margin-top: 20px;">
-            <!-- Only Login Button remains here -->
+            <!-- Login Button -->
             <a href="admin.html" style="text-decoration:none;">
                 <button class="action-btn btn-secondary">Log In to Dashboard</button>
+            </a>
+
+            <!-- First Time Setup Button (Only visible on Home Page) -->
+            <a href="setup.html" style="text-decoration:none;">
+                <button class="action-btn btn-secondary">First Time User? Setup Here</button>
             </a>
         </div>
     </div>
