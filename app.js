@@ -226,7 +226,7 @@ function viewReport() {
     const input = document.getElementById('userid-input');
     const val = input.value.trim();
     if (val) {
-        window.location.href = "?daily=" + encodeURIComponent(val);
+        window.location.href = "?report=" + encodeURIComponent(val);
     } else {
         alert("Please enter a User ID.");
         input.focus();
