@@ -191,6 +191,7 @@
 </head>
 <body>
 
+    <!-- Login View -->
     <div id="login-container">
         <div class="login-box">
             <h2 style="color: var(--primary);">Dashboard</h2>
@@ -219,10 +220,12 @@
                 <button class="btn btn-primary w-full" onclick="loginWithEmail()">Sign In</button>
             </div>
             
+            <!-- New Setup Link -->
             <a href="setup.html" class="setup-link">First Time User? <b>Setup Here</b></a>
         </div>
     </div>
 
+    <!-- Main Application -->
     <div id="app-container">
         <header>
             <div>
@@ -236,52 +239,37 @@
             <button class="tab-btn active" onclick="openTab('tasks')">Daily Tasks</button>
             <button class="tab-btn" onclick="openTab('projects')">Active Projects</button>
             <button class="tab-btn" onclick="openTab('active')">Active Tasks</button>
-            <button class="tab-btn" onclick="openTab('settings')">Settings</button>
         </div>
 
+        <!-- Daily Tasks Section -->
         <div id="tab-tasks" class="tab-content active">
             <div style="display:flex; gap:10px; margin-bottom:20px;">
                 <input type="text" id="new-task-input" class="w-full" placeholder="Enter a new task (e.g., Review budget report)">
                 <button class="btn btn-primary" onclick="addDailyTask()">Add</button>
             </div>
             <ul id="daily-task-list" class="item-list">
-                </ul>
+                <!-- Tasks injected here -->
+            </ul>
         </div>
 
+        <!-- Projects Section -->
         <div id="tab-projects" class="tab-content">
             <button class="btn btn-primary" style="margin-bottom: 15px;" onclick="openModal('project')">+ Add New Project</button>
             <div id="project-list">
-                </div>
+                <!-- Projects injected here -->
+            </div>
         </div>
 
+        <!-- Active Tasks Section -->
         <div id="tab-active" class="tab-content">
             <button class="btn btn-primary" style="margin-bottom: 15px;" onclick="openModal('active')">+ Add New Active Task</button>
             <div id="active-task-list">
-                </div>
-        </div>
-        
-        <div id="tab-settings" class="tab-content">
-            <div style="max-width: 450px; padding-top: 10px;">
-                <h3 style="color: var(--primary);">Viewer Security</h3>
-                <p style="color: #666; font-size: 0.9em;">
-                    If you set a passcode here, visitors to your report page (<b>?report=yourID</b>) 
-                    will be required to enter it before seeing your data.
-                </p>
-
-                <div class="form-group" style="margin-top: 20px;">
-                    <label>Viewer Passcode</label>
-                    <input type="text" id="settings-passcode" class="w-full" placeholder="e.g. 1234 (Leave empty for public access)">
-                </div>
-
-                <div style="margin-top: 20px; padding: 15px; background: #eef7ff; border-radius: 4px;">
-                    <strong>Note:</strong> If you leave this blank, anyone with your User ID can view your tasks.
-                </div>
-
-                <button class="btn btn-primary" style="margin-top: 20px;" onclick="savePasscode()">Save Settings</button>
+                <!-- Active Tasks injected here -->
             </div>
         </div>
     </div>
 
+    <!-- Setup Profile Modal -->
     <div id="setup-modal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h3 style="color: var(--primary); margin-top:0;">Link Your Report ID</h3>
@@ -297,11 +285,14 @@
         </div>
     </div>
 
+    <!-- Generic Edit/Add Modal -->
     <div id="edit-modal" class="modal">
         <div class="modal-content">
             <h3 id="modal-title">Add Item</h3>
             <input type="hidden" id="modal-id">
-            <input type="hidden" id="modal-type"> <div class="form-group">
+            <input type="hidden" id="modal-type"> <!-- 'project' or 'active' -->
+
+            <div class="form-group">
                 <label>Name / Description</label>
                 <input type="text" id="m-name" class="w-full">
             </div>
@@ -346,6 +337,7 @@
         </div>
     </div>
 
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
@@ -375,8 +367,7 @@
         let localData = {
             dailyTasks: [],
             projects: [],
-            activeTasks: [],
-            passcode: "" // ADDED Passcode field
+            activeTasks: []
         };
 
         // --- AUTH LOGIC ---
@@ -467,12 +458,8 @@
                     localData.dailyTasks = data.structuredDailyTasks || [];
                     localData.projects = data.structuredProjects || [];
                     localData.activeTasks = data.structuredActiveTasks || [];
-                    
-                    // LOAD PASSCODE
-                    localData.passcode = data.passcode || "";
-                    document.getElementById('settings-passcode').value = localData.passcode;
                 } else {
-                    localData = { dailyTasks: [], projects: [], activeTasks: [], passcode: "" };
+                    localData = { dailyTasks: [], projects: [], activeTasks: [] };
                 }
                 renderAll();
             });
@@ -487,8 +474,6 @@
                 structuredProjects: localData.projects,
                 structuredActiveTasks: localData.activeTasks,
                 
-                passcode: localData.passcode, // SAVE PASSCODE
-                
                 lastUpdated: new Date().toISOString(),
                 reportId: managedReportId, 
                 
@@ -497,13 +482,6 @@
                 activeTasks_count: localData.activeTasks.length
                 
             }, { merge: true }).catch(e => console.error("Save error", e));
-        }
-
-        function savePasscode() {
-            const code = document.getElementById('settings-passcode').value.trim();
-            localData.passcode = code;
-            pushData();
-            alert("Settings Saved!");
         }
 
         // --- RENDERING ---
