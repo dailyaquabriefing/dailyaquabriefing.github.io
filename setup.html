@@ -154,21 +154,19 @@
 
         <form id="setupForm" onsubmit="return false;">
             
-            <!-- STEP 1: Welcome -->
             <div class="tab">
                 <h1>Welcome</h1>
                 <p>The <strong>Aqua Daily Briefing</strong> system helps you organize your day by combining your Outlook data with a web-based task list.</p>
                 <div class="highlight-box">
-                    <strong>How it works:</strong>
+                    <strong>Note on Security:</strong>
                     <ul>
-                        <li><strong>Web Dashboard:</strong> You manage your Daily Tasks and Projects online.</li>
-                        <li><strong>Outlook Agent:</strong> A small program runs on your PC to sync your emails and meetings automatically.</li>
+                        <li>Your <strong>Daily Briefing</strong> page (<code>?daily=YOUR_ID</code>) can be protected with a passcode, which you set on the Admin Dashboard.</li>
+                        <li>Your <strong>Weekly Report</strong> page (<code>?report=YOUR_ID</code>) remains public for easy sharing.</li>
                     </ul>
                 </div>
                 <p>Click <strong>Next</strong> to get started.</p>
             </div>
 
-            <!-- STEP 2: Download -->
             <div class="tab">
                 <h1>1. Download Agent</h1>
                 <p>You need to copy the sync agent to your computer.</p>
@@ -191,10 +189,9 @@
                 </label>
             </div>
 
-            <!-- STEP 3: Admin Dashboard -->
             <div class="tab">
-                <h1>2. Dashboard</h1>
-                <p>This is where you manage your content online.</p>
+                <h1>2. Dashboard & Passcode Setup</h1>
+                <p>This is where you manage your content and security settings online.</p>
                 
                 <div class="highlight-box" style="text-align:center;">
                     <p style="margin:0 0 10px 0;">Click below to open the dashboard:</p>
@@ -205,12 +202,12 @@
                 <ol>
                     <li>Log in using the <strong>Email/Password provided by IT</strong>.</li>
                     <li>Link your account to your <strong>Aqua Network ID</strong> (e.g., <code>jdoe</code>).</li>
-                    <li>Add a test task to verify it works.</li>
+                    <li>Navigate to the **Settings** tab and set a passcode for your Daily Briefing page.</li>
+                    <li>Add a test task to verify content creation works.</li>
                 </ol>
                 <p style="font-size:0.9em; color:#666;">Come back here and click Next once you are done.</p>
             </div>
 
-            <!-- STEP 4: Configure -->
             <div class="tab">
                 <h1>3. Configure Agent</h1>
                 <p>Tell the Outlook Agent who you are.</p>
@@ -225,7 +222,6 @@
                 </div>
             </div>
 
-            <!-- STEP 5: Run & Finish -->
             <div class="tab">
                 <h1>4. Run & Sync</h1>
                 <p>You are fully set up!</p>
@@ -239,7 +235,6 @@
                 </div>
             </div>
 
-            <!-- Navigation -->
             <div class="buttons">
                 <button type="button" id="prevBtn" class="secondary" onclick="nextPrev(-1)">Previous</button>
                 <button type="button" id="nextBtn" onclick="nextPrev(1)">Next</button>

@@ -76,23 +76,23 @@
         <h2>The Two-Part System</h2>
         <p>The system consists of two parts working together:</p>
         <ol>
-            <li><strong>The Web Dashboard:</strong> Where you manually type your tasks and project updates.</li>
+            <li><strong>The Web Dashboard:</strong> Where you manually type your tasks and project updates, and manage security.</li>
             <li><strong>The Outlook Agent:</strong> A small program on your PC that automatically grabs your emails and calendar.</li>
         </ol>
 
         <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
-        <h2>Step 1: Manage Projects/Tasks (Web Dashboard)</h2>
-        <p>Add/edit your projects/tasks/daily tasks!</p>
+        <h2>Step 1: Manage Content & Security (Web Dashboard)</h2>
+        <p>Add/edit your projects/tasks/daily tasks and set your security preferences.</p>
         <div class="step-box">
             <ol>
-                <li>Go to the <a href="admin.html" target="_blank"><strong>Admin Dashboard</strong></a>.</li>
-                <li>Log in with your email and password.</li>
+                <li>Go to the <a href="admin.html" target="_blank"><strong>Admin Dashboard</strong></a> and log in.</li>
+                <li><strong>Security:</strong> Navigate to the **Settings** tab to set a passcode for your secure Daily Briefing link (<code>?daily=</code>).</li>
                 <li><strong>Daily Tasks:</strong> Add your top 3-5 priorities for the day.</li>
                 <li><strong>Projects:</strong> Update the status (e.g., "On Track", "Delayed") of your active projects.</li>
             </ol>
         </div>
-        <p class="note"><strong>Tip:</strong> You can do this from home or your phone! The data saves to the cloud instantly.</p>
+        <p class="note"><strong>Tip:</strong> You only need to set the passcode once, but you can change it anytime in the Settings tab.</p>
 
         <h2>Step 2: Sync Outlook (The Agent)</h2>
         <p>Since the web cannot see your local Outlook, you must run the "Agent" to sync that data.</p>
@@ -106,9 +106,22 @@
         <p>This uploads your <strong>Unread Emails (Last 24h)</strong> and <strong>Upcoming Meetings (Today-Friday)</strong> to the report.</p>
 
         <h2>Step 3: View Your Report</h2>
-        <p>Once both steps are done, simply open the viewer link.</p>
-        <p>Usually: <code>https://dailyaquabriefing.github.io/?daily=YOUR_ID</code></p>
-        <p>You will see your Web Tasks and your Outlook Data combined into one view.</p>
+        <p>You have two ways to view your report:</p>
+        <div class="step-box">
+            <h3>A. Daily Briefing (Secure/Private)</h3>
+            <p><strong>URL:</strong> <code>https://dailyaquabriefing.github.io/?daily=YOUR_ID</code></p>
+            <ul>
+                <li>Shows Tasks, Projects, Active Tasks, Meetings, and Emails.</li>
+                <li>**Requires the passcode** you set on the Admin Settings tab.</li>
+            </ul>
+
+            <h3>B. Weekly Report (Public/Shareable)</h3>
+            <p><strong>URL:</strong> <code>https://dailyaquabriefing.github.io/?report=YOUR_ID</code></p>
+            <ul>
+                <li>Shows Tasks, Projects, and Active Tasks.</li>
+                <li>Does **NOT** require a passcode and is suitable for sharing.</li>
+            </ul>
+        </div>
 
         <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
