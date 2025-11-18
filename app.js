@@ -144,9 +144,24 @@ function listenToFirestore(reportId, isDaily) {
                 }
 
                 // Title & Header Updates
-                const updateTime = data.lastUpdated ? 
-                    (data.lastUpdated.toDate ? data.lastUpdated.toDate().toLocaleString() : data.lastUpdated) 
-                    : "Unknown";
+                let updateTime = "Unknown";
+if (data.lastUpdated) {
+    // Handle both Firestore Timestamps AND String dates
+    const dateObj = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated);
+    
+    // Format to readable text
+    if (!isNaN(dateObj)) {
+        updateTime = dateObj.toLocaleString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+    } else {
+        updateTime = data.lastUpdated; // Fallback if date is invalid
+    }
+}
 
                 if (isDaily) {
                     els.title.textContent = "Daily Briefing";
