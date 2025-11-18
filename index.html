@@ -221,6 +221,7 @@
         function viewReport() {
             const input = document.getElementById('userid-input');
             const val = input.value.trim();
+
             if (val) {
                 // Redirect to the same page with the query param
                 window.location.href = "?report=" + encodeURIComponent(val);
