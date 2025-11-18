@@ -45,62 +45,57 @@ function generateHtmlFromStructuredData(dataArray, type) {
     return "";
 }
 
-// --- Main Logic ---
+// --- Main Logic Wrapped in Function ---
 
-const db = firebase.firestore();
+function loadReportData(reportId, isDaily) {
+    const db = firebase.firestore();
 
-const els = {
-    title: document.getElementById("report-title"),
-    subtitle: document.getElementById("report-subtitle"),
-    lastUpdated: document.getElementById("last-updated"),
-    navLinks: document.getElementById("nav-links"),
-    linkWeekly: document.getElementById("link-weekly"),
-    linkDaily: document.getElementById("link-daily"),
-    defaultMessage: document.getElementById("default-message"),
-    reportBody: document.getElementById("report-body"),
-    
-    headerTasks: document.getElementById("header-tasks"),
-    headerProjects: document.getElementById("header-projects"),
-    headerActive: document.getElementById("header-active"),
-    headerMeetings: document.getElementById("header-meetings"),
-    headerEmails: document.getElementById("header-emails"),
+    const els = {
+        title: document.getElementById("report-title"),
+        subtitle: document.getElementById("report-subtitle"),
+        lastUpdated: document.getElementById("last-updated"),
+        navLinks: document.getElementById("nav-links"),
+        linkWeekly: document.getElementById("link-weekly"),
+        linkDaily: document.getElementById("link-daily"),
+        defaultMessage: document.getElementById("default-message"),
+        reportBody: document.getElementById("report-body"),
+        
+        headerTasks: document.getElementById("header-tasks"),
+        headerProjects: document.getElementById("header-projects"),
+        headerActive: document.getElementById("header-active"),
+        headerMeetings: document.getElementById("header-meetings"),
+        headerEmails: document.getElementById("header-emails"),
 
-    tasks: document.getElementById("content-tasks"),
-    projects: document.getElementById("content-projects"),
-    active: document.getElementById("content-active"),
-    meetings: document.getElementById("content-meetings"),
-    emails: document.getElementById("content-emails"),
-    
-    contMeetings: document.getElementById("container-meetings"),
-    contEmails: document.getElementById("container-emails")
-};
+        tasks: document.getElementById("content-tasks"),
+        projects: document.getElementById("content-projects"),
+        active: document.getElementById("content-active"),
+        meetings: document.getElementById("content-meetings"),
+        emails: document.getElementById("content-emails"),
+        
+        contMeetings: document.getElementById("container-meetings"),
+        contEmails: document.getElementById("container-emails")
+    };
 
-const urlParams = new URLSearchParams(window.location.search);
-let reportId = null; 
-let isDaily = false;
-
-if (urlParams.has('daily')) {
-    isDaily = true;
-    reportId = urlParams.get('daily');
-} else if (urlParams.has('report')) {
-    isDaily = false;
-    reportId = urlParams.get('report');
+    // Setup UI based on mode
+    if (reportId) {
+        els.defaultMessage.classList.add("hidden");
+        // NOTE: 'index.html' handles revealing reportBody now, but we keep this for safety
+        els.reportBody.classList.remove("hidden"); 
+        els.navLinks.classList.remove("hidden");
+        
+        // Update links based on current ID
+        els.linkWeekly.href = `?report=${reportId}&type=weekly`; // Default to public for weekly
+        els.linkDaily.href = `?daily=${reportId}`;   // Default to protected for daily
+        
+        setupView(isDaily, els);
+        listenToFirestore(reportId, isDaily, db, els);
+    } else {
+        els.subtitle.style.display = 'none';
+        els.lastUpdated.style.display = 'none';
+    }
 }
 
-if (reportId) {
-    els.defaultMessage.classList.add("hidden");
-    els.reportBody.classList.remove("hidden");
-    els.navLinks.classList.remove("hidden");
-    els.linkWeekly.href = `?report=${reportId}`;
-    els.linkDaily.href = `?daily=${reportId}`;
-    setupView(isDaily);
-    listenToFirestore(reportId, isDaily);
-} else {
-    els.subtitle.style.display = 'none';
-    els.lastUpdated.style.display = 'none';
-}
-
-function setupView(isDaily) {
+function setupView(isDaily, els) {
     if (isDaily) {
         els.contMeetings.classList.remove("hidden");
         els.contEmails.classList.remove("hidden");
@@ -110,7 +105,7 @@ function setupView(isDaily) {
     }
 }
 
-function listenToFirestore(reportId, isDaily) {
+function listenToFirestore(reportId, isDaily, db, els) {
     // --- LISTENER 1: Main User Data (Tasks, Projects) ---
     // Reads from 'briefings/jdoe'
     db.collection("briefings").doc(reportId)
@@ -145,23 +140,23 @@ function listenToFirestore(reportId, isDaily) {
 
                 // Title & Header Updates
                 let updateTime = "Unknown";
-if (data.lastUpdated) {
-    // Handle both Firestore Timestamps AND String dates
-    const dateObj = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated);
-    
-    // Format to readable text
-    if (!isNaN(dateObj)) {
-        updateTime = dateObj.toLocaleString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
-    } else {
-        updateTime = data.lastUpdated; // Fallback if date is invalid
-    }
-}
+                if (data.lastUpdated) {
+                    // Handle both Firestore Timestamps AND String dates
+                    const dateObj = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated);
+                    
+                    // Format to readable text
+                    if (!isNaN(dateObj)) {
+                        updateTime = dateObj.toLocaleString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric', 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                    } else {
+                        updateTime = data.lastUpdated; // Fallback if date is invalid
+                    }
+                }
 
                 if (isDaily) {
                     els.title.textContent = "Daily Briefing";
@@ -193,6 +188,7 @@ if (data.lastUpdated) {
 
     // --- LISTENER 2: Outlook Data (Emails, Meetings) ---
     // Reads from 'briefings/jdoe_outlook' (The safe sandbox file)
+    // Only runs if isDaily is TRUE
     if (isDaily) {
         db.collection("briefings").doc(reportId + "_outlook")
             .onSnapshot((doc) => {
