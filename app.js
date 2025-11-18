@@ -1,4 +1,5 @@
-// --- CONFIGURATION ---
+// --- CONFIGURATIONS ---
+
 const firebaseConfig = {
     apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU", 
     authDomain: "dailybriefing-fe7df.firebaseapp.com",
@@ -295,3 +296,4 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('default-message').classList.remove('hidden');
     }
 });
+
