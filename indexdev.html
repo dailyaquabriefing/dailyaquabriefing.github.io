@@ -469,7 +469,7 @@
             if (isDailyMode) {
                 document.getElementById('container-meetings').classList.remove('hidden');
                 document.getElementById('container-emails').classList.remove('hidden');
-                // The actual rendering of meetings/emails is now handled by loadOutlookData
+                // The actual rendering of meetings/emails is handled by loadOutlookData
             } else {
                 document.getElementById('container-meetings').classList.add('hidden');
                 document.getElementById('container-emails').classList.add('hidden');
@@ -489,20 +489,35 @@
                     if (typeof item === 'string') {
                         html += `<li>${item}</li>`;
                     } else {
+                        // Determine Color based on Status (includes new Completed status)
+                        let color;
+                        switch (item.status) {
+                            case 'On Track': color = 'green'; break;
+                            case 'Delayed': color = 'red'; break;
+                            case 'On-Hold': color = 'grey'; break;
+                            case 'Completed': color = '#800080'; break; // Purple for Completed
+                            default: color = 'grey';
+                        }
+
                         // For objects (projects/active tasks)
-                        const color = item.status === 'On Track' ? 'green' : (item.status==='Delayed'?'red':'grey');
                         html += `<li style="margin-bottom:10px;">
                             <strong>${item.name}</strong> 
                             <span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px;">${item.status}</span>
-                            <br><small style="color:#666">${item.notes || ''}</small>
-                        </li>`;
+                            <br><small style="color:#666">${item.notes || ''}</small>`;
+                        
+                        // Add Next Milestone on a new line with different style (small font, color #999)
+                        if (item.milestone) {
+                            html += `<br><small style="color:#999; font-size:0.8em;">Next Milestone: ${item.milestone}</small>`;
+                        }
+                        
+                        html += `</li>`;
                     }
                 });
                 el.innerHTML = linkify(html + '</ul>'); // Apply linkify to the final HTML
             };
 
-            // --- DATA FALLBACK LOGIC ---
-            // Check for 'structured...' fields first, then fallback to simpler names if data is missing.
+            // --- DATA FALLBACK LOGIC (Fixes "No items" when old data keys are present) ---
+            // Check for 'structured...' fields first, then fallback to simpler names.
             const dailyTasksData = data.structuredDailyTasks || data.dailyTasks;
             const projectsData = data.structuredProjects || data.projects;
             const activeData = data.structuredActiveTasks || data.activeTasks;
