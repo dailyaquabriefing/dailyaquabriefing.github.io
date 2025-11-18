@@ -38,20 +38,66 @@ function linkify(htmlContent) {
 
 /**
  * Helper to render structured/array content lists.
+ * This function has been significantly updated to fix the three issues.
  */
 const renderList = (id, items) => {
     const el = document.getElementById(id);
+    const headerEl = document.getElementById('header-' + id.replace('content-', ''));
+
+    // 1. Total Count is missing
+    const totalCount = Array.isArray(items) ? items.length : 0;
+    
+    // Update Header Text with count
+    if (headerEl) {
+        const titleMap = {
+            'header-tasks': 'Daily Tasks',
+            'header-projects': 'Active Projects',
+            'header-active': 'Active Tasks'
+        };
+        const baseTitle = titleMap[headerEl.id] || headerEl.textContent.split('(')[0].trim();
+        headerEl.textContent = baseTitle + ` (${totalCount})`;
+    }
+
+
     // Check if items is a non-empty array
     if (!Array.isArray(items) || !items.length) { 
         el.innerHTML = "<em>No items.</em>"; 
         return; 
     }
     
-    let html = '<ul style="padding-left:20px;">';
+    // 2. Daily Tasks, Active Projects, Active Tasks lists Not Numbered, but bulleted
+    // Using <ol> (Ordered List) instead of <ul> (Unordered List) for numbering
+    let html = '<ol style="padding-left:20px;">';
+    
     items.forEach(item => {
-        if (typeof item === 'string') {
-            html += `<li>${item}</li>`;
+        let name;
+        let notes = '';
+        
+        // Handling the new object structure for Daily Tasks
+        if (typeof item === 'object' && item !== null && item.name) {
+            name = item.name;
+            // The daily tasks from admin.html now only have name/id, 
+            // but we use the general item structure for projects/active tasks
+            notes = item.notes || '';
+        } else if (typeof item === 'string') {
+            name = item;
         } else {
+            // Skip invalid items if necessary
+            return; 
+        }
+
+        // 3. Daily tasks list now showing undefined (This was due to trying to access item.notes on the simple Daily Task object)
+        // Check if the item is a simple task (from old structure or new simple daily task)
+        const isComplexItem = (typeof item === 'object' && item.status);
+
+
+        if (!isComplexItem) {
+            // Simple Task (Daily Task)
+            html += `<li style="margin-bottom:5px;">
+                <strong>${name}</strong>
+            </li>`;
+        } else {
+            // Complex Item (Projects/Active Tasks)
             // Determine Color based on Status (including new Completed status)
             let color;
             switch (item.status) {
@@ -62,11 +108,10 @@ const renderList = (id, items) => {
                 default: color = 'grey';
             }
 
-            // For objects (projects/active tasks)
             html += `<li style="margin-bottom:10px;">
-                <strong>${item.name}</strong> 
+                <strong>${name}</strong> 
                 <span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px;">${item.status}</span>
-                <br><small style="color:#666">${item.notes || ''}</small>`;
+                <br><small style="color:#666">${notes || ''}</small>`;
             
             // Add Next Milestone on a new line with different style (small font, color #999)
             if (item.milestone) {
@@ -76,7 +121,8 @@ const renderList = (id, items) => {
             html += `</li>`;
         }
     });
-    el.innerHTML = linkify(html + '</ul>'); // Apply linkify to the final HTML
+    
+    el.innerHTML = linkify(html + '</ol>'); // Apply linkify to the final HTML, use </ol>
 };
 
 
@@ -159,6 +205,7 @@ function renderReport(data, isDailyMode) {
     }
 
     // --- DATA FALLBACK LOGIC ---
+    // structuredDailyTasks is now the primary data source from admin.html
     const dailyTasksData = data.structuredDailyTasks || data.dailyTasks;
     const projectsData = data.structuredProjects || data.projects;
     const activeData = data.structuredActiveTasks || data.activeTasks;
@@ -296,4 +343,3 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('default-message').classList.remove('hidden');
     }
 });
-

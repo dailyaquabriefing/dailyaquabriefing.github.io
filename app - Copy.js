@@ -1,4 +1,5 @@
-// --- CONFIGURATION ---
+// --- CONFIGURATIONS ---
+
 const firebaseConfig = {
     apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU", 
     authDomain: "dailybriefing-fe7df.firebaseapp.com",
@@ -145,7 +146,7 @@ function renderReport(data, isDailyMode) {
             updateTime = data.lastUpdated;
         }
     }
-    document.getElementById('last-updated').textContent = `Last generated: ${updateTime}`;
+    //document.getElementById('last-updated').textContent = ``;
 
 
     // Handle Visibility of Daily Sections (Meetings & Emails)
@@ -199,6 +200,38 @@ function attemptUnlock() {
     }
 }
 
+function setLastGenerated() {
+    const now = new Date();
+
+    // Time parts
+    let hour = now.getHours();
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const sec = String(now.getSeconds()).padStart(2, '0');
+
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    hour = hour ? hour : 12;
+
+    // Date parts
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day   = String(now.getDate()).padStart(2, '0');
+    const year  = now.getFullYear();
+
+    // Timezone abbreviation (CST, CDT, etc.)
+    const tz = Intl.DateTimeFormat('en-US', {
+        timeZoneName: 'short'
+    }).formatToParts(now).find(p => p.type === 'timeZoneName').value;
+
+    const formatted = `${month}/${day}/${year} ${hour}:${min}:${sec} ${ampm} ${tz}`;
+
+    const el = document.getElementById('last-updated');
+    if (el) {
+        el.textContent = `Report generated: ${formatted}`;
+    }
+}
+
+
+
 // --- INITIAL PAGE LOAD AND ROUTING ---
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -237,11 +270,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         // If passcode is EMPTY, render the report immediately
                         renderReport(data, true); 
                         loadOutlookData(targetId); // Load Outlook data immediately
+                        setLastGenerated();
                     }
                 } else {
                     // --- WEEKLY REPORT MODE (Public) ---
                     document.getElementById('report-title').textContent = "Weekly Report";
                     renderReport(data, false); // false = isWeeklyMode
+                    setLastGenerated();
                 }
             } else {
                 document.getElementById('loading-overlay').classList.add('hidden');
@@ -261,3 +296,4 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('default-message').classList.remove('hidden');
     }
 });
+
