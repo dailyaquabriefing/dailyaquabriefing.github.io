@@ -110,6 +110,21 @@
             transition: background 0.2s;
         }
         .btn-admin:hover { background: #218838; }
+        
+        .btn-download {
+            display: block;
+            text-align: center;
+            width: 100%;
+            background: #6c757d;
+            color: white;
+            padding: 12px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+        .btn-download:hover { background: #5a6268; }
 
         /* Top Right Link */
         .top-link {
@@ -157,13 +172,19 @@
             <div class="tab">
                 <h1>1. Download Agent</h1>
                 <p>You need to copy the sync agent to your computer.</p>
-                <p>Copy these <strong>2 files</strong> from <code>Q:\Support\MorningBriefing\</code> to your <code>G:\</code> drive:</p>
-                <ul>
-                    <li><code>AquaDailyBriefing.exe</code></li>
-                    <li><code>dailybriefingconfig.txt</code></li>
-                </ul>
+                
+                <div class="highlight-box" style="text-align:center;">
+                     <p style="margin:0 0 10px 0;">Click below to download the setup files:</p>
+                     <a href="files/dailybriefing.zip" class="btn-download" download>Download dailybriefing.zip</a>
+                </div>
+
+                <p><strong>Instructions:</strong></p>
+                <ol>
+                    <li>Unzip the downloaded file.</li>
+                    <li>Copy <code>AquaDailyBriefing.exe</code> and <code>dailybriefingconfig.txt</code> to the root of your <code>G:\</code> drive.</li>
+                </ol>
                 <p style="color: #666; font-size: 0.9em;">
-                    <i>(Ensure you copy them to the main folder of your G: drive).</i>
+                    <i>(Ensure they are in the main folder of your G: drive, not inside a subfolder).</i>
                 </p>
                 <label style="display:block; margin-top:20px; cursor:pointer;">
                     <input type="checkbox" id="confirmDownload"> I have copied the 2 files to my G: drive.
