@@ -1,6 +1,3 @@
-**
- * Converts URLs and emails in an HTML string to clickable HTML links.
- */
 function linkify(htmlContent) {
     if (!htmlContent) return "";
     let newText = htmlContent;
