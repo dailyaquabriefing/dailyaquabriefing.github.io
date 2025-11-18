@@ -120,7 +120,7 @@ function renderReport(data, isDailyMode) {
     // Hide overlays
     document.getElementById('default-message').classList.add('hidden');
     document.getElementById('lock-screen').classList.add('hidden');
-    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('loading-overlay').classList.add('hidden'); // HIDE LOADING OVERLAY
     
     // Show Report elements
     document.getElementById('nav-links').classList.remove('hidden');
@@ -152,18 +152,15 @@ function renderReport(data, isDailyMode) {
     if (isDailyMode) {
         document.getElementById('container-meetings').classList.remove('hidden');
         document.getElementById('container-emails').classList.remove('hidden');
-        // Outlook rendering handled by loadOutlookData
     } else {
         document.getElementById('container-meetings').classList.add('hidden');
         document.getElementById('container-emails').classList.add('hidden');
     }
 
     // --- DATA FALLBACK LOGIC ---
-    // Check for 'structured...' fields first, then fallback to simpler names.
     const dailyTasksData = data.structuredDailyTasks || data.dailyTasks;
     const projectsData = data.structuredProjects || data.projects;
     const activeData = data.structuredActiveTasks || data.activeTasks;
-
 
     // Render Main Sections
     renderList('content-tasks', dailyTasksData || []);
@@ -210,8 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === "Enter") viewReport();
     });
     
-    // Note: unlock-pass listener is attached inside load logic below since it might be hidden initially.
-
     const urlParams = new URLSearchParams(window.location.search);
     const dailyId = urlParams.get('daily');
     const reportId = urlParams.get('report');
@@ -252,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('loading-overlay').classList.add('hidden');
                 document.getElementById('default-message').classList.remove('hidden');
                 document.getElementById('report-subtitle').innerText = "ID not found";
-                // alert("Report ID '" + targetId + "' not found."); // Keep alert muted unless debugging
             }
         }).catch(error => {
             console.error("Error getting document:", error);
@@ -260,7 +254,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('default-message').classList.remove('hidden');
         });
     } else {
+        // --- LANDING PAGE ---
         document.getElementById('report-subtitle').textContent = "Please enter ID below";
-        document.getElementById('loading-overlay').classList.add('hidden');
+        // ONLY HIDE the loading overlay if we are on the landing page
+        document.getElementById('loading-overlay').classList.add('hidden'); 
+        document.getElementById('default-message').classList.remove('hidden');
     }
 });
