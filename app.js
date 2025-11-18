@@ -1,3 +1,6 @@
+/**
+ * Converts URLs and emails in an HTML string to clickable HTML links.
+ */
 function linkify(htmlContent) {
     if (!htmlContent) return "";
     let newText = htmlContent;
@@ -22,7 +25,7 @@ function generateHtmlFromStructuredData(dataArray, type) {
         // For Daily Tasks
         let html = "";
         dataArray.forEach((task, i) => {
-            html += `${i + 1}. ${task}\n`; // Using newline for linkify to catch or simple formatting
+            html += `${i + 1}. ${task}\n`; 
         });
         return html.replace(/\n/g, "<br>");
     }
@@ -108,14 +111,12 @@ function setupView(isDaily) {
 }
 
 function listenToFirestore(reportId, isDaily) {
-    // Note: reportId is now likely a Firebase User UID if created via Admin page
+    // --- LISTENER 1: Main User Data (Tasks, Projects) ---
+    // Reads from 'briefings/jdoe'
     db.collection("briefings").doc(reportId)
         .onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
-                
-                // --- HYBRID HANDLING ---
-                // Check if data comes from new Admin Tool (Structured) or Old AHK (Strings)
                 
                 let tasksHtml = "";
                 let projectsHtml = "";
@@ -123,10 +124,8 @@ function listenToFirestore(reportId, isDaily) {
                 
                 // 1. Handle Daily Tasks
                 if (data.structuredDailyTasks) {
-                    // Data from Admin Tool
                     tasksHtml = generateHtmlFromStructuredData(data.structuredDailyTasks, 'simpleList');
                 } else {
-                    // Data from Legacy AHK
                     tasksHtml = data.tasks || "";
                 }
 
@@ -143,14 +142,8 @@ function listenToFirestore(reportId, isDaily) {
                 } else {
                      activeTasksHtml = data.activeTasks || "";
                 }
-                
-                // --- Outlook Data (Emails/Meetings) ---
-                // These will likely still come as strings from the AHK script for now
-                // until you update the AHK script to push structured data too.
-                // The current AHK sends strings, so we keep that logic.
-                
-                const dateStr = data.dateString || "Unknown Date";
-                // Use lastUpdated timestamp if available, else string
+
+                // Title & Header Updates
                 const updateTime = data.lastUpdated ? 
                     (data.lastUpdated.toDate ? data.lastUpdated.toDate().toLocaleString() : data.lastUpdated) 
                     : "Unknown";
@@ -158,7 +151,7 @@ function listenToFirestore(reportId, isDaily) {
                 if (isDaily) {
                     els.title.textContent = "Daily Briefing";
                     els.subtitle.style.display = 'block';
-                    els.subtitle.textContent = `Daily briefing for ${reportId}`; // Removed date from title to avoid clutter
+                    els.subtitle.textContent = `Daily briefing for ${reportId}`;
                 } else {
                     els.title.textContent = "Weekly Report";
                     els.subtitle.style.display = 'block';
@@ -170,25 +163,38 @@ function listenToFirestore(reportId, isDaily) {
                 els.headerProjects.textContent = `2. Active Projects (${data.projects_count || 0})`;
                 els.headerActive.textContent   = `3. Active Tasks (${data.activeTasks_count || 0})`;
 
-                // Inject Content (Linkify handles both the new HTML generated above and old AHK strings)
                 els.tasks.innerHTML    = linkify(tasksHtml)       || "<i>No tasks found.</i>";
                 els.projects.innerHTML = linkify(projectsHtml)    || "<i>No active projects found.</i>";
                 els.active.innerHTML   = linkify(activeTasksHtml) || "<i>No active tasks found.</i>";
-                
-                if (isDaily) {
-                    els.headerMeetings.textContent = `4. This Week's Meetings (${data.meetings_count || 0})`;
-                    els.headerEmails.textContent   = `5. Unread Emails (Last 24h) (${data.emails_count || 0})`;
-                    els.meetings.innerHTML = linkify(data.meetings) || "<i>No meetings found.</i>";
-                    els.emails.innerHTML   = linkify(data.emails)   || "<i>No unread emails.</i>";
-                }
             
             } else {
                 els.title.textContent = "Report Not Found";
                 els.subtitle.textContent = `No data found for ID: ${reportId}`;
-                els.lastUpdated.textContent = "If this is a new user ID, please log into the Admin Dashboard to initialize your data.";
+                els.lastUpdated.textContent = "Please ensure you have set up your Dashboard and Sync Agent.";
             }
         }, (error) => {
-            console.error("Error:", error);
-            els.subtitle.textContent = "Error loading report. Check console.";
+            console.error("Error main:", error);
         });
+
+    // --- LISTENER 2: Outlook Data (Emails, Meetings) ---
+    // Reads from 'briefings/jdoe_outlook' (The safe sandbox file)
+    if (isDaily) {
+        db.collection("briefings").doc(reportId + "_outlook")
+            .onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    els.headerMeetings.textContent = `4. This Week's Meetings (${data.meetings_count || 0})`;
+                    els.headerEmails.textContent   = `5. Unread Emails (Last 24h) (${data.emails_count || 0})`;
+                    
+                    els.meetings.innerHTML = linkify(data.meetings) || "<i>No meetings found.</i>";
+                    els.emails.innerHTML   = linkify(data.emails)   || "<i>No unread emails.</i>";
+                } else {
+                    // If the outlook doc doesn't exist yet, just show empty
+                    els.meetings.innerHTML = "<i>Waiting for Outlook Sync...</i>";
+                    els.emails.innerHTML = "<i>Waiting for Outlook Sync...</i>";
+                }
+            }, (error) => {
+                 console.error("Error outlook:", error);
+            });
+    }
 }
