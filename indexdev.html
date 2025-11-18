@@ -338,6 +338,7 @@
                             document.getElementById('lock-screen').classList.remove('hidden');
                             document.getElementById('report-subtitle').textContent = "Protected";
                         } else {
+                            // FIX: If passcode is EMPTY, render the report immediately
                             renderReport(data, true); // true = isDailyMode
                         }
                     } else {
