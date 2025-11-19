@@ -1,13 +1,5 @@
 ; ====================================================================================
 ; === AQUA BRIEFING - OUTLOOK SYNC AGENT
-; ===
-; === Purpose: 
-;
-; === 1. Fetches Unread Emails (Last 24h) using your CUSTOM FORMAT (HTML Ready).
-;
-; === 2. Fetches Upcoming Meetings (Today-Friday) using your CUSTOM FORMAT (HTML Ready).
-;
-; === 3. Pushes data to a SEPARATE Firebase document (User_outlook) to avoid overwriting tasks.
 ; ====================================================================================
 
 #SingleInstance, Force
@@ -20,24 +12,13 @@ SetWorkingDir, %A_ScriptDir%
 global g_ReportID
 global g_Prompt
 global g_RunAtLogin
+global configFile 
+global configSection
 
 ; --- Define the config file path ---
 configFile := "G:\dailybriefingconfig.txt"
 configSection := "Settings"
 
-;
---- Read values from INI ---
-IniRead, g_ReportID, %configFile%, %configSection%, ReportID, default
-IniRead, g_Prompt, %configFile%, %configSection%, Prompt, Yes
-IniRead, g_RunAtLogin, %configFile%, %configSection%, RunAtLogin, Yes
-
-;
---- Validate ID ---
-if (g_ReportID = "default" || g_ReportID = "")
-{
-    MsgBox, 0x10, Config Error, Please open G:\dailybriefingconfig.txt and set ReportID to your user ID (e.g. jdoe).
-    ExitApp
-}
 
 ; ====================================================================================
 ; --- MAIN EXECUTION ---
@@ -47,11 +28,55 @@ Main()
 ExitApp
 
 Main() {
-    ; --- NEW STEP: 0. Ensure the executable is locally copied ---
+ ; --- NEW STEP: 0. Ensure the executable is locally copied ---
     CopyExecutable()
+
+; --- NEW STEP: 0b. Ensure the config file is locally copied (NEW) ---
+    CopyConfigFile()
+
+Loop {
+        ; Read values from INI (Now run inside the Main loop)
+        IniRead, g_ReportID, %configFile%, %configSection%, ReportID, default
+        IniRead, g_Prompt, %configFile%, %configSection%, Prompt, Yes
+        IniRead, g_RunAtLogin, %configFile%, %configSection%, RunAtLogin, Yes
+        
+        ; Validate ID
+        if (g_ReportID != "default" && g_ReportID != "")
+            break ; ID is set, exit the loop
+        
+        ; ID is default or empty, prompt the user
+        InputBox, InputID, Aqua Briefing Setup, Please enter your Aqua Network ID (example: jdoe) to complete configuration., , 500, 150
+        
+        ; If user cancels, exit the app
+        if (ErrorLevel = 1) 
+    {
+        ; ErrorLevel 1 means Cancel was pressed
+        ExitApp
+    }
+        
+        ; If user provides input, save it to the config file
+        if (ErrorLevel = 0)
+        {
+            NewID := Trim(InputID)
+            if (NewID != "")
+            {
+                IniWrite, %NewID%, %configFile%, %configSection%, ReportID
+                ; Set g_ReportID temporarily so the next loop iteration can re-read it
+                g_ReportID := NewID
+                ; The loop will now repeat, IniRead will fetch the new ID, and it will break out.
+            }
+            Else
+            {
+                MsgBox, 0x10, Configuration Error, Network ID cannot be empty. Please re-enter your ID.
+            }
+        }
+    }
 
     ; 1. Manage Startup Shortcut based on config
     StartUp() 
+    
+    ; 1b. Manage Desktop Shortcut based on config (NEW)
+    DesktopShortcut() 
 
     ; 2. Get Outlook Data using your custom formatting functions
     unreadEmailsObj  := GetUnreadEmails()
@@ -59,6 +84,7 @@ Main() {
 
     ; 3. Push to Firebase (Safe Mode)
     PushOutlookData(unreadEmailsObj, todayMeetingsObj)
+
 }
 
 ; ====================================================================================
@@ -91,6 +117,28 @@ CopyExecutable() {
         ; ErrorLevel will be 1 if the operation failed (e.g., file not found, permission issue)
         MsgBox, 16, Error, Failed to copy AquaDailyBriefing.exe. Please ensure Q:\ drive is mapped and you have permissions. ErrorLevel: %ErrorLevel%
         ExitApp ; Critical error: Stop execution if the executable cannot be copied.
+    }
+}
+
+
+; ====================================================================================
+; --- FILE MANAGEMENT FUNCTION (CONFIG FILE) (MODIFIED FOR DUAL COPY) ---
+; ====================================================================================
+
+CopyConfigFile() {
+    ; Define paths
+    SourceFile := "Q:\Support\AquaBriefingReport\dailybriefingconfig.txt"
+    DestFileG   := "G:\dailybriefingconfig.txt" ; New destination
+
+      
+    ; 2. Copy to G:\ (Required for IniRead at the top of the script)
+    FileCopy, %SourceFile%, %DestFileG%, 1
+    If (ErrorLevel != 0)
+    {
+        ; Note: This error is critical because the script looks for the config in G:\
+        MsgBox, 16, Error, Failed to copy dailybriefingconfig.txt to G:\.
+        MsgBox, 16, Error, Please ensure G:\ drive is mapped and the file exists on Q:\.
+        ExitApp
     }
 }
 
@@ -337,6 +385,55 @@ StartUp() {
     }
 }
 
+; ====================================================================================
+; --- 4b. DESKTOP SHORTCUT MANAGEMENT (NEW) ---
+; ====================================================================================
+
+DesktopShortcut() {
+    global g_RunAtLogin
+    
+    ; Define paths (used for both creation and deletion)
+    
+    ; A_Desktop is a built-in variable for the user's desktop folder
+    DesktopFolder := A_Desktop
+    
+    ; Target EXE is the same as the Startup folder logic
+    TargetExe := "C:\AquaBriefing\AquaDailyBriefing.exe"
+    
+    ; Shortcut Path for the Desktop
+    ShortcutPath := DesktopFolder . "\AquaDailyBriefing.lnk"
+    
+    ; Normalize the config value for reliable comparison
+    CleanRunAtLogin := RegExReplace(g_RunAtLogin, "[\s""]", "")
+    
+    if (CleanRunAtLogin = "Yes") 
+    {
+        ; --- Action: Create Shortcut (if needed) ---
+        ; Check if the shortcut already exists
+        if (!FileExist(ShortcutPath))
+        {
+            ; Create the shortcut (Normal run state)
+            FileCreateShortcut, %TargetExe%, %ShortcutPath%, , , , , , , 1
+            
+            ; Optional: Error check
+            ;if (ErrorLevel != 0) { ... }
+        }
+    } 
+    else if (CleanRunAtLogin = "No") 
+    {
+        ; --- Action: Delete Shortcut (if it exists) ---
+        ; Check if the shortcut exists
+        if (FileExist(ShortcutPath))
+        {
+            ; Delete the shortcut file
+            FileDelete, %ShortcutPath%
+            
+            ; Optional: Error check
+            ;if (ErrorLevel != 0) { ... }
+        }
+    }
+}
+
 ;
 ; ====================================================================================
 ; --- UTILITIES ---
@@ -442,6 +539,8 @@ PushOutlookData(emailsObj, meetingsObj) {
         MsgBox, 0x10, Error, % "Upload failed: " . e.Message
     }
 }
+
+
 
 EscapeJSON(str) {
   ; This must be a standalone function

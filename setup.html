@@ -168,8 +168,8 @@
             </div>
 
             <div class="tab">
-                <h1>1. Download Agent</h1>
-                <p>You need to copy the sync agent to your computer.</p>
+                <h1>1. Download & Install Agent</h1>
+                <p>The setup program will manage file copying and configuration automatically.</p>
                 
                 <div class="highlight-box" style="text-align:center;">
                      <p style="margin:0 0 10px 0;">Click below to download the setup files:</p>
@@ -178,20 +178,18 @@
 
                 <p><strong>Instructions:</strong></p>
                 <ol>
-                    <li>Unzip the downloaded file.</li>
-                    <li>Copy <code>AquaDailyBriefing.exe</code> and <code>dailybriefingconfig.txt</code> to the root of your <code>G:\</code> drive.</li>
+                    <li>Download the <code>dailybriefing.zip</code> file to your <strong>Downloads</strong> folder.</li>
+                    <li>Unzip the file.</li>
+                    <li>Run the setup program: <strong><code>AquaDailyBriefing.exe</code></strong>.</li>
+                    <li>The setup program will copy required files, place a <strong>shortcut on your desktop</strong>, and configure the sync agent to <strong>run upon login</strong>.</li>
+                    <li>When prompted by the program, enter your <strong>Aqua Network User ID</strong> (e.g., <code>jdoe</code>).</li>
+                    <li>The program will then gather your Outlook information and prompt you to view your first daily briefing.</li>
                 </ol>
-                <p style="color: #666; font-size: 0.9em;">
-                    <i>(Ensure they are in the main folder of your G: drive, not inside a subfolder).</i>
-                </p>
-                <label style="display:block; margin-top:20px; cursor:pointer;">
-                    <input type="checkbox" id="confirmDownload"> I have copied the 2 files to my G: drive.
-                </label>
             </div>
 
             <div class="tab">
                 <h1>2. Dashboard & Passcode Setup</h1>
-                <p>This is where you manage your content and security settings online.</p>
+                <p>Use the web dashboard to manage your content and security settings online.</p>
                 
                 <div class="highlight-box" style="text-align:center;">
                     <p style="margin:0 0 10px 0;">Click below to open the dashboard:</p>
@@ -200,43 +198,45 @@
                 
                 <p><strong>Instructions:</strong></p>
                 <ol>
-                    <li>Log in using the <strong>Email/Password provided by IT</strong>.</li>
+                    <li>Log in using the <strong>Email/Password</strong> provided by IT.</li>
                     <li>Link your account to your <strong>Aqua Network ID</strong> (e.g., <code>jdoe</code>).</li>
-                    <li>Navigate to the **Settings** tab and set a passcode for your Daily Briefing page.</li>
-                    <li>Add a test task to verify content creation works.</li>
+                    <li>Navigate to the <strong>Settings</strong> tab and set a <strong>passcode</strong> for your Daily Briefing page (optional).</li>
+                    <li>Add a <strong>test daily task</strong> to verify content creation works.</li>
                 </ol>
                 <p style="font-size:0.9em; color:#666;">Come back here and click Next once you are done.</p>
             </div>
 
             <div class="tab">
-                <h1>3. Configure Agent</h1>
-                <p>Tell the Outlook Agent who you are and whether to run automatically at login.</p>
-                <ol>
-                    <li>Open <code>G:\dailybriefingconfig.txt</code>.</li>
-                    <li>Change <code>ReportID=default</code> to your Network ID (e.g., <code>jdoe</code>).</li>
-                    <li>Ensure <code>Prompt=Yes</code>.</li>
-                    <li>Set <code>RunAtLogin=Yes</code> to automatically create a shortcut in your Startup folder, or <code>RunAtLogin=No</code> to prevent/remove the shortcut.</li>
-                    <li>Save and close the file.</li>
-                </ol>
+                <h1>3. View Agent Configuration</h1>
+                <p>The agent is automatically configured during the setup process.</p>
+                <p>The agent's configuration file (<code>G:\dailybriefingconfig.txt</code>) is set as follows:</p>
+                
                 <div class="highlight-box">
-                    Example: <br>
-                    <code>ReportID=jdoe</code><br>
-                    <code>RunAtLogin=Yes</code>
+                    <strong>//confirm set to your Aqua Network UserID</strong><br>
+                    <code>ReportID={Aqua Network UserID}</code><br>
+                    <strong>//Recommended to keep the below default values</strong><br>
+                    <code>Prompt=Yes</code> // Prompted when AquaDailyBriefing runs successfully<br>
+                    <code>RunAtLogin=Yes</code> // Run AquaDailyBriefing automatically at login
                 </div>
+                
+                <p style="color: #666; font-size: 0.9em;">
+                    The setup program automatically updated the <strong>ReportID</strong> when you entered your Aqua Network User ID.
+                </p>
             </div>
 
             <div class="tab">
                 <h1>4. Run & Sync</h1>
                 <p>You are fully set up!</p>
-                <ol>
-                    <li>Double-click <code>G:\AquaDailyBriefing.exe</code>.</li>
-                    <li>It will read your Outlook Emails & Meetings.</li>
-                    <li>It will push them to the cloud and combine them with your web tasks.</li>
-                    <li>**Startup:** Based on your <code>RunAtLogin</code> setting, it will automatically manage the shortcut for running this sync agent when you log in.</li>
-                </ol>
+                
                 <div class="highlight-box" style="border-color:#28a745; background:#e8f5e9;">
-                    <strong>Success!</strong> You can now view your complete Daily Briefing.
+                    <strong>Sync Agent Status:</strong><br>
+                    <ol style="margin-top: 5px;">
+                        <li>The agent is configured to run automatically upon Windows login.</li>
+                        <li>You can run the sync agent any time by double-clicking the new <strong>desktop shortcut</strong> for <strong>AquaDailyBriefing</strong>.</li>
+                    </ol>
                 </div>
+                
+                <p>Click <strong>Finish</strong> to go to your main viewer page.</p>
             </div>
 
             <div class="buttons">
@@ -252,14 +252,21 @@
 
         function showStep(n) {
             let tabs = document.getElementsByClassName("tab");
-            tabs[n].style.display = "block";
+            
+            // Check if element exists before accessing its style
+            if(tabs.length > n) {
+                tabs[n].style.display = "block";
+            }
             
             // Update dots
             let dots = document.getElementsByClassName("step-dot");
             for (i = 0; i < dots.length; i++) {
                 dots[i].className = dots[i].className.replace(" active", "");
             }
-            dots[n].className += " active";
+            if(dots.length > n) {
+                dots[n].className += " active";
+            }
+
 
             // Buttons
             if (n == 0) {
@@ -275,14 +282,9 @@
                 nextBtn.innerHTML = "Next";
             }
 
-            // Logic for Step 2 Checkbox
-            if (n == 1) {
-                let chk = document.getElementById("confirmDownload");
-                nextBtn.disabled = !chk.checked;
-                chk.onclick = function() { nextBtn.disabled = !this.checked; };
-            } else {
-                nextBtn.disabled = false;
-            }
+            // Removed old Step 1 Checkbox logic (Step 2 in old numbering)
+            // Re-enabling the Next button for all steps
+            nextBtn.disabled = false;
         }
 
         function nextPrev(n) {
