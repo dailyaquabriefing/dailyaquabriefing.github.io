@@ -27,6 +27,18 @@ Main()
 ExitApp
 
 Main() {
+  ; -----------------------------------------------------------
+    ; 1. Ensure Outlook is running BEFORE anything else executes
+    ; -----------------------------------------------------------
+    if !ProcessExist("OUTLOOK.EXE") {
+        Run, outlook.exe
+        WinWait, ahk_exe OUTLOOK.EXE
+        Sleep, 1500  ; give Outlook a moment to initialize
+    }
+
+    ; -----------------------------------------------------------
+    ; 2. Now proceed with your startup steps
+    ; -----------------------------------------------------------
     ; --- NEW STEP: 0. Ensure the executable is locally copied ---
     CopyExecutable()
 
@@ -83,6 +95,12 @@ Main() {
 ; ====================================================================================
 ; --- FILE MANAGEMENT FUNCTION (NEW) ---
 ; ====================================================================================
+
+ProcessExist(name) {
+    Process, Exist, %name%
+    return ErrorLevel
+}
+
 
 CopyExecutable() {
     EnvGet, userProfile, USERPROFILE
