@@ -5,8 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-/* ...Updated    ... */
+    /* ...Updated Styles... */
     
+        :root {
+            --primary: #0078D4;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --bg-light: #f8f9fa;
+        }
+
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             line-height: 1.6; 
@@ -14,6 +21,12 @@
             max-width: 900px; 
             margin: 0 auto; 
             color: #333;
+            box-sizing: border-box;
+        }
+
+        /* Ensure padding doesn't expand width */
+        *, *:before, *:after {
+            box-sizing: inherit;
         }
         
        /* Header Styling */
@@ -21,7 +34,7 @@
             display: flex; 
             align-items: center; 
             gap: 20px; 
-            border-bottom: 4px solid #0078D4;
+            border-bottom: 4px solid var(--primary);
             padding-bottom: 10px;
             margin-bottom: 30px;
         }
@@ -33,11 +46,11 @@
         #report-title { 
             margin: 0; 
             font-size: 2.2em; 
-            color: #2c3e50; 
+            color: var(--text-dark); 
         }
         #report-subtitle { 
             font-size: 1.1em; 
-            color: #7f8c8d; 
+            color: var(--text-light); 
             margin: 0;
             font-weight: normal;
         }
@@ -45,28 +58,38 @@
         /* Navigation */
         #nav-links {
             margin-bottom: 20px;
-            padding: 10px;
-            background: #f8f9fa;
+            padding: 15px;
+            background: var(--bg-light);
             border-radius: 4px;
             font-size: 0.95em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px; /* Use gap instead of text pipes */
+            align-items: center;
         }
         #nav-links a {
-            color: #0078D4;
+            color: var(--primary);
             text-decoration: none;
-            margin: 0 5px;
             font-weight: 500;
             cursor: pointer;
         }
         #nav-links a:hover { text-decoration: underline; }
         
+        /* Visual Separator for Desktop */
+        .nav-separator {
+            color: #ccc;
+            user-select: none;
+        }
+
         /* Sections */
         .hidden { display: none !important; }
         
         h2 {
-            color: #0078D4;
+            color: var(--primary);
             border-bottom: 2px solid #eee;
             padding-bottom: 8px;
             margin-top: 30px;
+            font-size: 1.5rem;
         }
         
         .section-content {
@@ -75,6 +98,7 @@
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             min-height: 50px;
+            overflow-x: auto; /* Handle wide tables on mobile */
         }
 
         /* Footer */
@@ -107,10 +131,10 @@
             margin: 5px;
             transition: background 0.2s;
         }
-        .btn-primary { background: #0078D4; color: white; }
+        .btn-primary { background: var(--primary); color: white; }
         .btn-primary:hover { background: #005a9e; }
         
-        .btn-secondary { background: #fff; color: #0078D4; border: 2px solid #0078D4; }
+        .btn-secondary { background: #fff; color: var(--primary); border: 2px solid var(--primary); }
         .btn-secondary:hover { background: #eef7ff; }
 
         /* User ID Input Styling */
@@ -123,7 +147,7 @@
             margin-right: 10px;
         }
         .userid-input:focus {
-            border-color: #0078D4;
+            border-color: var(--primary);
             outline: none;
         }
 
@@ -146,6 +170,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             text-align: center;
             width: 300px;
+            max-width: 90%; /* Safety for small screens */
         }
 
         /* LOADING OVERLAY */
@@ -162,7 +187,7 @@
         }
         .spinner {
             border: 5px solid #f3f3f3;
-            border-top: 5px solid #0078D4;
+            border-top: 5px solid var(--primary);
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -175,25 +200,87 @@
         }
         .loading-text {
             font-size: 1.5rem;
-            color: #0078D4;
+            color: var(--primary);
             font-weight: bold;
             font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* --- MOBILE RESPONSIVE STYLES --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            /* Stack Header Elements */
+            #header-section {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            #logo {
+                max-height: 50px;
+            }
+
+            #report-title {
+                font-size: 1.8em;
+            }
+
+            /* Convert Nav to Vertical Stack */
+            #nav-links {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 10px;
+                gap: 10px;
+            }
+            
+            #nav-links a {
+                display: block;
+                text-align: center;
+                padding: 10px;
+                background: white;
+                border: 1px solid #eee;
+                border-radius: 4px;
+            }
+            
+            /* Hide the | separators on mobile */
+            .nav-separator {
+                display: none;
+            }
+
+            /* Stack Inputs and Buttons */
+            .userid-input {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+
+            .action-btn {
+                width: 100%;
+                margin: 5px 0;
+                display: block;
+            }
+
+            .message-box {
+                padding: 20px;
+            }
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loading-overlay">  <div class="spinner"></div>
-    <div class="loading-text">Loading Report...</div>
-</div>
+    <div id="loading-overlay">  
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Report...</div>
+    </div>
 
     <div id="lock-screen" class="hidden">
         <div class="lock-box">
             <h2 style="color: #0078D4; margin-top:0;">Protected Report</h2>
             <p style="margin-bottom: 20px;">Please enter passcode to view.</p>
-            <input type="password" id="unlock-pass" class="userid-input" style="width: 100%; box-sizing: border-box; margin-bottom: 15px;" placeholder="Passcode">
-            <button onclick="attemptUnlock()" class="action-btn btn-primary" style="width:100%">Unlock</button>
+            <input type="password" id="unlock-pass" class="userid-input" placeholder="Passcode">
+            <button onclick="attemptUnlock()" class="action-btn btn-primary">Unlock</button>
             <p id="unlock-error" style="color: red; font-size: 0.9em; display: none; margin-top:10px;">Incorrect Passcode</p>
         </div>
     </div>
@@ -207,9 +294,12 @@
     </div>
 
     <div id="nav-links" class="hidden">
-        <a id="link-weekly" href="#">Weekly Report</a> | 
-        <a id="link-daily" href="#">Daily Briefing</a> |
-        <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a> | 
+        <a id="link-weekly" href="#">Weekly Report</a> 
+        <span class="nav-separator">|</span>
+        <a id="link-daily" href="#">Daily Briefing</a>
+        <span class="nav-separator">|</span>
+        <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a>
+        <span class="nav-separator">|</span>
         <a href="howtouse.html" target="_blank">How to Use</a>
     </div>
 
@@ -270,6 +360,4 @@
     
     <script src="app.js"></script>
 </body>
-
 </html>
-

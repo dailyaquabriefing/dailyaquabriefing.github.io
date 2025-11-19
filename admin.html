@@ -319,7 +319,14 @@
         
         <div id="tab-settings" class="tab-content">
             <div style="max-width: 450px; padding-top: 10px;">
-                <h3 style="color: var(--primary);">Viewer Security</h3>
+                
+                <h3 style="color: var(--primary);">User Mapping</h3>
+                <div class="form-group">
+                    <label>Current Network User ID (Read-only) - see IT if this needs changed.</label>
+                    <input type="text" id="settings-report-id-display" class="w-full" readonly style="background:#f0f0f0;">
+                </div>
+
+                <h3 style="color: var(--primary); margin-top: 30px;">Viewer Security</h3>
                 <p style="color: #666; font-size: 0.9em;">
                     If you set a passcode here, visitors to your <b>Daily Briefing</b> page (<b>?daily=yourID</b>) 
                     will be required to enter it before seeing your data.
@@ -341,7 +348,7 @@
     <div id="setup-modal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h3 style="color: var(--primary); margin-top:0;">Link Your Report ID</h3>
-            <p>Please enter the Network User ID you want to manage (e.g., <b>jdoe</b>).</p>
+            <p>Please enter the Network User ID you want to manage (e.g., <b>jdoe</b>) in <b>lowercase</b>.</p>
             <p style="font-size:0.9em; color:#666;">This must match the "ReportID" in your local G:\dailybriefingconfig.txt file.</p>
             
             <div class="form-group" style="text-align:left; margin-top:20px;">
@@ -468,7 +475,8 @@
 
         function saveReportId() {
             const input = document.getElementById('setup-report-id');
-            const val = input.value.trim();
+            // MODIFIED: Convert input to lowercase before saving
+            const val = input.value.toLowerCase().trim();
             if (!val) { alert("Please enter an ID."); return; }
             
             // Save mapping
@@ -487,6 +495,8 @@
         function initializeDashboard() {
             document.getElementById('app-container').style.display = 'block';
             document.getElementById('current-report-id').textContent = "Managing: " + managedReportId;
+            // NEW: Populate the read-only field in the Settings tab
+            document.getElementById('settings-report-id-display').value = managedReportId; 
             loadData();
         }
 

@@ -26,7 +26,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh; /* Changed from height to min-height for scrolling on short screens */
         }
         .login-box {
             background: var(--white);
@@ -73,6 +73,7 @@
             display: flex;
             border-bottom: 1px solid var(--border);
             background: #f9f9f9;
+            overflow-x: auto; /* Allow scrolling on very small screens */
         }
         .tab-btn {
             flex: 1;
@@ -83,6 +84,7 @@
             font-weight: 600;
             color: #666;
             border-bottom: 3px solid transparent;
+            white-space: nowrap; /* Prevent text wrapping in tabs */
         }
         .tab-btn.active {
             color: var(--primary);
@@ -109,6 +111,12 @@
         }
         .item-row:last-child { border-bottom: none; }
         
+        /* Action Buttons Container */
+        .row-actions {
+            min-width: 250px; 
+            text-align: right;
+        }
+
         /* Forms & Inputs */
         input, select, textarea {
             padding: 10px;
@@ -130,12 +138,12 @@
         .btn-secondary { background: #e9ecef; color: #333; }
         .btn-danger { background: #dc3545; color: white; padding: 6px 12px; font-size: 12px;}
         .btn-edit { background: #ffc107; color: #333; padding: 6px 12px; font-size: 12px; margin-right: 5px;}
-        /* ADDED: New style for Reorder Buttons */
+        
         .btn-move {
-            background: #007bff; /* Secondary/Info color */
+            background: #007bff; 
             color: white;
-            padding: 6px 8px; /* Slightly smaller padding */
-            font-size: 10px; /* Smaller font */
+            padding: 6px 8px; 
+            font-size: 10px; 
             margin-right: 5px;
         }
 
@@ -161,6 +169,7 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            overflow-y: auto; /* Allow scrolling within modal */
         }
         .modal-content {
             background: white;
@@ -168,12 +177,16 @@
             border-radius: 8px;
             width: 90%;
             max-width: 500px;
+            margin: 20px auto; /* Add margin for scroll */
         }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;}
+        
+        /* Complex field grid for desktop */
+        .complex-field { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
         /* Status Badges */
-        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white;}
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white; display: inline-block;}
         .st-on-track { background-color: #28a745; }
         .st-delayed { background-color: #dc3545; }
         .st-on-hold { background-color: #6c757d; }
@@ -194,6 +207,42 @@
             border-radius: 4px;
         }
         .login-instructions ul, .login-instructions ol { margin: 5px 0 0 0; padding-left: 20px; }
+
+        /* --- MOBILE RESPONSIVE STYLES --- */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            
+            /* Login Adjustments */
+            .login-box { padding: 20px; }
+            
+            /* Stack Header */
+            header { flex-direction: column; text-align: center; gap: 10px; }
+            
+            /* Stack List Items */
+            .item-row { flex-direction: column; align-items: flex-start; }
+            
+            /* Action Buttons on Mobile */
+            .row-actions { 
+                width: 100%; 
+                text-align: left; 
+                margin-top: 10px; 
+                display: flex; 
+                flex-wrap: wrap; 
+                gap: 5px;
+            }
+            .btn-move, .btn-edit, .btn-danger {
+                padding: 8px 12px; /* Larger touch targets */
+                margin-right: 0;
+                font-size: 12px;
+            }
+
+            /* Stack Form Grids */
+            .complex-field { grid-template-columns: 1fr; }
+            
+            /* Task Input Area */
+            #tab-tasks > div { flex-direction: column; }
+            #new-task-input { margin-bottom: 10px; }
+        }
 
     </style>
 </head>
@@ -313,7 +362,7 @@
                 <input type="text" id="m-name" class="w-full">
             </div>
             
-            <div class="complex-field" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="complex-field">
                 <div class="form-group">
                     <label>Status</label>
                     <select id="m-status" class="w-full">
@@ -537,9 +586,10 @@
             localData.dailyTasks.forEach((task, index) => {
                 const li = document.createElement('li');
                 li.className = 'item-row';
+                // UPDATED: Swapped inline styles for 'row-actions' class for mobile responsive support
                 li.innerHTML = `
                     <span>${index + 1}. ${task.name}</span>
-                    <div style="min-width: 250px; text-align:right;">
+                    <div class="row-actions">
                         <button class="btn btn-move" onclick="moveItem('daily', ${index}, -1)">Up</button>
                         <button class="btn btn-move" onclick="moveItem('daily', ${index}, 1)">Down</button>
                         <button class="btn btn-edit" onclick="editItem('daily', ${index})">Edit</button>
@@ -562,6 +612,7 @@
                 const statusClass = 'st-' + item.status.toLowerCase().replace(' ', '-');
                 const div = document.createElement('div');
                 div.className = 'item-row';
+                // UPDATED: Swapped inline styles for 'row-actions' class for mobile responsive support
                 div.innerHTML = `
                     <div style="flex-grow:1">
                         <div style="font-weight:bold; font-size:1.1em;">${item.name}</div>
@@ -574,7 +625,7 @@
                             <strong>Note:</strong> ${item.notes}
                         </div>
                     </div>
-                    <div style="min-width: 250px; text-align:right;">
+                    <div class="row-actions">
                         <button class="btn btn-move" onclick="moveItem('${type}', ${index}, -1)">Up</button>
                         <button class="btn btn-move" onclick="moveItem('${type}', ${index}, 1)">Down</button>
                         <button class="btn btn-edit" onclick="editItem('${type}', ${index})">Edit</button>
@@ -650,7 +701,7 @@
                 complexFields.forEach(el => el.style.display = 'none');
             } else {
                 document.getElementById('modal-title').textContent = isNew ? (type === 'project' ? 'Add Project' : 'Add Active Task') : 'Edit Item';
-                complexFields.forEach(el => el.style.display = 'grid');
+                complexFields.forEach(el => el.style.removeProperty('display')); // Allow grid to take over
             }
             
             let item = {name: '', status: 'On Track', priority: 'High', milestone: '', notes: ''};
