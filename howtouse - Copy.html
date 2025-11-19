@@ -126,14 +126,14 @@
         <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
         <h2>Pro-Tip: Automate the Outlook Sync</h2>
-        <p>The Outlook Agent can be configured to run automatically at login or on a schedule.</p>
+        <p>Don't want to manually run the Agent every morning? Set it to run automatically!</p>
         
-        <h3>Option A: Run at Login (Recommended)</h3>
-        <p>The agent manages its own startup shortcut based on your config file.</p>
+        <h3>Option A: Startup Folder (Runs once at login)</h3>
         <ol>
-            <li>Open <code>G:\dailybriefingconfig.txt</code>.</li>
-            <li>Set <code>RunAtLogin=Yes</code> to have the agent automatically create a shortcut in your Startup folder every time it runs.</li>
-            <li>Set <code>RunAtLogin=No</code> to have the agent delete the shortcut if it exists, preventing it from running at login.</li>
+            <li>Press <code>Win + R</code> on your keyboard.</li>
+            <li>Type <code>shell:startup</code> and press Enter.</li>
+            <li>Right-click inside the folder and select <strong>New > Shortcut</strong>.</li>
+            <li>Browse to <code>G:\AquaDailyBriefing.exe</code> and click Finish.</li>
         </ol>
 
         <h3>Option B: Task Scheduler (Runs hourly)</h3>
@@ -148,7 +148,7 @@
             <li>Check <strong>Repeat task every:</strong> <code>1 hour</code> for a duration of <code>10 hours</code>.</li>
         </ol>
         
-        <p class="note">Note: If running automatically via any method, you might want to open <code>G:\dailybriefingconfig.txt</code> and change <code>Prompt=Yes</code> to <code>Prompt=No</code> so the agent runs silently in the background without a confirmation box.</p>
+        <p class="note">Note: If running automatically, you might want to open <code>G:\dailybriefingconfig.txt</code> and change <code>Prompt=Yes</code> to <code>Prompt=No</code> so it runs silently in the background.</p>
 
         <br>
         <a href="index.html" class="back-link">&larr; Back to Report</a>

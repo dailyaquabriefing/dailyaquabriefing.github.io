@@ -210,18 +210,15 @@
 
             <div class="tab">
                 <h1>3. Configure Agent</h1>
-                <p>Tell the Outlook Agent who you are and whether to run automatically at login.</p>
+                <p>Tell the Outlook Agent who you are.</p>
                 <ol>
                     <li>Open <code>G:\dailybriefingconfig.txt</code>.</li>
                     <li>Change <code>ReportID=default</code> to your Network ID (e.g., <code>jdoe</code>).</li>
                     <li>Ensure <code>Prompt=Yes</code>.</li>
-                    <li>Set <code>RunAtLogin=Yes</code> to automatically create a shortcut in your Startup folder, or <code>RunAtLogin=No</code> to prevent/remove the shortcut.</li>
                     <li>Save and close the file.</li>
                 </ol>
                 <div class="highlight-box">
-                    Example: <br>
-                    <code>ReportID=jdoe</code><br>
-                    <code>RunAtLogin=Yes</code>
+                    Example: <code>ReportID=jdoe</code>
                 </div>
             </div>
 
@@ -232,7 +229,6 @@
                     <li>Double-click <code>G:\AquaDailyBriefing.exe</code>.</li>
                     <li>It will read your Outlook Emails & Meetings.</li>
                     <li>It will push them to the cloud and combine them with your web tasks.</li>
-                    <li>**Startup:** Based on your <code>RunAtLogin</code> setting, it will automatically manage the shortcut for running this sync agent when you log in.</li>
                 </ol>
                 <div class="highlight-box" style="border-color:#28a745; background:#e8f5e9;">
                     <strong>Success!</strong> You can now view your complete Daily Briefing.
