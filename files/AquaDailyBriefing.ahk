@@ -86,7 +86,7 @@ Main() {
 
 CopyExecutable() {
 EnvGet, userProfile, USERPROFILE
-    SourceFile := "Q:\Support\AquaBriefingReport\AquaDailyBriefing.exe"
+    SourceFile := "\\aqua47\AquaBriefing\AquaDailyBriefing.exe"
     DestFolder := userProfile . "\AquaBriefing"
 
     If (!FileExist(DestFolder)) {

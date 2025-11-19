@@ -1,0 +1,12 @@
+[Settings]
+; === Main User ===
+; Edit: Change 'default' to your Aqua Network ID (e.g. jdoe).
+; This must match the ID you linked in the Web Dashboard.
+ReportID=default
+
+; === Automation ===
+; Edit: Set to 'No' if you run this via Task Scheduler (runs silently in background).
+; Edit: Set to 'Yes' to see a confirmation popup and "View Report" button after sync.
+Prompt=Yes
+; Run this at login 
+RunAtLogin=Yes
