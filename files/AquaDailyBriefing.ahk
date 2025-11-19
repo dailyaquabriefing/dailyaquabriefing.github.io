@@ -7,8 +7,7 @@
 SendMode Input
 SetWorkingDir, %A_ScriptDir%
 
-;
---- CONFIGURATION ---
+; --- CONFIGURATION ---
 global g_ReportID
 global g_Prompt
 global g_RunAtLogin
@@ -28,13 +27,13 @@ Main()
 ExitApp
 
 Main() {
- ; --- NEW STEP: 0. Ensure the executable is locally copied ---
+    ; --- NEW STEP: 0. Ensure the executable is locally copied ---
     CopyExecutable()
 
-; --- NEW STEP: 0b. Ensure the config file is locally copied (NEW) ---
+    ; --- NEW STEP: 0b. Ensure the config file is locally copied (NEW) ---
     CopyConfigFile()
 
-Loop {
+    Loop {
         ; Read values from INI (Now run inside the Main loop)
         IniRead, g_ReportID, %configFile%, %configSection%, ReportID, default
         IniRead, g_Prompt, %configFile%, %configSection%, Prompt, Yes
@@ -48,25 +47,20 @@ Loop {
         InputBox, InputID, Aqua Briefing Setup, Please enter your Aqua Network ID (example: jdoe) to complete configuration., , 500, 150
         
         ; If user cancels, exit the app
-        if (ErrorLevel = 1) 
-    {
-        ; ErrorLevel 1 means Cancel was pressed
-        ExitApp
-    }
+        if (ErrorLevel = 1) {
+            ; ErrorLevel 1 means Cancel was pressed
+            ExitApp
+        }
         
         ; If user provides input, save it to the config file
-        if (ErrorLevel = 0)
-        {
+        if (ErrorLevel = 0) {
             NewID := Trim(InputID)
-            if (NewID != "")
-            {
+            if (NewID != "") {
                 IniWrite, %NewID%, %configFile%, %configSection%, ReportID
                 ; Set g_ReportID temporarily so the next loop iteration can re-read it
                 g_ReportID := NewID
                 ; The loop will now repeat, IniRead will fetch the new ID, and it will break out.
-            }
-            Else
-            {
+            } else {
                 MsgBox, 0x10, Configuration Error, Network ID cannot be empty. Please re-enter your ID.
             }
         }
@@ -84,7 +78,6 @@ Loop {
 
     ; 3. Push to Firebase (Safe Mode)
     PushOutlookData(unreadEmailsObj, todayMeetingsObj)
-
 }
 
 ; ====================================================================================
@@ -97,8 +90,7 @@ CopyExecutable() {
     DestFolder := "C:\AquaBriefing\"
 
     ; 2. Check if the destination folder exists, and if not, create it
-    If (!FileExist(DestFolder))
-    {
+    If (!FileExist(DestFolder)) {
         FileCreateDir, %DestFolder%
     }
 
@@ -107,13 +99,9 @@ CopyExecutable() {
     FileCopy, %SourceFile%, %DestFolder%, 1
 
     ; 4. Check if the copy operation was successful (Optional but recommended)
-    If (ErrorLevel = 0)
-    {
-        ; MsgBox, 64, Success, AquaDailyBriefing.exe was successfully copied to %DestFolder%
-        ; NOTE: Commenting out the success MsgBox to avoid unnecessary popups on every run.
-    }
-    Else
-    {
+    If (ErrorLevel = 0) {
+        ; Success, no popup needed.
+    } Else {
         ; ErrorLevel will be 1 if the operation failed (e.g., file not found, permission issue)
         MsgBox, 16, Error, Failed to copy AquaDailyBriefing.exe. Please ensure Q:\ drive is mapped and you have permissions. ErrorLevel: %ErrorLevel%
         ExitApp ; Critical error: Stop execution if the executable cannot be copied.
@@ -128,19 +116,15 @@ CopyExecutable() {
 CopyConfigFile() {
     ; Define paths
     SourceFile := "Q:\Support\AquaBriefingReport\dailybriefingconfig.txt"
-    DestFileG   := "G:\dailybriefingconfig.txt" ; New destination
+    DestFileG  := "G:\dailybriefingconfig.txt" ; New destination
 
-    
-    ; 2. Check if the file already exists in the G:\ destination.
-    ;    Only copy if it DOES NOT exist (!FileExist).
-    If (!FileExist(DestFileG))
-    {
+    ; Check if the file already exists in the G:\ destination.
+    ; Only copy if it DOES NOT exist (!FileExist).
+    If (!FileExist(DestFileG)) {
         ; Copy to G:\ (Required for IniRead at the top of the script).
-        ; NOTE: Removed the '1' parameter, as we only want to copy if it doesn't exist.
         FileCopy, %SourceFile%, %DestFileG%
         
-        If (ErrorLevel != 0)
-        {
+        If (ErrorLevel != 0) {
             ; Note: This error is critical because the script looks for the config in G:\
             MsgBox, 16, Error, Failed to copy dailybriefingconfig.txt to G:\.
             MsgBox, 16, Error, Please ensure G:\ drive is mapped and the file exists on Q:\.
@@ -151,19 +135,61 @@ CopyConfigFile() {
 
 
 ; ====================================================================================
+; --- BULLETPROOF OUTLOOK COM LOADER (SAFE) ---
+; ====================================================================================
+
+GetOutlookSafe() {
+    ; Try multiple times in case Outlook is still starting / busy.
+    Loop, 12  ; ~6 seconds total (12 * 500ms)
+    {
+        try {
+            ; Prefer an existing Outlook instance if one is running
+            try {
+                ol := ComObjActive("Outlook.Application")
+            } catch {
+                ol := ComObjCreate("Outlook.Application")
+            }
+
+            ns := ol.GetNamespace("MAPI")
+            ns.Logon("", "", true, false)  ; Hidden MAPI session
+            return ns
+        } catch e {
+            Sleep, 500
+        }
+    }
+
+    ; If we get here, Outlook COM never became ready.
+    MsgBox, 48, Outlook Error,
+    ( LTrim Join`r`n
+        Unable to establish a COM connection to Outlook after several attempts.
+
+        Possible causes:
+        - Outlook is still starting or very busy.
+        - A security prompt is blocking programmatic access.
+        - Outlook is running with different elevation (Run as administrator)
+          than this app.
+
+        Try:
+        1) Open Outlook normally and let it finish loading.
+        2) Check: File → Options → Trust Center → Trust Center Settings → Programmatic Access.
+        3) Make sure neither Outlook nor this app is running as Administrator.
+        4) Then run AquaDailyBriefing again.
+    )
+    return ""
+}
+
+
+; ====================================================================================
 ; --- 1. Get Outlook Emails (HTML Formatted) ---
-;
 ; ====================================================================================
 
 GetUnreadEmails() {
     emails := ""
     try {
-        ; ----------------------------------------------------------
-        ; NEW METHOD: Load Outlook COM without opening Outlook UI
-        ; ----------------------------------------------------------
-        ol := ComObjCreate("Outlook.Application")
-        ns := ol.GetNamespace("MAPI")
-        ns.Logon("", "", true, false)
+        ; Use safe COM loader (works even if Outlook not already open)
+        ns := GetOutlookSafe()
+        if (!ns)
+            return {content: "Error: Unable to connect to Outlook for email retrieval.", count: 0}
 
         inbox := ns.GetDefaultFolder(6)    ; 6 = Inbox
 
@@ -192,7 +218,6 @@ GetUnreadEmails() {
         ; Loop through all unread emails
         ; ----------------------------------------------------------
         for item in restricted {
-
             ; ---------------------------
             ; Clean body and subject
             ; ---------------------------
@@ -224,7 +249,7 @@ GetUnreadEmails() {
             ; ---------------------------
             ; Sent Time
             ; ---------------------------
-             try {
+            try {
                 sentTime := item.SentOn
             } catch {
                 sentTime := "Unknown"
@@ -251,7 +276,6 @@ GetUnreadEmails() {
 }
 
 
-;
 ; ====================================================================================
 ; --- 2. Date Helper Functions (YOUR EXACT LOGIC) ---
 ; ====================================================================================
@@ -263,13 +287,16 @@ OleDateToYmdHMS(oleDate) {
     ok := DllCall("OleAut32\VariantTimeToSystemTime", "double", dateVal, "ptr", &st, "int")
     if (!ok)
         return ""
-    y := NumGet(st, 0, "UShort"), m := NumGet(st, 2, "UShort"), d := NumGet(st, 6, "UShort")
-    hh := NumGet(st, 8, "UShort"), mi := NumGet(st, 10, "UShort"), ss := NumGet(st, 12, "UShort")
+    y  := NumGet(st, 0,  "UShort")
+    m  := NumGet(st, 2,  "UShort")
+    d  := NumGet(st, 6,  "UShort")
+    hh := NumGet(st, 8,  "UShort")
+    mi := NumGet(st, 10, "UShort")
+    ss := NumGet(st, 12, "UShort")
     return Format("{:04}{:02}{:02}{:02}{:02}{:02}", y,m,d,hh,mi,ss)
 }
 
 FormatOleDate(oleDate, ByRef outDate, ByRef outTime) {
- 
     ts := OleDateToYmdHMS(oleDate)
     if (ts = "") { 
         outDate := "", outTime := ""
@@ -281,10 +308,9 @@ FormatOleDate(oleDate, ByRef outDate, ByRef outTime) {
     return true
 }
 
-;
+
 ; ====================================================================================
 ; --- 3. Get Outlook Meetings (Using Your Date Logic) ---
-;
 ; ====================================================================================
 
 GetTodayMeetings() {
@@ -292,25 +318,23 @@ GetTodayMeetings() {
     Today_WDay := A_WDay
     if (Today_WDay = 7)
         return {content: "Today is Saturday - no meetings remaining this week.", count: 0}
+
     DaysToAdd := 6 - Today_WDay 
+
     FormatTime, StartTime, %A_Now%, MMMM d, yyyy 00:00
     EndTime := A_Now
     EndTime += %DaysToAdd%, Days
     FormatTime, EndTime, %EndTime%, MMMM d, yyyy 23:59
+
     Filter := "[Start] >= '" . StartTime . "' AND [Start] <= '" . EndTime . "'"
 
-    try {
-        olApp := ComObjActive("Outlook.Application")
-    } catch {
-        try olApp := ComObjCreate("Outlook.Application")
-        catch e
-            return {content: "Error: Could not start or connect to Outlook.", count: 0} 
-    }
+    ; Use the same safe Outlook loader here
+    ns := GetOutlookSafe()
+    if (!ns)
+        return {content: "Error: Could not start or connect to Outlook.", count: 0}
 
     try {
-        ns := olApp.GetNamespace("MAPI")
         cal := ns.GetDefaultFolder(olFolderCalendar)
-     
         items := cal.Items
         items.IncludeRecurrences := 1
         items.Sort("[Start]")
@@ -321,39 +345,35 @@ GetTodayMeetings() {
         out := "<b>Your Meetings (Today - Friday):</b><br>===============================<br><br>"
         counter := 1 
 
- 
         for item in filtered {
             try {
-                 if !FormatOleDate(item.Start, meetDate, startTime)
+                if !FormatOleDate(item.Start, meetDate, startTime)
                     continue
                 FormatOleDate(item.End, dummyDate, endTime)
-            
- 
-     
-                subject  := item.Subject ? item.Subject : "(No Subject)"
+
+                subject  := item.Subject  ? item.Subject  : "(No Subject)"
                 location := item.Location ? item.Location : "(No Location)"
-                meetDate := item.Start ? item.Start : "(No Date)"
-                endDate  := item.End ? item.End : "(No End Date)"
+                meetDate := item.Start    ? item.Start    : "(No Date)"
+                endDate  := item.End      ? item.End      : "(No End Date)"
+                
                 body := item.Body
                 if (body != "") {
                     body := RegExReplace(body, "\r|\n", " ")
                     body := SubStr(body, 1, 200)
-         
- 
                     if (StrLen(item.Body) > 200)
                         body .= "..."
-                } else
+                } else {
                     body := "(No Notes)"
+                }
 
-           
-             ; --- MODIFIED to include counter ---
-                out .= "" . counter . "<b>" . ". Date/Time:</b>&nbsp;" . meetDate . " - " . endTime . "<br>"
-                out .= "<small style='color:#666; font-size:0.8em;'>&nbsp;&nbsp;&nbsp;&nbsp;<b>Subject  :</b>&nbsp;" . subject . "</small><br>"
+                ; --- Include counter ---
+                out .= "" . counter . "<b>. Date/Time:</b>&nbsp;" . meetDate . " - " . endTime . "<br>"
+                out .= "<small style='color:#666; font-size:0.8em;'>&nbsp;&nbsp;&nbsp;&nbsp;<b>Subject  :</b>&nbsp;" . subject  . "</small><br>"
                 out .= "<small style='color:#666; font-size:0.8em;'>&nbsp;&nbsp;&nbsp;&nbsp;<i>Location :</i>&nbsp;" . location . "</small><br>"
-                out .= "<small style='color:#666; font-size:0.8em;'>&nbsp;&nbsp;&nbsp;&nbsp;<i>Notes    :</i>&nbsp;" . body . "</small><br>"
+                out .= "<small style='color:#666; font-size:0.8em;'>&nbsp;&nbsp;&nbsp;&nbsp;<i>Notes    :</i>&nbsp;" . body     . "</small><br>"
                 out .= "------------------------------------<br>"
                 
-                counter++ ; <-- ADDED
+                counter++
 
             } catch err {
                 continue
@@ -367,59 +387,38 @@ GetTodayMeetings() {
     }
 }
 
+
 ; ====================================================================================
-;
---- 4. STARTUP SHORTCUT MANAGEMENT ---
+; --- 4. STARTUP SHORTCUT MANAGEMENT ---
 ; ====================================================================================
 
 StartUp() {
     global g_RunAtLogin
     
-    ;    Define paths (used for both creation and deletion)
-    
-    ; *** MODIFIED LINE: StartupFolder changed to C:\AquaBriefing\ ***
-     StartupFolder := A_StartMenu . "\Programs\Startup"
-    
-    ; *** MODIFIED LINE: TargetExe changed to C:\AquaBriefing\AquaDailyBriefing.exe ***
-    TargetExe := "C:\AquaBriefing\AquaDailyBriefing.exe"
-    
-    ; *** MODIFIED LINE: ShortcutPath updated to reflect new folder ***
-    ShortcutPath := StartupFolder . "\AquaDailyBriefing.lnk"
+    ; Define paths (used for both creation and deletion)
+    StartupFolder := A_StartMenu . "\Programs\Startup"
+    TargetExe     := "C:\AquaBriefing\AquaDailyBriefing.exe"
+    ShortcutPath  := StartupFolder . "\AquaDailyBriefing.lnk"
     
     ; Normalize the config value for reliable comparison
     CleanRunAtLogin := RegExReplace(g_RunAtLogin, "[\s""]", "")
     
-    if (CleanRunAtLogin = "Yes") 
-    {
+    if (CleanRunAtLogin = "Yes") {
         ; --- Action: Create Shortcut (if needed) ---
-        ;Check if the shortcut already exists
-        if (!FileExist(ShortcutPath))
-        {
-            ; Create the shortcut
+        if (!FileExist(ShortcutPath)) {
             FileCreateShortcut, %TargetExe%, %ShortcutPath%
-            
-            ; Error check is optional here, as before
-            ;if (ErrorLevel != 0) { ... }
         }
-    } 
-    else if (CleanRunAtLogin = "No") 
-    {
+    } else if (CleanRunAtLogin = "No") {
         ; --- Action: Delete Shortcut (if it exists) ---
-        ; Check if the shortcut exists
-        if (FileExist(ShortcutPath))
-        {
-            ;     Delete the shortcut file
+        if (FileExist(ShortcutPath)) {
             FileDelete, %ShortcutPath%
-            
-            ;  Optional: Error check
-            if (ErrorLevel != 0)
-            {
-                ;
+            if (ErrorLevel != 0) {
                 MsgBox, 0x10, Shortcut Error, Failed to delete the startup shortcut: %ShortcutPath%
             }
         }
     }
 }
+
 
 ; ====================================================================================
 ; --- 4b. DESKTOP SHORTCUT MANAGEMENT (NEW) ---
@@ -428,57 +427,30 @@ StartUp() {
 DesktopShortcut() {
     global g_RunAtLogin
     
-    ; Define paths (used for both creation and deletion)
-    
-    ; A_Desktop is a built-in variable for the user's desktop folder
     DesktopFolder := A_Desktop
+    TargetExe     := "C:\AquaBriefing\AquaDailyBriefing.exe"
+    ShortcutPath  := DesktopFolder . "\AquaDailyBriefing.lnk"
     
-    ; Target EXE is the same as the Startup folder logic
-    TargetExe := "C:\AquaBriefing\AquaDailyBriefing.exe"
-    
-    ; Shortcut Path for the Desktop
-    ShortcutPath := DesktopFolder . "\AquaDailyBriefing.lnk"
-    
-    ; Normalize the config value for reliable comparison
     CleanRunAtLogin := RegExReplace(g_RunAtLogin, "[\s""]", "")
     
-    if (CleanRunAtLogin = "Yes") 
-    {
-        ; --- Action: Create Shortcut (if needed) ---
-        ; Check if the shortcut already exists
-        if (!FileExist(ShortcutPath))
-        {
-            ; Create the shortcut (Normal run state)
+    if (CleanRunAtLogin = "Yes") {
+        if (!FileExist(ShortcutPath)) {
             FileCreateShortcut, %TargetExe%, %ShortcutPath%, , , , , , , 1
-            
-            ; Optional: Error check
-            ;if (ErrorLevel != 0) { ... }
         }
-    } 
-    else if (CleanRunAtLogin = "No") 
-    {
-        ; --- Action: Delete Shortcut (if it exists) ---
-        ; Check if the shortcut exists
-        if (FileExist(ShortcutPath))
-        {
-            ; Delete the shortcut file
+    } else if (CleanRunAtLogin = "No") {
+        if (FileExist(ShortcutPath)) {
             FileDelete, %ShortcutPath%
-            
-            ; Optional: Error check
-            ;if (ErrorLevel != 0) { ... }
         }
     }
 }
 
-;
+
 ; ====================================================================================
 ; --- UTILITIES ---
 ; ====================================================================================
 
-
 PushOutlookData(emailsObj, meetingsObj) {
     global g_ReportID, g_Prompt
-    
     
     functionURL := "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/updateBriefing"
 
@@ -491,23 +463,18 @@ PushOutlookData(emailsObj, meetingsObj) {
     FormatTime, dateStr, %A_Now%, dddd, MMMM d, yyyy
     
     json_payload := "{"
-    ; Corrected line continuation for safer compilation
-    json_payload .= """reportId"": """    . safeUploadID . """, "
-    json_payload .= """dateString"": """  . dateStr      . """, "
-    
-    json_payload .= """meetings"": """    . safeMeetings . """, "
+    json_payload .= """reportId"": """    . safeUploadID     . """, "
+    json_payload .= """dateString"": """  . dateStr          . """, "
+    json_payload .= """meetings"": """    . safeMeetings     . """, "
     json_payload .= """meetings_count"": " . meetingsObj.count . ", "
-    
-    json_payload .= """emails"": """       . safeEmails   . """, "
-    json_payload .= """emails_count"": "   . emailsObj.count . ", "
-    
+    json_payload .= """emails"": """      . safeEmails       . """, "
+    json_payload .= """emails_count"": "  . emailsObj.count  . ", "
     json_payload .= """tasks"": """", "
     json_payload .= """projects"": """", "
     json_payload .= """activeTasks"": """", "
     json_payload .= """tasks_count"": 0, "
     json_payload .= """projects_count"": 0, "
     json_payload .= """activeTasks_count"": 0"
-    
     json_payload .= "}"
 
     whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
@@ -521,8 +488,7 @@ PushOutlookData(emailsObj, meetingsObj) {
 
         if (whr.Status == 200) {
             if (CleanPrompt = "Yes") {
-                
-                ;                --- DETERMINE GREETING BASED ON TIME OF DAY ---
+                ; --- DETERMINE GREETING BASED ON TIME OF DAY ---
                 currentHour := A_Hour
                 if (currentHour >= 5 && currentHour < 12)
                     greeting := "Good Morning!"
@@ -530,31 +496,28 @@ PushOutlookData(emailsObj, meetingsObj) {
                     greeting := "Good Afternoon!"
                 else
                     greeting := "Good Evening!"
+
                 ; --- MESSAGE COMPOSITION ---
-                
-                emailWord := (emailsObj.count = 1) ? "email" : "emails"
+                emailWord   := (emailsObj.count   = 1) ? "email"   : "emails"
                 meetingWord := (meetingsObj.count = 1) ? "meeting" : "meetings"
                 
-                meetingsSummary := ""
                 if (meetingsObj.count > 0)
                     meetingsSummary := "You have (" . meetingsObj.count . ") scheduled " . meetingWord . " through Friday."
                 else
                     meetingsSummary := "No meetings scheduled through Friday. Enjoy the open calendar!"
-                emailsSummary := ""
+
                 if (emailsObj.count > 0)
                     emailsSummary := "You have (" . emailsObj.count . ") unread " . emailWord . " to catch up on (last 24h)."
                 else
                     emailsSummary := "Your inbox is clear! (No unread emails in the last 24h)."
-                ; Final Message
-                
+
                 msg := greeting . "`n`n"
                 msg .= "- " . meetingsSummary . "`n"
-                msg .= "- " . emailsSummary . "`n`n"
+                msg .= "- " . emailsSummary   . "`n`n"
                 msg .= "View your full Aqua Daily Briefing Report?"
+
                 MsgBox, 68, Aqua Daily Briefing, % msg
                 IfMsgBox, Yes
-                    ;
-                    ; Corrected line: Ensure the Run command expression is on a single line
                     Run, % "https://dailyaquabriefing.github.io/?daily=" . g_ReportID
             }
         } else {
@@ -565,14 +528,10 @@ PushOutlookData(emailsObj, meetingsObj) {
     }
 }
 
-
-
 EscapeJSON(str) {
-  ; This must be a standalone function
     str := StrReplace(str, "\", "\\")
     str := StrReplace(str, """", "\""")
     str := StrReplace(str, "`r", "\r")
     str := StrReplace(str, "`n", "\n")
     return str
-
 }
