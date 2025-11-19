@@ -98,7 +98,6 @@
         <p>Since the web cannot see your local Outlook, you must run the "Agent" to sync that data.</p>
         <div class="step-box">
             <ol>
-                <li>Ensure <strong>Microsoft Outlook</strong> is open on your computer.</li>
                 <li>Double-click <code>G:\AquaDailyBriefing.exe</code>.</li>
                 <li>Wait a few seconds for the confirmation popup.</li>
             </ol>
@@ -126,30 +125,50 @@
         <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
         <h2>Pro-Tip: Automate the Outlook Sync</h2>
-        <p>Don't want to manually run the Agent every morning? Set it to run automatically!</p>
+        <p>The Outlook Agent can be configured to run automatically at login using the Startup folder.</p>
         
-        <h3>Option A: Startup Folder (Runs once at login)</h3>
+        <h3>Run at Login (Recommended)</h3>
+        <p>The agent manages its own startup shortcut based on your config file.</p>
         <ol>
-            <li>Press <code>Win + R</code> on your keyboard.</li>
-            <li>Type <code>shell:startup</code> and press Enter.</li>
-            <li>Right-click inside the folder and select <strong>New > Shortcut</strong>.</li>
-            <li>Browse to <code>G:\AquaDailyBriefing.exe</code> and click Finish.</li>
-        </ol>
-
-        <h3>Option B: Task Scheduler (Runs hourly)</h3>
-        <p>This keeps your email list fresh all day.</p>
-        <ol>
-            <li>Open the <strong>Task Scheduler</strong> app.</li>
-            <li>Click <strong>Create Basic Task...</strong>.</li>
-            <li>Name it "Briefing Sync".</li>
-            <li><strong>Trigger:</strong> Select "Daily" at "7:00 AM".</li>
-            <li><strong>Action:</strong> "Start a program" -> Browse to <code>G:\AquaDailyBriefing.exe</code>.</li>
-            <li>Finish. Then right-click the task > <strong>Properties</strong> > <strong>Triggers</strong> > <strong>Edit</strong>.</li>
-            <li>Check <strong>Repeat task every:</strong> <code>1 hour</code> for a duration of <code>10 hours</code>.</li>
+            <li>Open <code>G:\dailybriefingconfig.txt</code>.</li>
+            <li>Set <code>RunAtLogin=Yes</code> to have the agent automatically create a shortcut in your Startup folder every time it runs.</li>
+            <li>Set <code>RunAtLogin=No</code> to have the agent delete the shortcut if it exists, preventing it from running at login.</li>
         </ol>
         
-        <p class="note">Note: If running automatically, you might want to open <code>G:\dailybriefingconfig.txt</code> and change <code>Prompt=Yes</code> to <code>Prompt=No</code> so it runs silently in the background.</p>
+        <p class="note">Note: If running automatically, you might want to open <code>G:\dailybriefingconfig.txt</code> and change <code>Prompt=Yes</code> to <code>Prompt=No</code> so the agent runs silently in the background without a confirmation box.</p>
 
+        <h2>🗓️ Automated Daily Briefing Workflow</h2>
+        <p>Once the Outlook Agent is configured to run automatically (via <code>RunAtLogin=Yes</code>), the system manages your briefing data efficiently:</p>
+        
+        <div class="step-box">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #ddd; color: #005a9e;">Step</th>
+                        <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #ddd; color: #005a9e;">Process & Benefit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold; width: 35%;">1. System Login</td>
+                        <td style="padding: 8px 0;">The Outlook Agent automatically starts running in the background upon computer login (morning, after lunch, etc.).</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">2. Data Gathering</td>
+                        <td style="padding: 8px 0;">The Agent securely gathers your **Upcoming Meetings** (Today through Friday) and **Unread Emails** (last 24 hours).</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">3. Confirmation</td>
+                        <td style="padding: 8px 0;">The system greets you with a brief confirmation message displaying the count of new meetings and emails.</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; font-weight: bold;">4. User Prompt</td>
+                        <td style="padding: 8px 0;">You are prompted to **View Your Aqua Daily Briefing!** to begin your organized day.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
         <br>
         <a href="index.html" class="back-link">&larr; Back to Report</a>
     </div>
