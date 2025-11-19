@@ -85,28 +85,22 @@ Main() {
 ; ====================================================================================
 
 CopyExecutable() {
-    ; 1. Define the source and destination paths
+EnvGet, userProfile, USERPROFILE
     SourceFile := "Q:\Support\AquaBriefingReport\AquaDailyBriefing.exe"
-    DestFolder := "C:\AquaBriefing\"
+    DestFolder := userProfile . "\AquaBriefing"
 
-    ; 2. Check if the destination folder exists, and if not, create it
     If (!FileExist(DestFolder)) {
         FileCreateDir, %DestFolder%
     }
 
-    ; 3. Copy the file
-    ; The '1' at the end means to overwrite the destination file if it already exists.
     FileCopy, %SourceFile%, %DestFolder%, 1
 
-    ; 4. Check if the copy operation was successful (Optional but recommended)
-    If (ErrorLevel = 0) {
-        ; Success, no popup needed.
-    } Else {
-        ; ErrorLevel will be 1 if the operation failed (e.g., file not found, permission issue)
-        MsgBox, 16, Error, Failed to copy AquaDailyBriefing.exe. Please ensure Q:\ drive is mapped and you have permissions. ErrorLevel: %ErrorLevel%
-        ExitApp ; Critical error: Stop execution if the executable cannot be copied.
+    If (ErrorLevel != 0) {
+        MsgBox, 16, Error, Failed to copy AquaDailyBriefing.exe. ErrorLevel: %ErrorLevel%
+        ExitApp
     }
 }
+
 
 
 ; ====================================================================================
@@ -393,11 +387,13 @@ GetTodayMeetings() {
 ; ====================================================================================
 
 StartUp() {
+EnvGet, userProfile, USERPROFILE
     global g_RunAtLogin
     
     ; Define paths (used for both creation and deletion)
     StartupFolder := A_StartMenu . "\Programs\Startup"
-    TargetExe     := "C:\AquaBriefing\AquaDailyBriefing.exe"
+    TargetExe := userProfile . "\AquaBriefing\AquaDailyBriefing.exe"
+
     ShortcutPath  := StartupFolder . "\AquaDailyBriefing.lnk"
     
     ; Normalize the config value for reliable comparison
@@ -425,10 +421,11 @@ StartUp() {
 ; ====================================================================================
 
 DesktopShortcut() {
+EnvGet, userProfile, USERPROFILE
     global g_RunAtLogin
     
     DesktopFolder := A_Desktop
-    TargetExe     := "C:\AquaBriefing\AquaDailyBriefing.exe"
+    TargetExe := userProfile . "\AquaBriefing\AquaDailyBriefing.exe"
     ShortcutPath  := DesktopFolder . "\AquaDailyBriefing.lnk"
     
     CleanRunAtLogin := RegExReplace(g_RunAtLogin, "[\s""]", "")
