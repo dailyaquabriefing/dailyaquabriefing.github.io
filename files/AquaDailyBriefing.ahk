@@ -130,15 +130,22 @@ CopyConfigFile() {
     SourceFile := "Q:\Support\AquaBriefingReport\dailybriefingconfig.txt"
     DestFileG   := "G:\dailybriefingconfig.txt" ; New destination
 
-      
-    ; 2. Copy to G:\ (Required for IniRead at the top of the script)
-    FileCopy, %SourceFile%, %DestFileG%, 1
-    If (ErrorLevel != 0)
+    
+    ; 2. Check if the file already exists in the G:\ destination.
+    ;    Only copy if it DOES NOT exist (!FileExist).
+    If (!FileExist(DestFileG))
     {
-        ; Note: This error is critical because the script looks for the config in G:\
-        MsgBox, 16, Error, Failed to copy dailybriefingconfig.txt to G:\.
-        MsgBox, 16, Error, Please ensure G:\ drive is mapped and the file exists on Q:\.
-        ExitApp
+        ; Copy to G:\ (Required for IniRead at the top of the script).
+        ; NOTE: Removed the '1' parameter, as we only want to copy if it doesn't exist.
+        FileCopy, %SourceFile%, %DestFileG%
+        
+        If (ErrorLevel != 0)
+        {
+            ; Note: This error is critical because the script looks for the config in G:\
+            MsgBox, 16, Error, Failed to copy dailybriefingconfig.txt to G:\.
+            MsgBox, 16, Error, Please ensure G:\ drive is mapped and the file exists on Q:\.
+            ExitApp
+        }
     }
 }
 
