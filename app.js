@@ -141,8 +141,8 @@ function loadOutlookData(reportId) {
             const data = doc.data();
 
             // Update Headers with Counts
-            headerMeetings.textContent = `4. This Week's Meetings (${data.meetings_count || 0})`;
-            headerEmails.textContent   = `5. Unread Emails (Last 24h) (${data.emails_count || 0})`;
+            headerMeetings.textContent = `4. Meetings (${data.meetings_count || 0})`;
+            headerEmails.textContent   = `5. Emails (${data.emails_count || 0})`;
             
             // Update Content using original app.js logic (Linkify data)
             meetingsContent.innerHTML = linkify(data.meetings || "") || "<i>No meetings found.</i>";
