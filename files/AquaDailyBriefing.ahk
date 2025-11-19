@@ -158,33 +158,52 @@ CopyConfigFile() {
 GetUnreadEmails() {
     emails := ""
     try {
-        ol := GetOutlook()
-        if !IsObject(ol)
-            return {content: ol, count: 0} 
+        ; ----------------------------------------------------------
+        ; NEW METHOD: Load Outlook COM without opening Outlook UI
+        ; ----------------------------------------------------------
+        ol := ComObjCreate("Outlook.Application")
         ns := ol.GetNamespace("MAPI")
-        inbox := ns.GetDefaultFolder(6)
+        ns.Logon("", "", true, false)
+
+        inbox := ns.GetDefaultFolder(6)    ; 6 = Inbox
+
+        ; --- Build 24-hour filter ---
         yesterday := A_Now
         EnvAdd, yesterday, -1, Days
         FormatTime, filterTime, %yesterday%, MM/dd/yyyy hh:mm tt
+
         filter := "[Unread] = true AND [ReceivedTime] >= '" . filterTime . "'"
+
         restricted := inbox.Items.Restrict(filter)
         restricted.Sort("[ReceivedTime]", True)
+
         if (restricted.Count = 0)
             return {content: "No unread emails in the last 24 hours.", count: 0}
-        
-        emails .= "&nbsp;&nbsp;&nbsp;&nbsp;<small style='color:#6c7475; font-size:0.9em;'>Unread emails (last 24h): Sent date\time, sender, subject, and email preview...</small><br><br>"
-        counter := 1 
-    
+
+        ; --- Header text ---
+        emails .= "&nbsp;&nbsp;&nbsp;&nbsp;"
+        emails .= "<small style='color:#6c7475; font-size:0.9em;'>"
+        emails .= "Unread emails (last 24h): Sent date/time, sender, subject, and email preview..."
+        emails .= "</small><br><br>"
+
+        counter := 1    
+
+        ; ----------------------------------------------------------
+        ; Loop through all unread emails
+        ; ----------------------------------------------------------
         for item in restricted {
-            ; --- Clean the item body to plain text ---
+
+            ; ---------------------------
+            ; Clean body and subject
+            ; ---------------------------
             CleanBody := item.Body
             CleanSubject := item.Subject
 
-            ; Merge real paragraph boundaries
+            ; Merge fake paragraph boundaries
             CleanBody := RegExReplace(CleanBody, "(?i)</p>\s*<p[^>]*>", " ")
             CleanBody := RegExReplace(CleanBody, "(?i)&lt;/p&gt;\s*&lt;p[^&]*&gt;", " ")
 
-            ;  Remove all real HTML tags
+            ; Remove HTML tags
             CleanBody := RegExReplace(CleanBody, "<[^>]*>", "")
             CleanBody := RegExReplace(CleanBody, "(?i)&lt;/?p[^&]*&gt;", "")
             CleanSubject := RegExReplace(CleanSubject, "<[^>]*>", "")
@@ -193,34 +212,44 @@ GetUnreadEmails() {
             CleanBody := StrReplace(StrReplace(CleanBody, "`r", " "), "`n", " ")
             CleanBody := RegExReplace(CleanBody, "\s+", " ")
             CleanBody := Trim(CleanBody)
+
             CleanSubject := StrReplace(StrReplace(CleanSubject, "`r", " "), "`n", " ")
             CleanSubject := RegExReplace(CleanSubject, "\s+", " ")
-           
             CleanSubject := Trim(CleanSubject)
 
-            ;Truncate
+            ; Truncate long values
             CleanBody := (StrLen(CleanBody) > 75) ? SubStr(CleanBody, 1, 75) . "..." : CleanBody
             CleanSubject := (StrLen(CleanSubject) > 50) ? SubStr(CleanSubject, 1, 50) . "..." : CleanSubject
-            
-            ;Format Sent Time (using simple property access if possible, otherwise could apply Ole helper here too)
-            try {
+
+            ; ---------------------------
+            ; Sent Time
+            ; ---------------------------
+             try {
                 sentTime := item.SentOn
             } catch {
                 sentTime := "Unknown"
             }
 
-          
-            emails .= "" . counter . "<b>" . ".</b> [" . sentTime . "]: " . item.SenderName . ": " . CleanSubject . "<br>"
-            emails .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<small style='color:#666; font-size:0.8em;'><i>EMAIL PREVIEW:</i>&nbsp;" . CleanBody . "</small><br><br>"
-            
-            counter++ 
+            ; ---------------------------
+            ; Build HTML block
+            ; ---------------------------
+            emails .= counter . "<b>.</b> [" . sentTime . "]: "
+                    . item.SenderName . ": " . CleanSubject . "<br>"
+
+            emails .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                    . "<small style='color:#666; font-size:0.8em;'>"
+                    . "<i>EMAIL PREVIEW:</i>&nbsp;" . CleanBody . "</small><br><br>"
+
+            counter++
         }
+
     } catch e {
         return {content: "Error: Failed to get Outlook emails. " . e.message, count: 0}
     }
-    
+
     return {content: emails, count: counter - 1}
 }
+
 
 ;
 ; ====================================================================================
@@ -446,17 +475,6 @@ DesktopShortcut() {
 ; --- UTILITIES ---
 ; ====================================================================================
 
-GetOutlook() {
-    try {
-        return ComObjActive("Outlook.Application")
-    } catch {
-        try {
-            return ComObjCreate("Outlook.Application")
-        } catch {
-            return "Outlook not running"
-        }
-    }
-}
 
 PushOutlookData(emailsObj, meetingsObj) {
     global g_ReportID, g_Prompt
