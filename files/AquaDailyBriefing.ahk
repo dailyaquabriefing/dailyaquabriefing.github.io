@@ -85,21 +85,36 @@ Main() {
 ; ====================================================================================
 
 CopyExecutable() {
-EnvGet, userProfile, USERPROFILE
-    SourceFile := "\\aqua47\AquaBriefing\AquaDailyBriefing.exe"
+    EnvGet, userProfile, USERPROFILE
+    
+    SourceFile := A_ScriptFullPath
     DestFolder := userProfile . "\AquaBriefing"
 
+    ; Create destination folder if missing
     If (!FileExist(DestFolder)) {
         FileCreateDir, %DestFolder%
     }
 
-    FileCopy, %SourceFile%, %DestFolder%, 1
+    ; Full destination file path
+    DestFile := DestFolder . "\" . A_ScriptName
 
+    ; --- NEW: Skip copy if destination EXE already exists ---
+    If (FileExist(DestFile)) {
+        ; Optional: remove the MsgBox if you want silent skip
+        ; MsgBox, Destination file already exists. Skipping copy.
+        return   ; exit function
+    }
+
+    ; Copy EXE (overwrite flag 1 is harmless since skip happens before)
+    FileCopy, %SourceFile%, %DestFile%, 1
+
+    ; Error handling
     If (ErrorLevel != 0) {
-        MsgBox, 16, Error, Failed to copy AquaDailyBriefing.exe. ErrorLevel: %ErrorLevel%
+        MsgBox, 16, Error, Failed to copy %A_ScriptName%. ErrorLevel: %ErrorLevel%
         ExitApp
     }
 }
+
 
 
 
@@ -109,7 +124,7 @@ EnvGet, userProfile, USERPROFILE
 
 CopyConfigFile() {
     ; Define paths
-    SourceFile := "Q:\Support\AquaBriefingReport\dailybriefingconfig.txt"
+    SourceFile := "\\aqua47\AquaBriefing\dailybriefingconfig.txt"
     DestFileG  := "G:\dailybriefingconfig.txt" ; New destination
 
     ; Check if the file already exists in the G:\ destination.
