@@ -176,7 +176,7 @@
             padding: 25px;
             border-radius: 8px;
             width: 90%;
-            max-width: 600px; /* Increased width for new fields */
+            max-width: 600px; 
             margin: 20px auto;
         }
         .form-group { margin-bottom: 15px; }
@@ -184,7 +184,7 @@
         
         /* Complex field grid */
         .complex-field { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .date-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; } /* New Grid for dates */
+        .date-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; } 
 
         /* Status Badges */
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white; display: inline-block;}
@@ -221,7 +221,7 @@
             .btn-move, .btn-edit, .btn-danger {
                 padding: 8px 12px; margin-right: 0; font-size: 12px;
             }
-            .complex-field, .date-grid { grid-template-columns: 1fr; } /* Stack grids on mobile */
+            .complex-field, .date-grid { grid-template-columns: 1fr; }
             #tab-tasks > div { flex-direction: column; }
             #new-task-input { margin-bottom: 10px; }
         }
@@ -275,7 +275,7 @@
 
         <div id="tab-tasks" class="tab-content active">
             <div style="display:flex; gap:10px; margin-bottom:20px;">
-                <input type="text" id="new-task-input" class="w-full" placeholder="Enter a new task (e.g., Review budget report)">
+                <input type="text" id="new-task-input" class="w-full" placeholder="Enter a new task...">
                 <button class="btn btn-primary" onclick="addDailyTask()">Add</button>
             </div>
             <ul id="daily-task-list" class="item-list"></ul>
@@ -334,6 +334,11 @@
                 <input type="text" id="m-name" class="w-full">
             </div>
 
+            <div class="form-group" style="background:#e6fffa; padding:10px; border-radius:5px; border:1px solid #b2f5ea;">
+                <label style="color:#004d40;">🎯 Goal / Expected Result</label>
+                <input type="text" id="m-goal" class="w-full" placeholder="e.g. Reduce load time by 50% / Finalize Budget">
+            </div>
+
             <div class="complex-field complex-only">
                 <div class="form-group">
                     <label>Status</label>
@@ -380,6 +385,12 @@
             <div class="form-group">
                 <label>Next Milestone</label>
                 <input type="text" id="m-milestone" class="w-full">
+            </div>
+
+            <div class="form-group">
+                <label>📎 Attachment / Link (Screenshot/File URL)</label>
+                <input type="text" id="m-attachment" class="w-full" placeholder="https://sharepoint.com/... or https://drive.google.com/...">
+                <small style="color:#777;">Paste a link to your screenshot, document, or sample data here.</small>
             </div>
 
             <div class="form-group">
@@ -561,6 +572,9 @@
                 let extraInfo = [];
                 if(task.tester) extraInfo.push(`Tester: ${task.tester}`);
                 if(task.endDate) extraInfo.push(`End: ${task.endDate}`);
+                if(task.goal) extraInfo.push(`Goal: ${task.goal}`);
+                if(task.attachment) extraInfo.push(`(Has Attachment)`);
+
                 const extraHtml = extraInfo.length > 0 ? `<div style="font-size:0.8em; color:#888;">${extraInfo.join(' | ')}</div>` : '';
 
                 li.innerHTML = `
@@ -594,6 +608,9 @@
                 if(item.endDate) dates.push(`End: ${item.endDate}`);
                 const dateStr = dates.length ? `<br><span>${dates.join(' • ')}</span>` : '';
                 const testerStr = item.tester ? `<br><strong>Tester:</strong> ${item.tester}` : '';
+                const goalStr = item.goal ? `<br><strong style="color:#004d40;">🎯 Goal:</strong> ${item.goal}` : '';
+                const attStr = item.attachment ? `<br>📎 <a href="${item.attachment}" target="_blank">Attachment</a>` : '';
+
 
                 const div = document.createElement('div');
                 div.className = 'item-row';
@@ -607,6 +624,8 @@
                         <div style="font-size:0.85em; color:#555; margin-top:4px;">
                             ${item.milestone ? `<strong>Milestone:</strong> ${item.milestone}` : ''}
                             ${item.notes ? `<br><strong>Note:</strong> ${item.notes}` : ''}
+                            ${goalStr}
+                            ${attStr}
                             ${testerStr}
                             ${dateStr}
                         </div>
@@ -671,14 +690,14 @@
             const complexOnlyFields = modal.querySelectorAll('.complex-only');
             if(type === 'daily') {
                 document.getElementById('modal-title').textContent = 'Edit Daily Task';
-                // Hide Status/Priority for Daily Tasks, but keep dates/tester visible
+                // Hide Status/Priority for Daily Tasks
                 complexOnlyFields.forEach(el => el.style.display = 'none');
             } else {
                 document.getElementById('modal-title').textContent = isNew ? (type === 'project' ? 'Add Project' : 'Add Active Task') : 'Edit Item';
                 complexOnlyFields.forEach(el => el.style.removeProperty('display'));
             }
             
-            let item = {name: '', status: 'On Track', priority: 'High', milestone: '', notes: '', tester: '', startDate: '', lastUpdated: '', endDate: ''};
+            let item = {name: '', status: 'On Track', priority: 'High', milestone: '', notes: '', tester: '', startDate: '', lastUpdated: '', endDate: '', goal: '', attachment: ''};
             
             if (!isNew) {
                 const list = type === 'project' ? localData.projects : (type === 'active' ? localData.activeTasks : localData.dailyTasks);
@@ -697,6 +716,8 @@
             document.getElementById('m-start-date').value = item.startDate || '';
             document.getElementById('m-last-updated').value = item.lastUpdated || '';
             document.getElementById('m-end-date').value = item.endDate || '';
+            document.getElementById('m-goal').value = item.goal || '';
+            document.getElementById('m-attachment').value = item.attachment || '';
             
             modal.style.display = 'flex';
         }
@@ -718,7 +739,9 @@
                 tester: document.getElementById('m-tester').value,
                 startDate: document.getElementById('m-start-date').value,
                 lastUpdated: document.getElementById('m-last-updated').value,
-                endDate: document.getElementById('m-end-date').value
+                endDate: document.getElementById('m-end-date').value,
+                goal: document.getElementById('m-goal').value,
+                attachment: document.getElementById('m-attachment').value
             };
 
             const complexData = {
@@ -731,7 +754,7 @@
                 const newItem = {
                     id: 'item_' + Date.now() + Math.random().toString(36).substring(2, 9),
                     ...commonData,
-                    ...complexData // Apply status/priority even if hidden (defaults)
+                    ...complexData 
                 };
                 list.push(newItem); 
             } else { 
