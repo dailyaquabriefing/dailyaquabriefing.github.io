@@ -293,6 +293,19 @@
                 padding: 20px;
             }
         }
+/* Add inside <style> tag */
+
+.item-it-comment {
+    background: #fff5f5;
+    color: #c0392b;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin-top: 6px;
+    margin-bottom: 4px;
+    font-size: 0.9em;
+    border: 1px solid #ffc9c9;
+    display: block; /* Force new line */
+}
 
     </style>
 </head>
@@ -307,8 +320,14 @@
         <div class="lock-box">
             <h2 style="color: #0078D4; margin-top:0;">Protected Report</h2>
             <p style="margin-bottom: 20px;">Please enter passcode to view.</p>
+            
             <input type="password" id="unlock-pass" class="userid-input" placeholder="Passcode">
-            <button onclick="attemptUnlock()" class="action-btn btn-primary">Unlock</button>
+            
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button onclick="cancelUnlock()" class="action-btn btn-secondary" style="flex: 1;">Cancel</button>
+                <button onclick="attemptUnlock()" class="action-btn btn-primary" style="flex: 1;">Unlock</button>
+            </div>
+
             <p id="unlock-error" style="color: red; font-size: 0.9em; display: none; margin-top:10px;">Incorrect Passcode</p>
         </div>
     </div>

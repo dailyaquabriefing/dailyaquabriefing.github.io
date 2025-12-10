@@ -182,6 +182,22 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;}
         
+        /* Private Field Styles */
+        .private-field-group {
+            background: #fff5f5;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ffc9c9;
+            margin-bottom: 15px;
+            display: none; /* Hidden by default */
+        }
+        .private-label {
+            color: #c0392b; 
+            display: flex; 
+            align-items: center; 
+            gap: 5px;
+        }
+
         /* Complex field grid */
         .complex-field { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .date-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; } 
@@ -335,7 +351,7 @@
             </div>
 
             <div class="form-group" style="background:#e6fffa; padding:10px; border-radius:5px; border:1px solid #b2f5ea;">
-                <label style="color:#004d40;">🎯 Goal / Expected Result</label>
+                <label style="color:#004d40;">識 Goal / Expected Result</label>
                 <input type="text" id="m-goal" class="w-full" placeholder="e.g. Reduce load time by 50% / Finalize Budget">
             </div>
 
@@ -388,9 +404,14 @@
             </div>
 
             <div class="form-group">
-                <label>📎 Attachment / Link (Screenshot/File URL)</label>
+                <label>梼 Attachment / Link (Screenshot/File URL)</label>
                 <input type="text" id="m-attachment" class="w-full" placeholder="https://sharepoint.com/... or https://drive.google.com/...">
                 <small style="color:#777;">Paste a link to your screenshot, document, or sample data here.</small>
+            </div>
+
+            <div id="m-it-comments-container" class="private-field-group">
+                <label class="private-label">🔒 IT Team Only Comments (Visible only via Passcode)</label>
+                <textarea id="m-it-comments" class="w-full" rows="2" placeholder="Internal notes for IT team..."></textarea>
             </div>
 
             <div class="form-group">
@@ -574,6 +595,7 @@
                 if(task.endDate) extraInfo.push(`End: ${task.endDate}`);
                 if(task.goal) extraInfo.push(`Goal: ${task.goal}`);
                 if(task.attachment) extraInfo.push(`(Has Attachment)`);
+                if(task.itComments) extraInfo.push(`🔒 (Has Private Note)`);
 
                 const extraHtml = extraInfo.length > 0 ? `<div style="font-size:0.8em; color:#888;">${extraInfo.join(' | ')}</div>` : '';
 
@@ -606,10 +628,11 @@
                 let dates = [];
                 if(item.startDate) dates.push(`Start: ${item.startDate}`);
                 if(item.endDate) dates.push(`End: ${item.endDate}`);
-                const dateStr = dates.length ? `<br><span>${dates.join(' • ')}</span>` : '';
+                const dateStr = dates.length ? `<br><span>${dates.join(' 窶｢ ')}</span>` : '';
                 const testerStr = item.tester ? `<br><strong>Tester:</strong> ${item.tester}` : '';
-                const goalStr = item.goal ? `<br><strong style="color:#004d40;">🎯 Goal:</strong> ${item.goal}` : '';
-                const attStr = item.attachment ? `<br>📎 <a href="${item.attachment}" target="_blank">Attachment</a>` : '';
+                const goalStr = item.goal ? `<br><strong style="color:#004d40;">識 Goal:</strong> ${item.goal}` : '';
+                const attStr = item.attachment ? `<br>梼 <a href="${item.attachment}" target="_blank">Attachment</a>` : '';
+                const itStr = item.itComments ? `<br><strong style="color:#c0392b;">🔒 Private Note:</strong> <span style="font-style:italic;">${item.itComments.substring(0, 30)}...</span>` : '';
 
 
                 const div = document.createElement('div');
@@ -626,6 +649,7 @@
                             ${item.notes ? `<br><strong>Note:</strong> ${item.notes}` : ''}
                             ${goalStr}
                             ${attStr}
+                            ${itStr}
                             ${testerStr}
                             ${dateStr}
                         </div>
@@ -696,8 +720,17 @@
                 document.getElementById('modal-title').textContent = isNew ? (type === 'project' ? 'Add Project' : 'Add Active Task') : 'Edit Item';
                 complexOnlyFields.forEach(el => el.style.removeProperty('display'));
             }
+
+            // --- IT COMMENTS VISIBILITY LOGIC ---
+            // Only show this field if a Passcode is actually set
+            const itContainer = document.getElementById('m-it-comments-container');
+            if (localData.passcode && localData.passcode.trim() !== "") {
+                itContainer.style.display = 'block';
+            } else {
+                itContainer.style.display = 'none';
+            }
             
-            let item = {name: '', status: 'On Track', priority: 'High', milestone: '', notes: '', tester: '', startDate: '', lastUpdated: '', endDate: '', goal: '', attachment: ''};
+            let item = {name: '', status: 'On Track', priority: 'High', milestone: '', notes: '', tester: '', startDate: '', lastUpdated: '', endDate: '', goal: '', attachment: '', itComments: ''};
             
             if (!isNew) {
                 const list = type === 'project' ? localData.projects : (type === 'active' ? localData.activeTasks : localData.dailyTasks);
@@ -718,6 +751,7 @@
             document.getElementById('m-end-date').value = item.endDate || '';
             document.getElementById('m-goal').value = item.goal || '';
             document.getElementById('m-attachment').value = item.attachment || '';
+            document.getElementById('m-it-comments').value = item.itComments || '';
             
             modal.style.display = 'flex';
         }
@@ -741,7 +775,8 @@
                 lastUpdated: document.getElementById('m-last-updated').value,
                 endDate: document.getElementById('m-end-date').value,
                 goal: document.getElementById('m-goal').value,
-                attachment: document.getElementById('m-attachment').value
+                attachment: document.getElementById('m-attachment').value,
+                itComments: document.getElementById('m-it-comments').value
             };
 
             const complexData = {

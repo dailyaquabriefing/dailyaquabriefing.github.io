@@ -33,7 +33,7 @@ function linkify(htmlContent) {
     return newText;
 }
 
-const renderList = (id, items) => {
+const renderList = (id, items, showPrivate = false) => {
     const el = document.getElementById(id);
     const headerEl = document.getElementById('header-' + id.replace('content-', ''));
 
@@ -57,7 +57,7 @@ const renderList = (id, items) => {
     let html = '<ol style="padding-left:20px;">';
     
     items.forEach(item => {
-        let name, notes = '', status, milestone = '', tester = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '';
+        let name, notes = '', status, milestone = '', tester = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '';
         
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
@@ -68,9 +68,9 @@ const renderList = (id, items) => {
             startDate = item.startDate;
             endDate = item.endDate;
             lastUpdated = item.lastUpdated;
-            // New Fields
             goal = item.goal;
             attachment = item.attachment;
+            itComments = item.itComments;
 
         } else if (typeof item === 'string') {
             name = item;
@@ -78,15 +78,15 @@ const renderList = (id, items) => {
             return; 
         }
 
-        // --- FIX: Linkify specific fields individually BEFORE building the HTML ---
-        // This prevents the linkifier from breaking the href attributes of the attachment link
+        // Linkify specific fields individually
         const safeName = linkify(name);
         const safeNotes = linkify(notes);
         const safeGoal = linkify(goal);
         const safeMilestone = linkify(milestone);
+        const safeItComments = linkify(itComments);
 
         // Determine if it's a "Complex" item
-        const isComplexItem = (status || tester || startDate || endDate || goal || attachment);
+        const isComplexItem = (status || tester || startDate || endDate || goal || attachment || itComments);
 
         // Build Extra Meta Data HTML
         let metaHtml = '';
@@ -113,15 +113,20 @@ const renderList = (id, items) => {
         
         let attachmentHtml = '';
         if (attachment) {
-            // We do NOT linkify the attachment URL here, because we are putting it inside an href attribute manually
             attachmentHtml = `<div class="item-attachment">📎 <a href="${attachment}" target="_blank">View Attachment / Link</a></div>`;
         }
 
+        // IT Comments HTML (Only if showPrivate is true)
+        let itCommentsHtml = '';
+        if (itComments && showPrivate) {
+            itCommentsHtml = `<div class="item-it-comment">🔒 <strong>IT Only:</strong> ${safeItComments}</div>`;
+        }
 
         if (!isComplexItem && !status) {
             // Simple Task (Minimal Display)
             html += `<li style="margin-bottom:5px;">
                 <strong>${safeName}</strong>
+                ${itCommentsHtml}
                 ${metaHtml}
             </li>`;
         } else {
@@ -148,13 +153,13 @@ const renderList = (id, items) => {
                 <small style="color:#666; display:block; margin-bottom:2px;">${safeNotes}</small>
                 ${goalHtml}
                 ${attachmentHtml}
+                ${itCommentsHtml}
                 ${milestoneHtml}
                 ${metaHtml}
             </li>`;
         }
     });
     
-    // --- FIX: Do NOT run linkify here anymore, as we ran it on the individual fields above ---
     el.innerHTML = html + '</ol>';
 };
 
@@ -198,6 +203,16 @@ function renderReport(data, isDailyMode) {
     document.getElementById('report-body').classList.remove('hidden');
     document.getElementById('report-subtitle').textContent = "Report: " + data.reportId;
     
+    // Check if the report is protected (has a passcode).
+    const hasPasscode = (data.passcode && data.passcode.trim() !== "");
+
+    // STRICT VISIBILITY RULE:
+    // 1. Must be in Daily Mode (Secure Tab).
+    // 2. Must have a Passcode configured.
+    // If we are active in renderReport in Daily Mode, it implies the passcode was entered successfully.
+    // If we are in Weekly Mode (isDailyMode=false), showPrivate forces to false.
+    const showPrivate = isDailyMode && hasPasscode;
+
     let updateTime = "Unknown";
     if (data.lastUpdated) {
         const dateObj = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated);
@@ -223,9 +238,10 @@ function renderReport(data, isDailyMode) {
     const projectsData = data.structuredProjects || data.projects;
     const activeData = data.structuredActiveTasks || data.activeTasks;
 
-    renderList('content-tasks', dailyTasksData || []);
-    renderList('content-projects', projectsData || []);
-    renderList('content-active', activeData || []);
+    // Pass the restricted visibility flag
+    renderList('content-tasks', dailyTasksData || [], showPrivate);
+    renderList('content-projects', projectsData || [], showPrivate);
+    renderList('content-active', activeData || [], showPrivate);
 }
 
 
@@ -252,6 +268,12 @@ function attemptUnlock() {
     }
 }
 
+function cancelUnlock() {
+    // Redirects to the base URL, effectively clearing the query parameters 
+    // and exiting the "Protected" mode back to the default welcome screen.
+    window.location.href = window.location.pathname;
+}
+
 function setLastGenerated() {
     const now = new Date();
     let hour = now.getHours();
@@ -270,8 +292,14 @@ function setLastGenerated() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Enter Key for Main User ID Input
     document.getElementById('userid-input').addEventListener("keypress", function(event) {
         if (event.key === "Enter") viewReport();
+    });
+
+    // 2. NEW: Enter Key for Passcode Input
+    document.getElementById('unlock-pass').addEventListener("keypress", function(event) {
+        if (event.key === "Enter") attemptUnlock();
     });
     
     const urlParams = new URLSearchParams(window.location.search);
@@ -290,11 +318,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = doc.data();
                 if (isDailyMode) {
                     document.getElementById('report-title').textContent = "Daily Briefing";
+                    // Check logic for protection
                     if (data.passcode && data.passcode.trim() !== "") {
                         pendingData = data; 
                         document.getElementById('loading-overlay').classList.add('hidden');
                         document.getElementById('lock-screen').classList.remove('hidden');
                         document.getElementById('report-subtitle').textContent = "Protected";
+                        
+                        // 3. NEW: Auto-focus the passcode field
+                        setTimeout(() => {
+                            document.getElementById('unlock-pass').focus();
+                        }, 100);
+
                     } else {
                         renderReport(data, true); 
                         loadOutlookData(targetId);
