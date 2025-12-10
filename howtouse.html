@@ -74,6 +74,16 @@
             color: #333;
             margin: 0 2px;
         }
+        .new-feature {
+            background: #e6fffa;
+            color: #004d40;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            border: 1px solid #b2f5ea;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -81,12 +91,12 @@
         <a href="index.html" class="back-link">&larr; Back to Report</a>
         
         <h1>How to Use Aqua Daily Briefing</h1>
-        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your **Task Priorities** with automated **Outlook Data** (emails/meetings) into one secure, shareable dashboard.</p>
+        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your <strong>Task Priorities</strong> with automated <strong>Outlook Data</strong> (emails/meetings) into one secure, shareable dashboard.</p>
 
         <h2>The Two-Part System</h2>
         <ol>
             <li><strong>The Web Dashboard:</strong> Your command center for managing Tasks, Projects, and Security Settings.</li>
-            <li><strong>The Outlook Agent:</strong> A background tool that securely syncs your **calendar and emails** to the report.</li>
+            <li><strong>The Outlook Agent:</strong> A background tool that securely syncs your <strong>calendar and emails</strong> to the report.</li>
         </ol>
 
         <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
@@ -112,23 +122,34 @@
             </ul>
 
             <h3>2. Projects & Active Tasks Tabs</h3>
-            <p>These sections now support <strong>Rich Data</strong>. When adding or editing an item, you can now specify:</p>
+            <p>These sections support <strong>Rich Data</strong>. When adding or editing an item, you can specify:</p>
             <ul>
                 <li><strong>Status:</strong> Color-coded badges (e.g., <span class="badge" style="background:#d4edda; color:#155724;">On Track</span>, <span class="badge" style="background:#f8d7da; color:#721c24;">Delayed</span>).</li>
                 <li><strong>Testers:</strong> Assign a QA tester or specific team member.</li>
-                <li><strong>Milestones:</strong> Track the next major goal (🏁).</li>
+                <li><strong>Milestones:</strong> Track the next major goal (🚩).</li>
                 <li><strong>Dates:</strong> Set Start, End, and Last Updated dates.</li>
+                <li><strong>IT Comments <span class="new-feature">NEW</span>:</strong> Private notes for the IT team. (See below).</li>
             </ul>
 
             <h3>3. Settings Tab (Security)</h3>
             <ul>
                 <li><strong>Passcode Protection:</strong> Set a passcode here to lock your <strong>Daily Briefing</strong> view.</li>
-                <li>Leave it blank if you want the report to be publicly accessible via your ID.</li>
+                <li><strong style="color:#d35400;">Important:</strong> You must set a passcode to enable the "IT Team Only Comments" field in the editor.</li>
             </ul>
         </div>
 
-        <h2>Step 3: Sync Outlook (The Agent)</h2>
-        <p>To see your **Meetings** and **Unread Emails**, the desktop agent must run.</p>
+        <h2>Step 3: Private IT Comments <span class="new-feature">NEW</span></h2>
+        <p>You can now add private notes that are <strong>hidden from the public</strong>.</p>
+        <div class="step-box">
+            <ul>
+                <li><strong>How to Enable:</strong> Go to <strong>Settings</strong> and save a Passcode.</li>
+                <li><strong>How to Add:</strong> In the Admin modal (Edit/Add Item), a new red field labeled <strong>"🔒 IT Team Only Comments"</strong> will appear.</li>
+                <li><strong>Visibility:</strong> These notes ONLY appear in the <strong>Daily Briefing</strong> view after you successfully enter the passcode. They are completely removed from the Weekly Report.</li>
+            </ul>
+        </div>
+
+        <h2>Step 4: Sync Outlook (The Agent)</h2>
+        <p>To see your <strong>Meetings</strong> and <strong>Unread Emails</strong>, the desktop agent must run.</p>
         <div class="step-box">
             <ol>
                 <li>Open the <code>AquaDailyBriefing</code> shortcut on your desktop.</li>
@@ -137,22 +158,22 @@
             </ol>
         </div>
 
-        <h2>Step 4: Viewing Reports</h2>
+        <h2>Step 5: Viewing Reports</h2>
         <p>You have two views available based on your needs:</p>
         
         <div class="step-box">
             <h3>🔒 Daily Briefing (Private)</h3>
             <p><strong>URL:</strong> <code>/?daily=YOUR_ID</code></p>
             <ul>
-                <li><strong>Includes:</strong> Tasks, Projects, <strong>Meetings, and Unread Emails</strong>.</li>
-                <li><strong>Security:</strong> If you set a passcode in Admin Settings, you must enter it to unlock this view.</li>
+                <li><strong>Includes:</strong> Tasks, Projects, <strong>IT Comments</strong>, Meetings, and Unread Emails.</li>
+                <li><strong>Security:</strong> Protected by your Passcode. (Press Enter to submit).</li>
             </ul>
 
             <h3>📢 Weekly Report (Public)</h3>
             <p><strong>URL:</strong> <code>/?report=YOUR_ID</code></p>
             <ul>
                 <li><strong>Includes:</strong> Tasks and Projects only.</li>
-                <li><strong>No Sensitive Data:</strong> Hides emails and meetings.</li>
+                <li><strong>No Sensitive Data:</strong> Hides emails, meetings, and <strong>IT Comments</strong>.</li>
                 <li><strong>Shareable:</strong> Perfect for sending to managers or stakeholders as a status update.</li>
             </ul>
         </div>
@@ -162,7 +183,8 @@
         <h2>Pro-Tip: Automate the Outlook Sync</h2>
         <p>The <strong>Outlook Agent</strong> can be configured to run automatically at login.</p>
         <ol>
-            <li>Open your config file at <code>G:\dailybriefingconfig.txt</code>.</li>
+            <li>Navigate to the folder: <code>C:\Users\{username}\AquaBriefing</code>.</li>
+            <li>Open the configuration file (e.g. <code>dailybriefingconfig.txt</code>).</li>
             <li>Set <code>RunAtLogin=Yes</code>.</li>
             <li>(Optional) Set <code>Prompt=No</code> to make it run silently in the background without popping up a confirmation box.</li>
         </ol>
