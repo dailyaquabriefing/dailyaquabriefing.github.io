@@ -348,11 +348,11 @@
     <div id="setup-modal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h3 style="color: var(--primary); margin-top:0;">Link Your Report ID</h3>
-            <p>Please enter the Network User ID you want to manage (e.g., <b>jdoe</b>) in <b>lowercase</b>.</p>
+            <p>Please enter your Aqua Network UserID (e.g., <b>jdoe</b>) in <b>lowercase</b>.</p>
             <p style="font-size:0.9em; color:#666;">This must match the "ReportID" in your local G:\dailybriefingconfig.txt file.</p>
             
             <div class="form-group" style="text-align:left; margin-top:20px;">
-                <label>Report ID / Network ID</label>
+                <label>Aqua Network UserID (e.g., jdoe)</label>
                 <input type="text" id="setup-report-id" class="w-full" placeholder="e.g. jdoe">
             </div>
             
@@ -368,7 +368,6 @@
                 <label>Name / Description</label>
                 <input type="text" id="m-name" class="w-full">
             </div>
-            
             <div class="complex-field">
                 <div class="form-group">
                     <label>Status</label>
@@ -392,12 +391,12 @@
                 </div>
             </div>
 
-            <div class="form-group complex-field">
+            <div class="form-group">
                 <label>Next Milestone</label>
                 <input type="text" id="m-milestone" class="w-full">
             </div>
 
-            <div class="form-group complex-field">
+            <div class="form-group">
                 <label>Notes</label>
                 <textarea id="m-notes" class="w-full" rows="3"></textarea>
             </div>
@@ -468,6 +467,16 @@
                     initializeDashboard();
                 } else {
                     // No mapping found. Ask user.
+                    
+                    // --- NEW LOGIC: Pre-populate ID input from email ---
+                    let defaultID = "";
+                    if (currentUser.email) {
+                        // Extract the part of the email before the @ symbol
+                        defaultID = currentUser.email.split('@')[0].toLowerCase();
+                    }
+                    document.getElementById('setup-report-id').value = defaultID;
+                    // ---------------------------------------------------
+
                     document.getElementById('setup-modal').style.display = 'flex';
                 }
             });

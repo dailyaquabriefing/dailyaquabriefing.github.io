@@ -224,7 +224,8 @@ function renderReport(data, isDailyMode) {
  */
 function viewReport() {
     const input = document.getElementById('userid-input');
-    const val = input.value.trim();
+    // MODIFIED: Convert input value to lowercase
+    const val = input.value.toLowerCase().trim();
     if (val) {
         window.location.href = "?report=" + encodeURIComponent(val);
     } else {
@@ -291,7 +292,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const dailyId = urlParams.get('daily');
     const reportId = urlParams.get('report');
 
-    targetId = dailyId || reportId;
+    // MODIFIED: Convert targetId to lowercase upon initial determination
+    let potentialTargetId = dailyId || reportId;
+    targetId = potentialTargetId ? potentialTargetId.toLowerCase() : null;
+
     const isDailyMode = !!dailyId; 
 
     if (targetId) {
