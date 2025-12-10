@@ -64,6 +64,16 @@
             color: #666;
             font-style: italic;
         }
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #eee;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #333;
+            margin: 0 2px;
+        }
     </style>
 </head>
 <body>
@@ -71,106 +81,92 @@
         <a href="index.html" class="back-link">&larr; Back to Report</a>
         
         <h1>How to Use Aqua Daily Briefing</h1>
-        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It cuts out the noise and lets you hit the ground running by automatically pulling your <strong>key Outlook details</strong> (like recent emails and meetings) and blending them seamlessly with your <strong>top daily priorities and project statuses</strong>. Think of it as one clean, powerful dashboard, giving you a crystal-clear, focused start to your day.</p>
+        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your **Task Priorities** with automated **Outlook Data** (emails/meetings) into one secure, shareable dashboard.</p>
 
-        <h2>The Two-Part System: Your Command Center</h2>
-        <p>The system is divided into two parts that work together to keep you organized and efficient:</p>
+        <h2>The Two-Part System</h2>
         <ol>
-            <li><strong>The Web Dashboard:</strong> Your centralized online workspace for managing and prioritizing your <strong>tasks, project updates, and security settings</strong> (passcode).</li>
-            <li><strong>The Outlook Agent:</strong> A small, automated program on your PC that <strong>securely syncs your latest emails and calendar events</strong> from Outlook to your online report.</li>
+            <li><strong>The Web Dashboard:</strong> Your command center for managing Tasks, Projects, and Security Settings.</li>
+            <li><strong>The Outlook Agent:</strong> A background tool that securely syncs your **calendar and emails** to the report.</li>
         </ol>
 
         <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
-        <h2>Step 1: Manage Content & Security (Web Dashboard)</h2>
-        <p>Add/edit your projects/tasks/daily tasks and set your security preferences.</p>
+        <h2>Step 1: Admin Dashboard & Setup</h2>
+        <p>Use the Admin Dashboard to manage what appears on your report.</p>
         <div class="step-box">
             <ol>
-                <li>Go to the <a href="admin.html" target="_blank"><strong>Admin Dashboard</strong></a> and log in.</li>
-                <li><strong>Security:</strong> Navigate to the <strong>Settings</strong> tab to set a <strong>passcode</strong> for your secure Daily Briefing link (<code>?daily=</code>).</li>
-                <li><strong>Daily Tasks:</strong> Add your top 3-5 <strong>priorities</strong> for the day.</li>
-                <li><strong>Projects:</strong> Update the <strong>status</strong> (e.g., "On Track", "Delayed") of your active projects.</li>
+                <li>Go to the <a href="admin.html" target="_blank"><strong>Admin Dashboard</strong></a>.</li>
+                <li><strong>First Time?</strong> Click <strong>"First Time User? Setup Here"</strong> on the login screen to link your email to your Aqua User ID (e.g., <code>jdoe</code>).</li>
+                <li><strong>Logging In:</strong> Use your email and password to access the dashboard.</li>
             </ol>
         </div>
-        <p class="note"><strong>Tip:</strong> You only need to set the <strong>passcode</strong> once, but you can change it anytime in the <strong>Settings</strong> tab.</p>
 
-        <h2>Step 2: Sync Outlook (The Agent)</h2>
-        <p>Since the web cannot see your local Outlook, you must run the <strong>"Agent"</strong> to sync that data.</p>
+        <h2>Step 2: Managing Your Content</h2>
+        <p>The Admin Dashboard is organized into four tabs:</p>
+        
+        <div class="step-box">
+            <h3>1. Daily Tasks Tab</h3>
+            <ul>
+                <li>Add your top 3-5 focus items for the day.</li>
+                <li>Use the <strong>Up/Down</strong> buttons to prioritize them.</li>
+            </ul>
+
+            <h3>2. Projects & Active Tasks Tabs</h3>
+            <p>These sections now support <strong>Rich Data</strong>. When adding or editing an item, you can now specify:</p>
+            <ul>
+                <li><strong>Status:</strong> Color-coded badges (e.g., <span class="badge" style="background:#d4edda; color:#155724;">On Track</span>, <span class="badge" style="background:#f8d7da; color:#721c24;">Delayed</span>).</li>
+                <li><strong>Testers:</strong> Assign a QA tester or specific team member.</li>
+                <li><strong>Milestones:</strong> Track the next major goal (🏁).</li>
+                <li><strong>Dates:</strong> Set Start, End, and Last Updated dates.</li>
+            </ul>
+
+            <h3>3. Settings Tab (Security)</h3>
+            <ul>
+                <li><strong>Passcode Protection:</strong> Set a passcode here to lock your <strong>Daily Briefing</strong> view.</li>
+                <li>Leave it blank if you want the report to be publicly accessible via your ID.</li>
+            </ul>
+        </div>
+
+        <h2>Step 3: Sync Outlook (The Agent)</h2>
+        <p>To see your **Meetings** and **Unread Emails**, the desktop agent must run.</p>
         <div class="step-box">
             <ol>
                 <li>Open the <code>AquaDailyBriefing</code> shortcut on your desktop.</li>
-                <li>Wait a few seconds for the <strong>confirmation popup</strong>.</li>
+                <li>Wait for the <strong>confirmation popup</strong> confirming the sync.</li>
+                <li>Your web report will automatically update with the new data.</li>
             </ol>
         </div>
-        <p>This uploads your <strong>Unread Emails (Last 24h)</strong> and <strong>Upcoming Meetings (Today-Friday)</strong> to the report.</p>
 
-        <h2>Step 3: View Your Report</h2>
-        <p>You have two primary ways to access your organized information:</p>
+        <h2>Step 4: Viewing Reports</h2>
+        <p>You have two views available based on your needs:</p>
+        
         <div class="step-box">
-            <h3>A. Daily Briefing (<strong>Secure/Private</strong>)</h3>
-            <p><strong>URL:</strong> <code>https://dailyaquabriefing.github.io/?daily=YOUR_ID</code></p>
+            <h3>🔒 Daily Briefing (Private)</h3>
+            <p><strong>URL:</strong> <code>/?daily=YOUR_ID</code></p>
             <ul>
-                <li>Shows <strong>Tasks, Projects, Active Tasks, Meetings, and preview of unread Emails</strong>.</li>
-                <li>By default, does <strong>NOT</strong> require a passcode.</li>
-                <li>(Secure Option): <strong>requires the OPTIONAL passcode</strong> you can set on the Admin Settings tab.</li>
+                <li><strong>Includes:</strong> Tasks, Projects, <strong>Meetings, and Unread Emails</strong>.</li>
+                <li><strong>Security:</strong> If you set a passcode in Admin Settings, you must enter it to unlock this view.</li>
             </ul>
 
-            <h3>B. Weekly Report (<strong>Public/Shareable</strong>)</h3>
-            <p><strong>URL:</strong> <code>https://dailyaquabriefing.github.io/?report=YOUR_ID</code></p>
+            <h3>📢 Weekly Report (Public)</h3>
+            <p><strong>URL:</strong> <code>/?report=YOUR_ID</code></p>
             <ul>
-                <li>Shows <strong>Tasks, Projects, and Active Tasks</strong>.</li>
-                <li>Does <strong>NOT</strong> require a passcode and is suitable for sharing.</li>
-                <li>This report is perfect for providing your manager or supervisor with a quick daily or weekly status update.</li>
+                <li><strong>Includes:</strong> Tasks and Projects only.</li>
+                <li><strong>No Sensitive Data:</strong> Hides emails and meetings.</li>
+                <li><strong>Shareable:</strong> Perfect for sending to managers or stakeholders as a status update.</li>
             </ul>
         </div>
 
         <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
         <h2>Pro-Tip: Automate the Outlook Sync</h2>
-        <p>The <strong>Outlook Agent</strong> can be configured to run automatically at login using the <strong>Startup folder</strong>.</p>
-        
-        <h3>Run at Login (Recommended)</h3>
-        <p>The agent manages its own startup shortcut based on your config file.</p>
+        <p>The <strong>Outlook Agent</strong> can be configured to run automatically at login.</p>
         <ol>
-            <li>Open <code>G:\dailybriefingconfig.txt</code>.</li>
-            <li>Set <code>RunAtLogin=Yes</code> to have the agent automatically create a <strong>shortcut</strong> in your Startup folder every time it runs.</li>
-            <li>Set <code>RunAtLogin=No</code> to have the agent delete the <strong>shortcut</strong> if it exists, preventing it from running at login.</li>
+            <li>Open your config file at <code>G:\dailybriefingconfig.txt</code>.</li>
+            <li>Set <code>RunAtLogin=Yes</code>.</li>
+            <li>(Optional) Set <code>Prompt=No</code> to make it run silently in the background without popping up a confirmation box.</li>
         </ol>
-        
-        <p class="note">Note: If running automatically, you might want to open <code>G:\dailybriefingconfig.txt</code> and change <code>Prompt=Yes</code> to <code>Prompt=No</code> so the agent runs <strong>silently</strong> in the background without a confirmation box.</p>
 
-        <h2>🗓️ Automated Daily Briefing Workflow</h2>
-        <p>Once the <strong>Outlook Agent</strong> is configured to run automatically (via <code>RunAtLogin=Yes</code>), the system manages your briefing data efficiently:</p>
-        
-        <div class="step-box">
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                <thead>
-                    <tr>
-                        <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #ddd; color: #005a9e;">Step</th>
-                        <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #ddd; color: #005a9e;">Process & Benefit</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 8px 0; font-weight: bold; width: 35%;">1. System Login</td>
-                        <td style="padding: 8px 0;">The <strong>Outlook Agent</strong> automatically starts running in the background upon computer login (<strong>morning, after lunch, etc.</strong>).</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 0; font-weight: bold;">2. Data Gathering</td>
-                        <td style="padding: 8px 0;">The <strong>Agent</strong> securely gathers your <strong>Upcoming Meetings</strong> (Today through Friday) and <strong>Unread Emails</strong> (last 24 hours).</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 0; font-weight: bold;">3. Confirmation</td>
-                        <td style="padding: 8px 0;">The system greets you with a brief confirmation message displaying the count of <strong>new meetings and emails</strong>.</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 0; font-weight: bold;">4. User Prompt</td>
-                        <td style="padding: 8px 0;">You are prompted to <strong>View Your Aqua Daily Briefing!</strong> to begin your organized day.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
         <br>
         <a href="index.html" class="back-link">&larr; Back to Report</a>
     </div>
