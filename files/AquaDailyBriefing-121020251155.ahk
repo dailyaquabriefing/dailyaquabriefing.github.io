@@ -15,8 +15,7 @@ global configFile
 global configSection
 
 ; --- Define the config file path ---
-EnvGet, userProfile, USERPROFILE
-configFile := userProfile . "\AquaBriefing\dailybriefingconfig.txt"
+configFile := "G:\dailybriefingconfig.txt"
 configSection := "Settings"
 
 
@@ -104,11 +103,10 @@ ProcessExist(name) {
 
 
 CopyExecutable() {
-    ; Renamed variable to avoid conflict with global userProfile
-    EnvGet, localProfile, USERPROFILE
+    EnvGet, userProfile, USERPROFILE
     
     SourceFile := A_ScriptFullPath
-    DestFolder := localProfile . "\AquaBriefing"
+    DestFolder := userProfile . "\AquaBriefing"
 
     ; Create destination folder if missing
     If (!FileExist(DestFolder)) {
@@ -120,6 +118,7 @@ CopyExecutable() {
 
     ; --- NEW: Skip copy if destination EXE already exists ---
     If (FileExist(DestFile)) {
+        ; Optional: remove the MsgBox if you want silent skip
         ; MsgBox, Destination file already exists. Skipping copy.
         return   ; exit function
     }
@@ -129,41 +128,38 @@ CopyExecutable() {
 
     ; Error handling
     If (ErrorLevel != 0) {
-        MsgBox, 16, Error, Failed to copy %A_ScriptName%.`nErrorLevel: %ErrorLevel%
+        MsgBox, 16, Error, Failed to copy %A_ScriptName%. ErrorLevel: %ErrorLevel%
         ExitApp
     }
 }
 
 
+
+
 ; ====================================================================================
-; --- FILE MANAGEMENT FUNCTION (CONFIG FILE) (MODIFIED FOR LOCAL COPY) ---
+; --- FILE MANAGEMENT FUNCTION (CONFIG FILE) (MODIFIED FOR DUAL COPY) ---
 ; ====================================================================================
 
 CopyConfigFile() {
-    ; Renamed variable to avoid conflict with global userProfile
-    EnvGet, localProfile, USERPROFILE
-    
     ; Define paths
     SourceFile := "\\aqua47\AquaBriefing\dailybriefingconfig.txt"
-    DestFolder := localProfile . "\AquaBriefing"
-    DestFile   := DestFolder . "\dailybriefingconfig.txt"
+    DestFileG  := "G:\dailybriefingconfig.txt" ; New destination
 
-    ; Ensure destination folder exists
-    If (!FileExist(DestFolder)) {
-        FileCreateDir, %DestFolder%
-    }
-
-    ; Check if the file already exists in the destination.
-    If (!FileExist(DestFile)) {
-        ; Copy to local folder
-        FileCopy, %SourceFile%, %DestFile%
+    ; Check if the file already exists in the G:\ destination.
+    ; Only copy if it DOES NOT exist (!FileExist).
+    If (!FileExist(DestFileG)) {
+        ; Copy to G:\ (Required for IniRead at the top of the script).
+        FileCopy, %SourceFile%, %DestFileG%
         
         If (ErrorLevel != 0) {
-            MsgBox, 16, Error, Failed to copy dailybriefingconfig.txt to %DestFolder%.`nPlease ensure the source network path is accessible.
+            ; Note: This error is critical because the script looks for the config in G:\
+            MsgBox, 16, Error, Failed to copy dailybriefingconfig.txt to G:\.
+            MsgBox, 16, Error, Please ensure G:\ drive is mapped and the file exists on Q:\.
             ExitApp
         }
     }
 }
+
 
 ; ====================================================================================
 ; --- BULLETPROOF OUTLOOK COM LOADER (SAFE) ---
@@ -424,17 +420,16 @@ GetTodayMeetings() {
 ; ====================================================================================
 
 StartUp() {
-    ; Renamed variable to avoid conflict with global userProfile
-    EnvGet, localProfile, USERPROFILE
+EnvGet, userProfile, USERPROFILE
     global g_RunAtLogin
     
-    ; Define paths
+    ; Define paths (used for both creation and deletion)
     StartupFolder := A_StartMenu . "\Programs\Startup"
-    TargetExe := localProfile . "\AquaBriefing\AquaDailyBriefing.exe"
+    TargetExe := userProfile . "\AquaBriefing\AquaDailyBriefing.exe"
 
     ShortcutPath  := StartupFolder . "\AquaDailyBriefing.lnk"
     
-    ; Normalize the config value
+    ; Normalize the config value for reliable comparison
     CleanRunAtLogin := RegExReplace(g_RunAtLogin, "[\s""]", "")
     
     if (CleanRunAtLogin = "Yes") {
@@ -459,12 +454,11 @@ StartUp() {
 ; ====================================================================================
 
 DesktopShortcut() {
-    ; Renamed variable to avoid conflict with global userProfile
-    EnvGet, localProfile, USERPROFILE
+EnvGet, userProfile, USERPROFILE
     global g_RunAtLogin
     
     DesktopFolder := A_Desktop
-    TargetExe := localProfile . "\AquaBriefing\AquaDailyBriefing.exe"
+    TargetExe := userProfile . "\AquaBriefing\AquaDailyBriefing.exe"
     ShortcutPath  := DesktopFolder . "\AquaDailyBriefing.lnk"
     
     CleanRunAtLogin := RegExReplace(g_RunAtLogin, "[\s""]", "")
