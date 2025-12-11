@@ -1,10 +1,10 @@
 // --- CONFIGURATIONS ---
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU", 
+    apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
     authDomain: "dailybriefing-fe7df.firebaseapp.com",
     projectId: "dailybriefing-fe7df",
-    storageBucket: "dailybriefing-fe7df.appspot.com",
+    storageBucket: "dailybriefing-fe7df.firebasestorage.app", // Ensure this matches console!
     messagingSenderId: "",
     appId: ""
 };
@@ -12,11 +12,11 @@ firebase.initializeApp(firebaseConfig);
 
 // --- GLOBAL VARIABLES ---
 const db = firebase.firestore();
-let pendingData = null; 
-let targetId = null; 
-let currentShowPrivate = false; // <--- ADD THIS LINE
+let pendingData = null;
+let targetId = null;
+let currentShowPrivate = false;
 
-// NEW GLOBALS FOR EXPORT
+// NEW GLOBALS FOR EXPORT AND ANALYTICS
 let currentReportData = null;
 let currentOutlookData = null;
 
@@ -65,63 +65,52 @@ window.postComment = function(listType, itemIndex, uniqueId) {
     // Save name for next time
     localStorage.setItem('commenterName', nameVal);
 
-    // Fetch current data 
-    const docRef = db.collection('briefings').doc(targetId); 
+    // Fetch current data
+    const docRef = db.collection('briefings').doc(targetId);
 
     docRef.get().then(doc => {
         if (!doc.exists) return;
         const data = doc.data();
         
-        // Determine which array to update and which Container to re-render
         let listKey = '';
         let listData = [];
         let containerId = '';
         
-        if (listType === 'daily') { 
-            listKey = 'structuredDailyTasks'; 
-            listData = data.structuredDailyTasks || data.dailyTasks; 
+        if (listType === 'daily') {
+            listKey = 'structuredDailyTasks';
+            listData = data.structuredDailyTasks || data.dailyTasks;
             containerId = 'content-tasks';
-        } else if (listType === 'project') { 
-            listKey = 'structuredProjects'; 
-            listData = data.structuredProjects || data.projects; 
+        } else if (listType === 'project') {
+            listKey = 'structuredProjects';
+            listData = data.structuredProjects || data.projects;
             containerId = 'content-projects';
-        } else if (listType === 'active') { 
-            listKey = 'structuredActiveTasks'; 
-            listData = data.structuredActiveTasks || data.activeTasks; 
+        } else if (listType === 'active') {
+            listKey = 'structuredActiveTasks';
+            listData = data.structuredActiveTasks || data.activeTasks;
             containerId = 'content-active';
         }
 
         if (!listData[itemIndex]) return;
 
-        // Create Comment Object
         const newComment = {
             author: nameVal,
             text: textVal,
             timestamp: new Date().toISOString()
         };
 
-        // Initialize array if it doesn't exist
         if (!listData[itemIndex].publicComments) {
             listData[itemIndex].publicComments = [];
         }
 
-        // Add to local memory immediately
         listData[itemIndex].publicComments.push(newComment);
 
-        // Save back to Firestore
         docRef.update({
             [listKey]: listData
         }).then(() => {
-            // 1. Re-render the list immediately using local data
-            // We use the global 'currentShowPrivate' variable we set in Step 2
             renderList(containerId, listData, currentShowPrivate);
-
-            // 2. The re-render will close the box, so we must force it open again
             const newContainer = document.getElementById('comments-' + uniqueId);
             if (newContainer) {
                 newContainer.classList.add('open');
-                
-                // 3. Clear the text box (but keep the name)
                 newContainer.querySelector('.comment-input-text').value = '';
                 newContainer.querySelector('.comment-input-name').value = nameVal;
             }
@@ -133,7 +122,6 @@ const renderList = (id, items, showPrivate = false) => {
     const el = document.getElementById(id);
     const headerEl = document.getElementById('header-' + id.replace('content-', ''));
     
-    // Determine List Type for saving logic
     let listType = 'daily';
     if (id === 'content-projects') listType = 'project';
     if (id === 'content-active') listType = 'active';
@@ -150,9 +138,9 @@ const renderList = (id, items, showPrivate = false) => {
         headerEl.textContent = baseTitle + ` (${totalCount})`;
     }
 
-    if (!Array.isArray(items) || !items.length) { 
-        el.innerHTML = "<em>No items.</em>"; 
-        return; 
+    if (!Array.isArray(items) || !items.length) {
+        el.innerHTML = "<em>No items.</em>";
+        return;
     }
     
     let html = '<ol style="padding-left:20px;">';
@@ -172,49 +160,45 @@ const renderList = (id, items, showPrivate = false) => {
             goal = item.goal;
             attachment = item.attachment;
             itComments = item.itComments;
-            publicComments = item.publicComments || []; // Get Comments
+            publicComments = item.publicComments || [];
 
         } else if (typeof item === 'string') {
             name = item;
         } else {
-            return; 
+            return;
         }
 
         const safeName = linkify(name);
         const safeNotes = linkify(notes);
         const uniqueId = `${listType}-${index}`;
 
-        // Determine if it's a "Complex" item
-        const isComplexItem = (status || tester || startDate || endDate || goal || attachment || itComments);
-
-        // Build Extra Meta Data HTML
+        // Meta Data HTML
         let metaHtml = '';
         let dateParts = [];
-        const fmtDate = (d) => d; 
+        const fmtDate = (d) => d;
 
         if (startDate) dateParts.push(`Start: ${fmtDate(startDate)}`);
         if (lastUpdated) dateParts.push(`Updated: ${fmtDate(lastUpdated)}`);
         if (endDate) dateParts.push(`End: ${fmtDate(endDate)}`);
         
         if (dateParts.length > 0) {
-            metaHtml += `<div style="font-size:0.8em; color:#777; margin-top:2px;">\uD83D\uDCC5 ${dateParts.join(' <span style="color:#ccc;">|</span> ')}</div>`;
+            metaHtml += `<div style="font-size:0.8em; color:#777; margin-top:2px;">📅 ${dateParts.join(' <span style="color:#ccc;">|</span> ')}</div>`;
         }
 
         if (tester) {
-            metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#eef; color:#336; padding:1px 6px; border-radius:4px; border:1px solid #dde;">\uD83D\uDC64 Tester: ${tester}</span></div>`;
+            metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#eef; color:#336; padding:1px 6px; border-radius:4px; border:1px solid #dde;">👤 Tester: ${tester}</span></div>`;
         }
         
-        // Build Goal and Attachment HTML
+        // Goal and Attachment HTML
         let goalHtml = '';
         if (goal) {
             goalHtml = `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>`;
         }
         
         let attachmentHtml = '';
-                if (attachment) {
-                    // Changed text to "View Resource"
-                    attachmentHtml = `<div class="item-attachment">🔗 <a href="${attachment}" target="_blank">View Resource</a></div>`;
-                }
+        if (attachment) {
+            attachmentHtml = `<div class="item-attachment">🔗 <a href="${attachment}" target="_blank">View Resource</a></div>`;
+        }
 
         // IT Comments HTML (Only if showPrivate is true)
         let itCommentsHtml = '';
@@ -222,7 +206,7 @@ const renderList = (id, items, showPrivate = false) => {
             itCommentsHtml = `<div class="item-it-comment">🔒 <strong>IT Only:</strong> ${linkify(itComments)}</div>`;
         }
 
-        // --- BUILD COMMENTS HTML ---
+        // --- COMMENTS HTML ---
         const commentCount = publicComments.length;
         const commentLabel = commentCount > 0 ? `💬 View/Add Comments (${commentCount})` : `💬 Add Question/Comment`;
         
@@ -260,7 +244,6 @@ const renderList = (id, items, showPrivate = false) => {
 
         // --- RENDER ITEM ---
         if (typeof item === 'object') {
-            // Complex Item or Object-based Daily Task
             let color;
             switch (status) {
                 case 'On Track': color = 'green'; break;
@@ -274,7 +257,7 @@ const renderList = (id, items, showPrivate = false) => {
             }
 
             const statusBadge = status ? `<span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px; margin-left:5px;">${status}</span>` : '';
-            const milestoneHtml = milestone ? `<small style="color:#999; font-size:0.8em; display:block;">\uD83C\uDFC1 Next Milestone: ${linkify(milestone)}</small>` : '';
+            const milestoneHtml = milestone ? `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next Milestone: ${linkify(milestone)}</small>` : '';
 
             html += `<li style="margin-bottom:15px;">
                 <div style="margin-bottom:2px;">
@@ -289,7 +272,6 @@ const renderList = (id, items, showPrivate = false) => {
                 ${commentsSectionHtml}
             </li>`;
         } else {
-             // String item (Legacy Daily Task) - minimal rendering, no comments
              html += `<li style="margin-bottom:5px;"><strong>${safeName}</strong></li>`;
         }
     });
@@ -309,10 +291,9 @@ function loadOutlookData(reportId) {
 
         if (doc.exists) {
             const data = doc.data();
-            currentOutlookData = data; // NEW: Capture for export
+            currentOutlookData = data;
             headerMeetings.textContent = `4. Meetings (${data.meetings_count || 0})`;
             headerEmails.textContent   = `5. Emails (${data.emails_count || 0})`;
-            // Keep linkify here as these are raw text blobs from Outlook
             meetingsContent.innerHTML = linkify(data.meetings || "") || "<i>No meetings found.</i>";
             emailsContent.innerHTML   = linkify(data.emails || "")   || "<i>No unread emails.</i>";
         } else {
@@ -338,27 +319,19 @@ function renderReport(data, isDailyMode) {
     document.getElementById('report-body').classList.remove('hidden');
     document.getElementById('report-subtitle').textContent = "Report: " + data.reportId;
     
-    // NEW: Capture data for export
-        currentReportData = data;
+    currentReportData = data;
     
-    // Check if the report is protected (has a passcode).
     const hasPasscode = (data.passcode && data.passcode.trim() !== "");
-
-    // STRICT VISIBILITY RULE:
-    // 1. Must be in Daily Mode (Secure Tab).
-    // 2. Must have a Passcode configured.
-    // If we are active in renderReport in Daily Mode, it implies the passcode was entered successfully.
-    // If we are in Weekly Mode (isDailyMode=false), showPrivate forces to false.
     const showPrivate = isDailyMode && hasPasscode;
-    currentShowPrivate = showPrivate; // <--- ADD THIS LINE
+    currentShowPrivate = showPrivate;
 
     let updateTime = "Unknown";
     if (data.lastUpdated) {
         const dateObj = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated);
         if (!isNaN(dateObj)) {
-            updateTime = dateObj.toLocaleString('en-US', { 
-                year: 'numeric', month: 'long', day: 'numeric', 
-                hour: '2-digit', minute: '2-digit' 
+            updateTime = dateObj.toLocaleString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
             });
         } else {
             updateTime = data.lastUpdated;
@@ -377,7 +350,6 @@ function renderReport(data, isDailyMode) {
     const projectsData = data.structuredProjects || data.projects;
     const activeData = data.structuredActiveTasks || data.activeTasks;
 
-    // Pass the restricted visibility flag
     renderList('content-tasks', dailyTasksData || [], showPrivate);
     renderList('content-projects', projectsData || [], showPrivate);
     renderList('content-active', activeData || [], showPrivate);
@@ -400,7 +372,7 @@ function attemptUnlock() {
     const entered = document.getElementById('unlock-pass').value;
     if (entered === pendingData.passcode) {
         document.getElementById('lock-screen').classList.add('hidden');
-        renderReport(pendingData, true); 
+        renderReport(pendingData, true);
         loadOutlookData(targetId);
     } else {
         document.getElementById('unlock-error').style.display = 'block';
@@ -408,8 +380,6 @@ function attemptUnlock() {
 }
 
 function cancelUnlock() {
-    // Redirects to the base URL, effectively clearing the query parameters 
-    // and exiting the "Protected" mode back to the default welcome screen.
     window.location.href = window.location.pathname;
 }
 
@@ -430,13 +400,115 @@ function setLastGenerated() {
     if (el) el.textContent = `Report generated: ${formatted}`;
 }
 
+// --- ANALYTICS VIEW LOGIC ---
+let statusChart = null;
+let priorityChart = null;
+let workloadChart = null;
+
+function toggleAnalyticsView() {
+    // Hide Lists
+    document.getElementById('container-tasks').classList.add('hidden');
+    document.getElementById('container-projects').classList.add('hidden');
+    document.getElementById('container-active').classList.add('hidden');
+    document.getElementById('container-meetings').classList.add('hidden');
+    document.getElementById('container-emails').classList.add('hidden');
+    
+    // Show Analytics
+    document.getElementById('container-analytics').classList.remove('hidden');
+    
+    renderPublicAnalytics();
+}
+
+function closeAnalytics() {
+    // Hide Analytics
+    document.getElementById('container-analytics').classList.add('hidden');
+    
+    // Show Lists
+    document.getElementById('container-tasks').classList.remove('hidden');
+    document.getElementById('container-projects').classList.remove('hidden');
+    document.getElementById('container-active').classList.remove('hidden');
+    
+    // Restore Outlook sections ONLY if we are in private mode
+    if (currentShowPrivate) {
+        document.getElementById('container-meetings').classList.remove('hidden');
+        document.getElementById('container-emails').classList.remove('hidden');
+    }
+}
+
+function renderPublicAnalytics() {
+    if (!currentReportData) return;
+
+    // 1. Consolidate Data (Safe Public Data Only)
+    const projects = currentReportData.structuredProjects || currentReportData.projects || [];
+    const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
+    const daily = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
+    
+    const allItems = [...projects, ...active];
+
+    // 2. Calculate Counts
+    const statusCounts = { 'On Track': 0, 'Delayed': 0, 'Completed': 0, 'On-Hold': 0, 'Other': 0 };
+    allItems.forEach(item => {
+        const s = item.status || 'Other';
+        if (statusCounts.hasOwnProperty(s)) statusCounts[s]++;
+        else statusCounts['Other']++;
+    });
+
+    const prioCounts = { 'High': 0, 'Medium': 0, 'Low': 0 };
+    allItems.forEach(item => {
+        const p = item.priority || 'Low';
+        if (prioCounts.hasOwnProperty(p)) prioCounts[p]++;
+    });
+
+    // 3. Destroy Old Charts
+    if (statusChart) statusChart.destroy();
+    if (priorityChart) priorityChart.destroy();
+    if (workloadChart) workloadChart.destroy();
+
+    // 4. Render Charts
+    // Status Chart
+    statusChart = new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(statusCounts),
+            datasets: [{
+                data: Object.values(statusCounts),
+                backgroundColor: ['#28a745', '#dc3545', '#17a2b8', '#6c757d', '#e2e6ea']
+            }]
+        }
+    });
+
+    // Priority Chart
+    priorityChart = new Chart(document.getElementById('chartPriority'), {
+        type: 'bar',
+        data: {
+            labels: Object.keys(prioCounts),
+            datasets: [{
+                label: 'Count',
+                data: Object.values(prioCounts),
+                backgroundColor: ['#dc3545', '#ffc107', '#28a745']
+            }]
+        },
+        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+
+    // Workload Chart
+    workloadChart = new Chart(document.getElementById('chartWorkload'), {
+        type: 'pie',
+        data: {
+            labels: ['Daily Priorities', 'Projects', 'Active Tasks'],
+            datasets: [{
+                data: [daily.length, projects.length, active.length],
+                backgroundColor: ['#007bff', '#6610f2', '#fd7e14']
+            }]
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Enter Key for Main User ID Input
     document.getElementById('userid-input').addEventListener("keypress", function(event) {
         if (event.key === "Enter") viewReport();
     });
 
-    // 2. NEW: Enter Key for Passcode Input
     document.getElementById('unlock-pass').addEventListener("keypress", function(event) {
         if (event.key === "Enter") attemptUnlock();
     });
@@ -446,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reportId = urlParams.get('report');
     let potentialTargetId = dailyId || reportId;
     targetId = potentialTargetId ? potentialTargetId.toLowerCase() : null;
-    const isDailyMode = !!dailyId; 
+    const isDailyMode = !!dailyId;
 
     if (targetId) {
         document.getElementById('link-weekly').href = "?report=" + encodeURIComponent(targetId);
@@ -457,20 +529,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = doc.data();
                 if (isDailyMode) {
                     document.getElementById('report-title').textContent = "Daily Briefing";
-                    // Check logic for protection
                     if (data.passcode && data.passcode.trim() !== "") {
-                        pendingData = data; 
+                        pendingData = data;
                         document.getElementById('loading-overlay').classList.add('hidden');
                         document.getElementById('lock-screen').classList.remove('hidden');
                         document.getElementById('report-subtitle').textContent = "Protected";
                         
-                        // 3. NEW: Auto-focus the passcode field
                         setTimeout(() => {
                             document.getElementById('unlock-pass').focus();
                         }, 100);
 
                     } else {
-                        renderReport(data, true); 
+                        renderReport(data, true);
                         loadOutlookData(targetId);
                         setLastGenerated();
                     }
@@ -491,27 +561,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     } else {
         document.getElementById('report-subtitle').textContent = "Please enter ID below";
-        document.getElementById('loading-overlay').classList.add('hidden'); 
+        document.getElementById('loading-overlay').classList.add('hidden');
         document.getElementById('default-message').classList.remove('hidden');
     }
 });
-// --- EXPORT FUNCTION ---
+
+// --- EXPORT FUNCTION (With Analytics) ---
 function exportReportToExcel() {
     if (!currentReportData) {
         alert("No data loaded to export.");
         return;
     }
 
-    // Helper: Clean data based on privacy settings
+    // 1. Helper: Clean List Data
     const formatForExcel = (list) => {
         if (!Array.isArray(list)) return [];
         return list.map(item => {
-            // Flatten comments
             let commentsStr = "";
             if (item.publicComments && item.publicComments.length > 0) {
                 commentsStr = item.publicComments.map(c => `[${c.author}]: ${c.text}`).join(" | ");
             }
-
             let row = {
                 Name: item.name,
                 Status: item.status || "",
@@ -526,19 +595,62 @@ function exportReportToExcel() {
                 Attachment: item.attachment || "",
                 Public_Comments: commentsStr
             };
-
-            // SECURITY CHECK: Only export IT comments if we are currently in Private Mode
             if (currentShowPrivate) {
                 row.IT_Private_Comments = item.itComments || "";
             }
-
             return row;
         });
     };
 
+    // 2. Helper: Generate Analytics Data
+    const generateAnalyticsSheet = () => {
+        const projects = currentReportData.structuredProjects || currentReportData.projects || [];
+        const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
+        const daily = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
+        const allItems = [...projects, ...active];
+
+        // Calc Counts
+        const statusCounts = {};
+        const prioCounts = {};
+        
+        allItems.forEach(i => {
+            const s = i.status || 'No Status';
+            statusCounts[s] = (statusCounts[s] || 0) + 1;
+            
+            const p = i.priority || 'No Priority';
+            prioCounts[p] = (prioCounts[p] || 0) + 1;
+        });
+
+        // Build Rows
+        const rows = [
+            { Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length },
+            { Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length },
+            { Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length },
+            { Category: "", Metric: "", Count: "" } // Spacer
+        ];
+
+        // Add Statuses
+        Object.keys(statusCounts).forEach(k => {
+            rows.push({ Category: "STATUS BREAKDOWN", Metric: k, Count: statusCounts[k] });
+        });
+
+        rows.push({ Category: "", Metric: "", Count: "" }); // Spacer
+
+        // Add Priorities
+        Object.keys(prioCounts).forEach(k => {
+            rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] });
+        });
+
+        return rows;
+    };
+
     const wb = XLSX.utils.book_new();
 
-    // 1. Task Sheets
+    // 3. Add Analytics Sheet FIRST (Executive Summary)
+    const analyticsData = generateAnalyticsSheet();
+    if(analyticsData.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analyticsData), "Analytics Overview");
+
+    // 4. Add Data Sheets
     const daily = formatForExcel(currentReportData.structuredDailyTasks || currentReportData.dailyTasks);
     const projects = formatForExcel(currentReportData.structuredProjects || currentReportData.projects);
     const active = formatForExcel(currentReportData.structuredActiveTasks || currentReportData.activeTasks);
@@ -547,28 +659,20 @@ function exportReportToExcel() {
     if(projects.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projects), "Projects");
     if(active.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(active), "Active Tasks");
 
-    // 2. Outlook Sheet (Only if Private Mode is Active AND data exists)
+    // 5. Add Outlook (If Private)
     if (currentShowPrivate && currentOutlookData) {
         const outlookRows = [];
-        
-        // Add Meetings
         if(currentOutlookData.meetings) {
-            // Outlook data often comes as a big HTML blob or text block.
-            // We'll just dump the text content into a cell.
             outlookRows.push({ Type: "MEETINGS", Content: currentOutlookData.meetings.replace(/<[^>]*>?/gm, '') });
         }
-        
-        // Add Emails
         if(currentOutlookData.emails) {
             outlookRows.push({ Type: "EMAILS", Content: currentOutlookData.emails.replace(/<[^>]*>?/gm, '') });
         }
-
         if (outlookRows.length > 0) {
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outlookRows), "Outlook Data");
         }
     }
 
-    // 3. Download
     const dateStr = new Date().toISOString().split('T')[0];
     const mode = currentShowPrivate ? "Private_Briefing" : "Public_Report";
     XLSX.writeFile(wb, `${mode}_${targetId}_${dateStr}.xlsx`);
