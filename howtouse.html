@@ -59,10 +59,15 @@
             padding: 15px;
             margin: 15px 0;
         }
-        .note {
-            font-size: 0.9em;
-            color: #666;
-            font-style: italic;
+        .new-feature {
+            background: #e6fffa;
+            color: #004d40;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            border: 1px solid #b2f5ea;
+            vertical-align: middle;
         }
         .badge {
             display: inline-block;
@@ -74,16 +79,6 @@
             color: #333;
             margin: 0 2px;
         }
-        .new-feature {
-            background: #e6fffa;
-            color: #004d40;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-            border: 1px solid #b2f5ea;
-            vertical-align: middle;
-        }
     </style>
 </head>
 <body>
@@ -91,7 +86,7 @@
         <a href="index.html" class="back-link">&larr; Back to Report</a>
         
         <h1>How to Use Aqua Daily Briefing</h1>
-        <p>窓 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your <strong>Task Priorities</strong> with automated <strong>Outlook Data</strong> (emails/meetings) into one secure, shareable dashboard.</p>
+        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your <strong>Task Priorities</strong> with automated <strong>Outlook Data</strong> (emails/meetings) into one secure, shareable dashboard.</p>
 
         <h2>The Two-Part System</h2>
         <ol>
@@ -125,8 +120,8 @@
             <p>These sections support <strong>Rich Data</strong>. When adding or editing an item, you can specify:</p>
             <ul>
                 <li><strong>Status:</strong> Color-coded badges (e.g., <span class="badge" style="background:#d4edda; color:#155724;">On Track</span>, <span class="badge" style="background:#f8d7da; color:#721c24;">Delayed</span>).</li>
-                <li><strong>Testers:</strong> Assign a QA tester or specific team member.</li>
-                <li><strong>Milestones:</strong> Track the next major goal (圸).</li>
+                <li><strong>Resources <span class="new-feature">NEW</span>:</strong> Upload files or paste links to Drive/SharePoint.</li>
+                <li><strong>Milestones:</strong> Track the next major goal (🏁).</li>
                 <li><strong>Dates:</strong> Set Start, End, and Last Updated dates.</li>
                 <li><strong>IT Comments <span class="new-feature">NEW</span>:</strong> Private notes for the IT team.</li>
                 <li><strong>Public Comments <span class="new-feature">NEW</span>:</strong> View and delete public comments directly from the edit window.</li>
@@ -144,7 +139,7 @@
         <div class="step-box">
             <ul>
                 <li><strong>How to Enable:</strong> Go to <strong>Settings</strong> and save a Passcode.</li>
-                <li><strong>How to Add:</strong> In the Admin modal (Edit/Add Item), a new red field labeled <strong>"白 IT Team Only Comments"</strong> will appear.</li>
+                <li><strong>How to Add:</strong> In the Admin modal (Edit/Add Item), a new red field labeled <strong>"🔒 IT Team Only Comments"</strong> will appear.</li>
                 <li><strong>Visibility:</strong> These notes ONLY appear in the <strong>Daily Briefing</strong> view after you successfully enter the passcode. They are completely removed from the Weekly Report.</li>
             </ul>
         </div>
@@ -153,7 +148,7 @@
         <p>Stakeholders can now ask questions or leave feedback directly on your report.</p>
         <div class="step-box">
             <ul>
-                <li><strong>How to Comment:</strong> Viewers can click <strong>"町 View/Add Comments"</strong> on any task, enter their Name, and click Post.</li>
+                <li><strong>How to Comment:</strong> Viewers can click <strong>"💬 View/Add Comments"</strong> on any task, enter their Name, and click Post.</li>
                 <li><strong>Where it Appears:</strong> Comments are visible on both the Public Weekly Report and the Private Daily Briefing.</li>
                 <li><strong>Moderation:</strong> To delete an inappropriate comment:
                     <ol>
@@ -166,7 +161,33 @@
             </ul>
         </div>
 
-        <h2>Step 5: Sync Outlook (The Agent)</h2>
+        <h2>Step 5: File Uploads <span class="new-feature">NEW</span></h2>
+        <p>You can now host documents directly within your report (e.g., Specs, PDFs, Screenshots).</p>
+        <div class="step-box">
+            <ul>
+                <li><strong>How to Upload:</strong> In the Admin "Edit Item" window, find the <strong>Resource</strong> section.</li>
+                <li><strong>Click "Upload":</strong> Select a file from your computer (PDF, Word, Excel, Text, or Image).</li>
+                <li><strong>Limits:</strong> The maximum file size is <strong>10MB</strong>.</li>
+                <li><strong>Automatic Linking:</strong> Once the upload finishes, the system automatically inserts the secure link for you.</li>
+            </ul>
+        </div>
+
+        <h2>Step 6: Export to Excel <span class="new-feature">NEW</span></h2>
+        <p>Need a hard copy or backup? You can now export your data to Excel.</p>
+        <div class="step-box">
+            <ul>
+                <li><strong>Where:</strong> Click the <strong style="color:#27ae60;">&#128229; Export to Excel</strong> link in the top navigation bar.</li>
+                <li><strong>What is Exported:</strong> All Tasks, Projects, and Active Tasks.</li>
+                <li><strong>Smart Security:</strong>
+                    <ul>
+                        <li>If exported from the <strong>Public View</strong>, it excludes IT Comments and Outlook Data.</li>
+                        <li>If exported from the <strong>Private (Unlocked) View</strong>, it <em>includes</em> IT Comments, Meetings, and Emails.</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <h2>Step 7: Sync Outlook (The Agent)</h2>
         <p>To see your <strong>Meetings</strong> and <strong>Unread Emails</strong>, the desktop agent must run.</p>
         <div class="step-box">
             <ol>
@@ -176,21 +197,21 @@
             </ol>
         </div>
 
-        <h2>Step 6: Viewing Reports</h2>
+        <h2>Step 8: Viewing Reports</h2>
         <p>You have two views available based on your needs:</p>
         
         <div class="step-box">
-            <h3>白 Daily Briefing (Private)</h3>
+            <h3>🔒 Daily Briefing (Private)</h3>
             <p><strong>URL:</strong> <code>/?daily=YOUR_ID</code></p>
             <ul>
                 <li><strong>Includes:</strong> Tasks, Projects, <strong>IT Comments</strong>, Meetings, Unread Emails, and Public Comments.</li>
                 <li><strong>Security:</strong> Protected by your Passcode. (Press Enter to submit).</li>
             </ul>
 
-            <h3>討 Weekly Report (Public)</h3>
+            <h3>📊 Weekly Report (Public)</h3>
             <p><strong>URL:</strong> <code>/?report=YOUR_ID</code></p>
             <ul>
-                <li><strong>Includes:</strong> Tasks, Projects, and Public Comments.</li>
+                <li><strong>Includes:</strong> Tasks, Projects, Resources, and Public Comments.</li>
                 <li><strong>No Sensitive Data:</strong> Hides emails, meetings, and <strong>IT Comments</strong>.</li>
                 <li><strong>Shareable:</strong> Perfect for sending to managers or stakeholders as a status update.</li>
             </ul>
