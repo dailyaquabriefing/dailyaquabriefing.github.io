@@ -22,7 +22,7 @@ STEP 2: INSTALLATION
 ------------------------------------------------------------
 1.  Ensure you have downloaded and extracted all files to a folder on your PC.
 2.  Locate the file named: "AquaDailyBriefing.exe" 
-3.  Double-click "AquaDailyBriefing.exe" to run the installer.
+3.  Double-click "AquaDailyBriefing.exe" to run the installer.(if asked, uncheck "Always ask before opening this file").
 4.  The app will automatically:
     - Create the necessary folders in your user directory.
     - Copy the program files.
