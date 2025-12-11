@@ -566,21 +566,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- EXPORT FUNCTION (With Analytics) ---
+// --- EXPORT FUNCTION (Requires xlsx-js-style library) ---
 function exportReportToExcel() {
     if (!currentReportData) {
         alert("No data loaded to export.");
         return;
     }
 
-    // 1. Helper: Clean List Data
+    // --- HELPER 1: FORMAT DATA & NEWLINES ---
     const formatForExcel = (list) => {
         if (!Array.isArray(list)) return [];
         return list.map(item => {
             let commentsStr = "";
+            // Use \r\n for line breaks which Excel recognizes inside cells
             if (item.publicComments && item.publicComments.length > 0) {
-                commentsStr = item.publicComments.map(c => `[${c.author}]: ${c.text}`).join(" | ");
+                commentsStr = [...item.publicComments].reverse().map(c => {
+                    let timeStr = "N/A";
+                    if (c.timestamp) {
+                        const d = new Date(c.timestamp);
+                        timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    }
+                    return `[${timeStr}]: [${c.author}]: ${c.text}`;
+                }).join("\r\n");
             }
+
+            // Define the base row order (Attachment removed from middle)
             let row = {
                 Name: item.name,
                 Status: item.status || "",
@@ -592,84 +602,133 @@ function exportReportToExcel() {
                 Updated: item.lastUpdated || "",
                 Tester: item.tester || "",
                 Notes: item.notes || "",
-                Attachment: item.attachment || "",
-                Public_Comments: commentsStr
+                Public_Comments: commentsStr 
             };
+
+            // Add Private Comments next (if applicable)
             if (currentShowPrivate) {
                 row.IT_Private_Comments = item.itComments || "";
             }
+
+            // Add Attachment LAST
+            row.Attachment = item.attachment || "";
+
             return row;
         });
     };
 
-    // 2. Helper: Generate Analytics Data
+    // --- HELPER 2: APPLY STYLES (WRAP TEXT) ---
+    const applyColumnStyles = (ws, targetHeader) => {
+        if (!ws['!ref']) return;
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        
+        // 1. Find the Column Index for the Header
+        let colIndex = -1;
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const address = XLSX.utils.encode_cell({ r: range.s.r, c: C });
+            if (ws[address] && ws[address].v === targetHeader) {
+                colIndex = C;
+                break;
+            }
+        }
+        if (colIndex === -1) return; // Header not found
+
+        // 2. Set Column Width (approx 60 chars)
+        if (!ws['!cols']) ws['!cols'] = [];
+        // Fill empty slots to prevent sparse array errors
+        for (let i = 0; i <= range.e.c; i++) { if (!ws['!cols'][i]) ws['!cols'][i] = { wch: 10 }; }
+        ws['!cols'][colIndex] = { wch: 60 }; 
+
+        // 3. Iterate Rows and Apply Wrap Style
+        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+            const address = XLSX.utils.encode_cell({ r: R, c: colIndex });
+            
+            // If cell doesn't exist (empty), create it so styling applies
+            if (!ws[address]) ws[address] = { t: 's', v: '' };
+
+            // Apply Style Object
+            if (!ws[address].s) ws[address].s = {};
+            
+            ws[address].s.alignment = { 
+                wrapText: true, 
+                vertical: 'top', 
+                horizontal: 'left' 
+            };
+        }
+    };
+
+    // --- MAIN EXPORT LOGIC ---
+    const wb = XLSX.utils.book_new();
+
+    // 1. Generate Analytics
     const generateAnalyticsSheet = () => {
         const projects = currentReportData.structuredProjects || currentReportData.projects || [];
         const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
         const daily = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
         const allItems = [...projects, ...active];
 
-        // Calc Counts
         const statusCounts = {};
         const prioCounts = {};
         
         allItems.forEach(i => {
             const s = i.status || 'No Status';
             statusCounts[s] = (statusCounts[s] || 0) + 1;
-            
             const p = i.priority || 'No Priority';
             prioCounts[p] = (prioCounts[p] || 0) + 1;
         });
 
-        // Build Rows
         const rows = [
             { Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length },
             { Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length },
             { Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length },
-            { Category: "", Metric: "", Count: "" } // Spacer
+            { Category: "", Metric: "", Count: "" }
         ];
 
-        // Add Statuses
-        Object.keys(statusCounts).forEach(k => {
-            rows.push({ Category: "STATUS BREAKDOWN", Metric: k, Count: statusCounts[k] });
-        });
-
-        rows.push({ Category: "", Metric: "", Count: "" }); // Spacer
-
-        // Add Priorities
-        Object.keys(prioCounts).forEach(k => {
-            rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] });
-        });
+        Object.keys(statusCounts).forEach(k => rows.push({ Category: "STATUS BREAKDOWN", Metric: k, Count: statusCounts[k] }));
+        rows.push({ Category: "", Metric: "", Count: "" });
+        Object.keys(prioCounts).forEach(k => rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] }));
 
         return rows;
     };
 
-    const wb = XLSX.utils.book_new();
-
-    // 3. Add Analytics Sheet FIRST (Executive Summary)
     const analyticsData = generateAnalyticsSheet();
     if(analyticsData.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analyticsData), "Analytics Overview");
 
-    // 4. Add Data Sheets
-    const daily = formatForExcel(currentReportData.structuredDailyTasks || currentReportData.dailyTasks);
-    const projects = formatForExcel(currentReportData.structuredProjects || currentReportData.projects);
-    const active = formatForExcel(currentReportData.structuredActiveTasks || currentReportData.activeTasks);
+    // 2. Generate Data Sheets
+    const sheetsToProcess = [
+        { name: "Daily Tasks", data: currentReportData.structuredDailyTasks || currentReportData.dailyTasks },
+        { name: "Projects", data: currentReportData.structuredProjects || currentReportData.projects },
+        { name: "Active Tasks", data: currentReportData.structuredActiveTasks || currentReportData.activeTasks }
+    ];
 
-    if(daily.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(daily), "Daily Tasks");
-    if(projects.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projects), "Projects");
-    if(active.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(active), "Active Tasks");
+    sheetsToProcess.forEach(sheetObj => {
+        const formattedData = formatForExcel(sheetObj.data);
+        if (formattedData.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(formattedData);
+            
+            // Apply Styling
+            applyColumnStyles(ws, "Public_Comments");
+            if(currentShowPrivate) applyColumnStyles(ws, "IT_Private_Comments");
 
-    // 5. Add Outlook (If Private)
+            XLSX.utils.book_append_sheet(wb, ws, sheetObj.name);
+        }
+    });
+
+    // 3. Outlook Data
     if (currentShowPrivate && currentOutlookData) {
         const outlookRows = [];
         if(currentOutlookData.meetings) {
-            outlookRows.push({ Type: "MEETINGS", Content: currentOutlookData.meetings.replace(/<[^>]*>?/gm, '') });
+             const cleanMeetings = currentOutlookData.meetings.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>?/gm, '');
+             outlookRows.push({ Type: "MEETINGS", Content: cleanMeetings });
         }
         if(currentOutlookData.emails) {
-            outlookRows.push({ Type: "EMAILS", Content: currentOutlookData.emails.replace(/<[^>]*>?/gm, '') });
+             const cleanEmails = currentOutlookData.emails.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>?/gm, '');
+             outlookRows.push({ Type: "EMAILS", Content: cleanEmails });
         }
         if (outlookRows.length > 0) {
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outlookRows), "Outlook Data");
+            const wsOutlook = XLSX.utils.json_to_sheet(outlookRows);
+            applyColumnStyles(wsOutlook, "Content"); 
+            XLSX.utils.book_append_sheet(wb, wsOutlook, "Outlook Data");
         }
     }
 
