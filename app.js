@@ -14,6 +14,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 let pendingData = null; 
 let targetId = null; 
+let currentShowPrivate = false; // <--- ADD THIS LINE
 
 // --- HELPER FUNCTIONS ---
 
@@ -33,9 +34,105 @@ function linkify(htmlContent) {
     return newText;
 }
 
+// Toggle comment visibility
+window.toggleComments = function(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.toggle('open');
+        // Save Name Preference
+        const nameInput = el.querySelector('.comment-input-name');
+        if(nameInput && !nameInput.value) {
+            nameInput.value = localStorage.getItem('commenterName') || '';
+        }
+    }
+};
+
+// Post a new comment
+window.postComment = function(listType, itemIndex, uniqueId) {
+    const container = document.getElementById('comments-' + uniqueId);
+    const nameVal = container.querySelector('.comment-input-name').value.trim();
+    const textVal = container.querySelector('.comment-input-text').value.trim();
+
+    if (!nameVal || !textVal) {
+        alert("Please enter both your Name and a Comment.");
+        return;
+    }
+
+    // Save name for next time
+    localStorage.setItem('commenterName', nameVal);
+
+    // Fetch current data 
+    const docRef = db.collection('briefings').doc(targetId); 
+
+    docRef.get().then(doc => {
+        if (!doc.exists) return;
+        const data = doc.data();
+        
+        // Determine which array to update and which Container to re-render
+        let listKey = '';
+        let listData = [];
+        let containerId = '';
+        
+        if (listType === 'daily') { 
+            listKey = 'structuredDailyTasks'; 
+            listData = data.structuredDailyTasks || data.dailyTasks; 
+            containerId = 'content-tasks';
+        } else if (listType === 'project') { 
+            listKey = 'structuredProjects'; 
+            listData = data.structuredProjects || data.projects; 
+            containerId = 'content-projects';
+        } else if (listType === 'active') { 
+            listKey = 'structuredActiveTasks'; 
+            listData = data.structuredActiveTasks || data.activeTasks; 
+            containerId = 'content-active';
+        }
+
+        if (!listData[itemIndex]) return;
+
+        // Create Comment Object
+        const newComment = {
+            author: nameVal,
+            text: textVal,
+            timestamp: new Date().toISOString()
+        };
+
+        // Initialize array if it doesn't exist
+        if (!listData[itemIndex].publicComments) {
+            listData[itemIndex].publicComments = [];
+        }
+
+        // Add to local memory immediately
+        listData[itemIndex].publicComments.push(newComment);
+
+        // Save back to Firestore
+        docRef.update({
+            [listKey]: listData
+        }).then(() => {
+            // 1. Re-render the list immediately using local data
+            // We use the global 'currentShowPrivate' variable we set in Step 2
+            renderList(containerId, listData, currentShowPrivate);
+
+            // 2. The re-render will close the box, so we must force it open again
+            const newContainer = document.getElementById('comments-' + uniqueId);
+            if (newContainer) {
+                newContainer.classList.add('open');
+                
+                // 3. Clear the text box (but keep the name)
+                newContainer.querySelector('.comment-input-text').value = '';
+                newContainer.querySelector('.comment-input-name').value = nameVal;
+            }
+        });
+    });
+};
+
 const renderList = (id, items, showPrivate = false) => {
     const el = document.getElementById(id);
     const headerEl = document.getElementById('header-' + id.replace('content-', ''));
+    
+    // Determine List Type for saving logic
+    let listType = 'daily';
+    if (id === 'content-projects') listType = 'project';
+    if (id === 'content-active') listType = 'active';
 
     const totalCount = Array.isArray(items) ? items.length : 0;
     
@@ -56,8 +153,8 @@ const renderList = (id, items, showPrivate = false) => {
     
     let html = '<ol style="padding-left:20px;">';
     
-    items.forEach(item => {
-        let name, notes = '', status, milestone = '', tester = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '';
+    items.forEach((item, index) => {
+        let name, notes = '', status, milestone = '', tester = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '', publicComments = [];
         
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
@@ -71,6 +168,7 @@ const renderList = (id, items, showPrivate = false) => {
             goal = item.goal;
             attachment = item.attachment;
             itComments = item.itComments;
+            publicComments = item.publicComments || []; // Get Comments
 
         } else if (typeof item === 'string') {
             name = item;
@@ -78,12 +176,9 @@ const renderList = (id, items, showPrivate = false) => {
             return; 
         }
 
-        // Linkify specific fields individually
         const safeName = linkify(name);
         const safeNotes = linkify(notes);
-        const safeGoal = linkify(goal);
-        const safeMilestone = linkify(milestone);
-        const safeItComments = linkify(itComments);
+        const uniqueId = `${listType}-${index}`;
 
         // Determine if it's a "Complex" item
         const isComplexItem = (status || tester || startDate || endDate || goal || attachment || itComments);
@@ -108,7 +203,7 @@ const renderList = (id, items, showPrivate = false) => {
         // Build Goal and Attachment HTML
         let goalHtml = '';
         if (goal) {
-            goalHtml = `<div class="item-goal">🎯 <strong>Goal:</strong> ${safeGoal}</div>`;
+            goalHtml = `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>`;
         }
         
         let attachmentHtml = '';
@@ -119,18 +214,48 @@ const renderList = (id, items, showPrivate = false) => {
         // IT Comments HTML (Only if showPrivate is true)
         let itCommentsHtml = '';
         if (itComments && showPrivate) {
-            itCommentsHtml = `<div class="item-it-comment">🔒 <strong>IT Only:</strong> ${safeItComments}</div>`;
+            itCommentsHtml = `<div class="item-it-comment">🔒 <strong>IT Only:</strong> ${linkify(itComments)}</div>`;
         }
 
-        if (!isComplexItem && !status) {
-            // Simple Task (Minimal Display)
-            html += `<li style="margin-bottom:5px;">
-                <strong>${safeName}</strong>
-                ${itCommentsHtml}
-                ${metaHtml}
-            </li>`;
-        } else {
-            // Complex Item Display
+        // --- BUILD COMMENTS HTML ---
+        const commentCount = publicComments.length;
+        const commentLabel = commentCount > 0 ? `💬 View/Add Comments (${commentCount})` : `💬 Add Question/Comment`;
+        
+        let commentsListHtml = '';
+        publicComments.forEach(c => {
+            let timeStr = '';
+            if(c.timestamp) {
+                const d = new Date(c.timestamp);
+                timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+            commentsListHtml += `
+                <div class="comment-bubble">
+                    <div class="comment-header">
+                        <span class="comment-author">${linkify(c.author)}</span>
+                        <span>${timeStr}</span>
+                    </div>
+                    <div>${linkify(c.text)}</div>
+                </div>
+            `;
+        });
+
+        const commentsSectionHtml = `
+            <div class="comments-section">
+                <button class="comment-toggle" onclick="toggleComments('comments-${uniqueId}')">${commentLabel}</button>
+                <div id="comments-${uniqueId}" class="comments-container">
+                    ${commentsListHtml}
+                    <div class="comment-form">
+                        <input type="text" class="comment-input-name" placeholder="Your Name" maxlength="20">
+                        <input type="text" class="comment-input-text" placeholder="Type a question or comment...">
+                        <button class="btn-post" onclick="postComment('${listType}', ${index}, '${uniqueId}')">Post</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // --- RENDER ITEM ---
+        if (typeof item === 'object') {
+            // Complex Item or Object-based Daily Task
             let color;
             switch (status) {
                 case 'On Track': color = 'green'; break;
@@ -144,7 +269,7 @@ const renderList = (id, items, showPrivate = false) => {
             }
 
             const statusBadge = status ? `<span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px; margin-left:5px;">${status}</span>` : '';
-            const milestoneHtml = milestone ? `<small style="color:#999; font-size:0.8em; display:block;">\uD83C\uDFC1 Next Milestone: ${safeMilestone}</small>` : '';
+            const milestoneHtml = milestone ? `<small style="color:#999; font-size:0.8em; display:block;">\uD83C\uDFC1 Next Milestone: ${linkify(milestone)}</small>` : '';
 
             html += `<li style="margin-bottom:15px;">
                 <div style="margin-bottom:2px;">
@@ -156,7 +281,11 @@ const renderList = (id, items, showPrivate = false) => {
                 ${itCommentsHtml}
                 ${milestoneHtml}
                 ${metaHtml}
+                ${commentsSectionHtml}
             </li>`;
+        } else {
+             // String item (Legacy Daily Task) - minimal rendering, no comments
+             html += `<li style="margin-bottom:5px;"><strong>${safeName}</strong></li>`;
         }
     });
     
@@ -212,6 +341,7 @@ function renderReport(data, isDailyMode) {
     // If we are active in renderReport in Daily Mode, it implies the passcode was entered successfully.
     // If we are in Weekly Mode (isDailyMode=false), showPrivate forces to false.
     const showPrivate = isDailyMode && hasPasscode;
+    currentShowPrivate = showPrivate; // <--- ADD THIS LINE
 
     let updateTime = "Unknown";
     if (data.lastUpdated) {

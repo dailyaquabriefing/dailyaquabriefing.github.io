@@ -293,19 +293,93 @@
                 padding: 20px;
             }
         }
-/* Add inside <style> tag */
+        /* IT Comment Style */
+        .item-it-comment {
+            background: #fff5f5;
+            color: #c0392b;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 6px;
+            margin-bottom: 4px;
+            font-size: 0.9em;
+            border: 1px solid #ffc9c9;
+            display: block; 
+        }
 
-.item-it-comment {
-    background: #fff5f5;
-    color: #c0392b;
-    padding: 5px 10px;
-    border-radius: 4px;
-    margin-top: 6px;
-    margin-bottom: 4px;
-    font-size: 0.9em;
-    border: 1px solid #ffc9c9;
-    display: block; /* Force new line */
-}
+        /* --- COMMENT SECTION STYLES --- */
+        .comments-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #eee;
+        }
+        .comment-toggle {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 0.85em;
+            cursor: pointer;
+            padding: 0;
+            text-decoration: underline;
+        }
+        .comments-container {
+            background: #fafafa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            display: none; /* Hidden by default */
+        }
+        .comments-container.open { display: block; }
+
+        .comment-bubble {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        .comment-header {
+            font-size: 0.8em;
+            color: #777;
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .comment-author { font-weight: bold; color: #333; }
+
+        /* Comment Form */
+        .comment-form {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .comment-input-name {
+            flex: 1;
+            min-width: 100px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        .comment-input-text {
+            flex: 3;
+            min-width: 200px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        .btn-post {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .btn-post:hover { background: #005a9e; }
 
     </style>
 </head>
