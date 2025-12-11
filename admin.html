@@ -261,6 +261,19 @@
     padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; white-space: nowrap;
 }
 .btn-del-comment:hover { background: #dc3545; color: white; }
+.modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+            
+            /* --- NEW: FIX FOR TALL FORMS --- */
+            max-height: 90vh;      /* Limits height to 90% of the viewport */
+            overflow-y: auto;      /* Adds a scrollbar inside the modal if needed */
+            position: relative;    /* Keeps everything contained */
+        }
     </style>
 </head>
 <body>
@@ -424,9 +437,17 @@
             </div>
 
             <div class="form-group">
-                <label>📎 Resource URL (Screenshot, Video, or Drive Link)</label>
-                <input type="text" id="m-attachment" class="w-full" placeholder="https://sharepoint.com/... or https://drive.google.com/...">
-                <small style="color:#777;">Paste a link to your screenshot, document, or sample data here.</small>
+                <label>📎 Resource (Upload File or Paste Link)</label>
+                
+                <div style="display:flex; gap:10px; margin-bottom:5px;">
+                    <input type="file" id="file-upload-input" style="flex-grow:1; border:1px solid #ccc; background:#fff;"
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.png">
+                    <button class="btn" style="background:#6c757d; color:white; font-size:0.8em;" onclick="uploadFile()">⬆ Upload</button>
+                </div>
+                <div id="upload-status" style="font-size:0.85em; color:#0078D4; margin-bottom:5px; display:none;"></div>
+
+                <input type="text" id="m-attachment" class="w-full" placeholder="https://...">
+                <small style="color:#777;">Upload a file above (max 10MB) OR paste a link manually.</small>
             </div>
 
             <div id="m-it-comments-container" class="private-field-group">
@@ -455,6 +476,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script>
 
     <script>
         // --- CONFIGURATION ---
@@ -462,7 +484,7 @@
             apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU", 
             authDomain: "dailybriefing-fe7df.firebaseapp.com",
             projectId: "dailybriefing-fe7df",
-            storageBucket: "dailybriefing-fe7df.appspot.com",
+            storageBucket: "dailybriefing-fe7df.firebasestorage.app",
             messagingSenderId: "",
             appId: ""
         };
@@ -912,6 +934,70 @@ function deleteComment(commentIndex) {
             const btns = document.getElementsByClassName('tab-btn');
             for (let b of btns) b.classList.remove('active');
             event.currentTarget.classList.add('active');
+        }
+        
+        // --- FILE UPLOAD LOGIC ---
+        const storage = firebase.storage();
+
+        function uploadFile() {
+            const fileInput = document.getElementById('file-upload-input');
+            const statusEl = document.getElementById('upload-status');
+            const urlInput = document.getElementById('m-attachment');
+
+            if (fileInput.files.length === 0) {
+                alert("Please select a file first.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+
+            // 1. VALIDATION: Size Limit (10MB)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                alert("File is too large! Limit is 10MB.");
+                return;
+            }
+
+            // 2. VALIDATION: File Type (Safety Check)
+            // Allowed: Images, PDF, Word, Excel, Text
+            const allowedExtensions = /(\.jpg|\.jpeg|\.png|\.pdf|\.doc|\.docx|\.xls|\.xlsx|\.txt)$/i;
+            if (!allowedExtensions.exec(file.name)) {
+                alert("Invalid file type. Only PDF, Word, Excel, TXT, or Images allowed.");
+                return;
+            }
+
+            // 3. UPLOAD PROCESS
+            statusEl.style.display = 'block';
+            statusEl.textContent = "Uploading... please wait...";
+            
+            // Create a unique name: reports/userid/timestamp_filename
+            const storageRef = storage.ref();
+            const uniqueName = `uploads/${currentUser.uid}/${Date.now()}_${file.name}`;
+            const uploadTask = storageRef.child(uniqueName).put(file);
+
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    // Optional: Progress logic here
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    statusEl.textContent = `Uploading: ${Math.round(progress)}%`;
+                },
+                (error) => {
+                    console.error("Upload error:", error);
+                    statusEl.textContent = "Error uploading file.";
+                    statusEl.style.color = "red";
+                    alert("Upload failed: " + error.message);
+                },
+                () => {
+                    // Success! Get the URL
+                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                        statusEl.textContent = "✅ Upload Complete!";
+                        statusEl.style.color = "green";
+                        
+                        // Auto-fill the URL box
+                        urlInput.value = downloadURL;
+                    });
+                }
+            );
         }
     </script>
 </body>
