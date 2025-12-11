@@ -688,6 +688,17 @@ function exportReportToExcel() {
         rows.push({ Category: "", Metric: "", Count: "" });
         Object.keys(prioCounts).forEach(k => rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] }));
 
+        // --- NEW: FOOTER ROWS ---
+        // 1. Spacing (Two empty rows)
+        rows.push({ Category: "", Metric: "", Count: "" });
+        rows.push({ Category: "", Metric: "", Count: "" });
+        
+        // 2. Report ID (Label in Col A, ID in Col B)
+        rows.push({ Category: "Report for:", Metric: targetId || "Unknown", Count: "" });
+        
+        // 3. Current Date/Time (Label in Col A, Date in Col B)
+        rows.push({ Category: "Date Created:", Metric: new Date().toLocaleString(), Count: "" });
+
         return rows;
     };
 
