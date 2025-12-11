@@ -34,7 +34,7 @@ Main() {
     if !ProcessExist("OUTLOOK.EXE") {
         Run, outlook.exe
         WinWait, ahk_exe OUTLOOK.EXE
-        Sleep, 1500  ; give Outlook a moment to initialize
+        Sleep, 3000  ; give Outlook a moment to initialize
     }
 
     ; -----------------------------------------------------------
