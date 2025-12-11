@@ -12,7 +12,7 @@ If you have a previous version of Aqua Daily Briefing installed,
 you must remove it before installing the new version to avoid errors.
 
 1.  Ensure you have downloaded and extracted all files to a folder on your PC.
-2.  Locate the file named: "uninstall_aqua.bat"
+2.  Locate the file named: "uninstall_aquadailybriefing.bat"
 3.  Right-clicking the .bat file and selecting "Run as Administrator."
 4.  Wait for the "Uninstallation Completed Successfully" message.
 5.  Press any key to close the window.
