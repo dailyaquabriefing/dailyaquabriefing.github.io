@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Report Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+        <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
     /* ...Updated Styles... */
     
@@ -415,14 +415,16 @@
     </div>
 
     <div id="nav-links" class="hidden">
-        <a id="link-weekly" href="#">Weekly Report</a> 
-        <span class="nav-separator">|</span>
-        <a id="link-daily" href="#">Daily Briefing</a>
-        <span class="nav-separator">|</span>
-        <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a>
-        <span class="nav-separator">|</span>
-        <a href="howtouse.html" target="_blank">How to Use</a>
-    </div>
+            <a id="link-weekly" href="#">Weekly Report</a>
+            <span class="nav-separator">|</span>
+            <a id="link-daily" href="#">Daily Briefing</a>
+            <span class="nav-separator">|</span>
+            <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a>
+            <span class="nav-separator">|</span>
+            <a href="howtouse.html" target="_blank">How to Use</a>
+            <span class="nav-separator">|</span>
+            <a onclick="exportReportToExcel()" style="cursor:pointer; color:#27ae60; font-weight:bold;">&#128229; Export to Excel</a>
+        </div>
 
     <div id="default-message" class="message-box">
         <h2>Welcome to Aqua Briefing</h2>

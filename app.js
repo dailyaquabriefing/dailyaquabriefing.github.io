@@ -16,6 +16,10 @@ let pendingData = null;
 let targetId = null; 
 let currentShowPrivate = false; // <--- ADD THIS LINE
 
+// NEW GLOBALS FOR EXPORT
+let currentReportData = null;
+let currentOutlookData = null;
+
 // --- HELPER FUNCTIONS ---
 
 function linkify(htmlContent) {
@@ -207,9 +211,10 @@ const renderList = (id, items, showPrivate = false) => {
         }
         
         let attachmentHtml = '';
-        if (attachment) {
-            attachmentHtml = `<div class="item-attachment">📎 <a href="${attachment}" target="_blank">View Attachment / Link</a></div>`;
-        }
+                if (attachment) {
+                    // Changed text to "View Resource"
+                    attachmentHtml = `<div class="item-attachment">🔗 <a href="${attachment}" target="_blank">View Resource</a></div>`;
+                }
 
         // IT Comments HTML (Only if showPrivate is true)
         let itCommentsHtml = '';
@@ -304,6 +309,7 @@ function loadOutlookData(reportId) {
 
         if (doc.exists) {
             const data = doc.data();
+            currentOutlookData = data; // NEW: Capture for export
             headerMeetings.textContent = `4. Meetings (${data.meetings_count || 0})`;
             headerEmails.textContent   = `5. Emails (${data.emails_count || 0})`;
             // Keep linkify here as these are raw text blobs from Outlook
@@ -331,6 +337,9 @@ function renderReport(data, isDailyMode) {
     document.getElementById('nav-links').classList.remove('hidden');
     document.getElementById('report-body').classList.remove('hidden');
     document.getElementById('report-subtitle').textContent = "Report: " + data.reportId;
+    
+    // NEW: Capture data for export
+        currentReportData = data;
     
     // Check if the report is protected (has a passcode).
     const hasPasscode = (data.passcode && data.passcode.trim() !== "");
@@ -486,3 +495,81 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('default-message').classList.remove('hidden');
     }
 });
+// --- EXPORT FUNCTION ---
+function exportReportToExcel() {
+    if (!currentReportData) {
+        alert("No data loaded to export.");
+        return;
+    }
+
+    // Helper: Clean data based on privacy settings
+    const formatForExcel = (list) => {
+        if (!Array.isArray(list)) return [];
+        return list.map(item => {
+            // Flatten comments
+            let commentsStr = "";
+            if (item.publicComments && item.publicComments.length > 0) {
+                commentsStr = item.publicComments.map(c => `[${c.author}]: ${c.text}`).join(" | ");
+            }
+
+            let row = {
+                Name: item.name,
+                Status: item.status || "",
+                Priority: item.priority || "",
+                Goal: item.goal || "",
+                Milestone: item.milestone || "",
+                Start: item.startDate || "",
+                End: item.endDate || "",
+                Updated: item.lastUpdated || "",
+                Tester: item.tester || "",
+                Notes: item.notes || "",
+                Attachment: item.attachment || "",
+                Public_Comments: commentsStr
+            };
+
+            // SECURITY CHECK: Only export IT comments if we are currently in Private Mode
+            if (currentShowPrivate) {
+                row.IT_Private_Comments = item.itComments || "";
+            }
+
+            return row;
+        });
+    };
+
+    const wb = XLSX.utils.book_new();
+
+    // 1. Task Sheets
+    const daily = formatForExcel(currentReportData.structuredDailyTasks || currentReportData.dailyTasks);
+    const projects = formatForExcel(currentReportData.structuredProjects || currentReportData.projects);
+    const active = formatForExcel(currentReportData.structuredActiveTasks || currentReportData.activeTasks);
+
+    if(daily.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(daily), "Daily Tasks");
+    if(projects.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(projects), "Projects");
+    if(active.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(active), "Active Tasks");
+
+    // 2. Outlook Sheet (Only if Private Mode is Active AND data exists)
+    if (currentShowPrivate && currentOutlookData) {
+        const outlookRows = [];
+        
+        // Add Meetings
+        if(currentOutlookData.meetings) {
+            // Outlook data often comes as a big HTML blob or text block.
+            // We'll just dump the text content into a cell.
+            outlookRows.push({ Type: "MEETINGS", Content: currentOutlookData.meetings.replace(/<[^>]*>?/gm, '') });
+        }
+        
+        // Add Emails
+        if(currentOutlookData.emails) {
+            outlookRows.push({ Type: "EMAILS", Content: currentOutlookData.emails.replace(/<[^>]*>?/gm, '') });
+        }
+
+        if (outlookRows.length > 0) {
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(outlookRows), "Outlook Data");
+        }
+    }
+
+    // 3. Download
+    const dateStr = new Date().toISOString().split('T')[0];
+    const mode = currentShowPrivate ? "Private_Briefing" : "Public_Report";
+    XLSX.writeFile(wb, `${mode}_${targetId}_${dateStr}.xlsx`);
+}
