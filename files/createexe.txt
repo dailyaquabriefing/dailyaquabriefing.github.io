@@ -1,0 +1,47 @@
+Yes, you must create the .pfx file before you click "Compile". The compiler needs it to exist so it can stamp the signature onto your new .exe.
+
+Here is the fastest way to generate a valid self-signed certificate for your project using PowerShell.
+
+Step 1: Create the Certs Folder
+Go to your project folder (where AquaDailyBriefing.ahk is) and create a new subfolder named Certs.
+
+Step 2: Generate the .pfx (One-Time Setup)
+Press the Windows Key, type PowerShell, right-click it, and select Run as Administrator.
+
+Paste the following code block into PowerShell.
+
+# 1. Set your password here
+$password = ConvertTo-SecureString -String "aqua@2025" -Force -AsPlainText
+
+# 2. Create the certificate in the Windows store
+$cert = New-SelfSignedCertificate -CertStoreLocation cert:\CurrentUser\My -Subject "CN=AquaBriefing" -KeyUsage DigitalSignature -Type CodeSigningCert
+
+# 3. Export it as a .pfx file to your C: drive temporarily
+Export-PfxCertificate -Cert $cert -FilePath "C:\AquaBriefingCert.pfx" -Password $password
+
+# 4. Cleanup: Tell you it's done
+Write-Host "Certificate created at C:\AquaBriefingCert.pfx" -ForegroundColor Green
+
+Step 3: Move the Certificate
+Go to your *C:* drive.
+
+Find the file AquaBriefingCert.pfx.
+
+Cut and Paste it into your project's \Certs\ folder.
+
+Step 4: Update Your Script
+Now, update the top line of your AquaDailyBriefing.ahk to match the filename and password you just used:
+
+;@Ahk2Exe-PostExec "%A_ScriptDir%\tools\signtool.exe" sign /f "%A_ScriptDir%\Certs\AquaBriefingCert.pfx" /p MySecretPassword123 /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "%A_WorkFileName%"
+
+Final Check
+Your folder structure should now look like this:
+/AquaBriefing/
+│
+├── AquaDailyBriefing.ahk   <-- Contains the line above at the very top
+│
+├── /tools/
+│   └── signtool.exe
+│
+└── /Certs/
+    └── AquaBriefingCert.pfx

@@ -1,12 +1,4 @@
 ; ====================================================================================
-; === COMPILER DIRECTIVE: AUTOMATED SIGNING ===
-; ====================================================================================
-; This command runs immediately after the .exe is created.
-; It looks for signtool.exe in a "\tools\" subfolder and the cert in "\Certs\".
-; EDIT THE CERTIFICATE NAME AND PASSWORD BELOW:
-;@Ahk2Exe-PostExec "%A_ScriptDir%\tools\signtool.exe" sign /f "%A_ScriptDir%\Certs\AquaBriefingCert.pfx" /p aqua@2025 /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "%A_WorkFileName%"
-
-; ====================================================================================
 ; === AQUA BRIEFING - OUTLOOK SYNC AGENT
 ; ====================================================================================
 
@@ -36,7 +28,7 @@ Main()
 ExitApp
 
 Main() {
-    ; -----------------------------------------------------------
+  ; -----------------------------------------------------------
     ; 1. Ensure Outlook is running BEFORE anything else executes
     ; -----------------------------------------------------------
     if !ProcessExist("OUTLOOK.EXE") {
@@ -210,7 +202,7 @@ GetOutlookSafe() {
 
         Try:
         1) Open Outlook normally and let it finish loading.
-        2) Check: File -> Options -> Trust Center -> Trust Center Settings -> Programmatic Access.
+        2) Check: File → Options → Trust Center → Trust Center Settings → Programmatic Access.
         3) Make sure neither Outlook nor this app is running as Administrator.
         4) Then run AquaDailyBriefing again.
     )
@@ -300,7 +292,8 @@ GetUnreadEmails() {
             emails .= counter . "<b>.</b> [" . sentTime . "]: "
                     . item.SenderName . ": " . CleanSubject . "<br>"
 
-            emails .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" . "<small style='color:#666; font-size:0.8em;'>"
+            emails .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+                    . "<small style='color:#666; font-size:0.8em;'>"
                     . "<i>EMAIL PREVIEW:</i>&nbsp;" . CleanBody . "</small><br><br>"
 
             counter++
