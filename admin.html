@@ -815,6 +815,13 @@ function deleteComment(commentIndex) {
         function openModal(type, index = -1) {
             const modal = document.getElementById('edit-modal');
             document.getElementById('modal-type').value = type;
+
+// --- NEW: Reset File Upload Inputs ---
+    document.getElementById('file-upload-input').value = ""; // Clears the file name
+    document.getElementById('upload-status').textContent = ""; // Clears "Upload Complete" text
+    document.getElementById('upload-status').style.display = "none"; // Hides status div
+    // -------------------------------------            
+
             const isNew = index === -1;
             editIndex = index;
 
@@ -990,11 +997,14 @@ function deleteComment(commentIndex) {
                 () => {
                     // Success! Get the URL
                     uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                        statusEl.textContent = "✅ Upload Complete!";
-                        statusEl.style.color = "green";
-                        
-                        // Auto-fill the URL box
-                        urlInput.value = downloadURL;
+                       statusEl.textContent = "✅ Upload Complete!";
+        statusEl.style.color = "green";
+        
+        // Auto-fill the URL box
+        urlInput.value = downloadURL;
+
+        // --- NEW: Clear the file input ---
+        fileInput.value = "";
                     });
                 }
             );
