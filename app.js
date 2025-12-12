@@ -146,12 +146,15 @@ const renderList = (id, items, showPrivate = false) => {
     let html = '<ol style="padding-left:20px;">';
     
     items.forEach((item, index) => {
-        let name, notes = '', status, milestone = '', tester = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '', publicComments = [];
+        // 1. ADDED 'priority' TO THIS LINE
+        let name, notes = '', status, priority = '', milestone = '', tester = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '', publicComments = [];
         
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
             notes = item.notes || '';
             status = item.status;
+            // 2. EXTRACT PRIORITY HERE
+            priority = item.priority; 
             milestone = item.milestone;
             tester = item.tester;
             startDate = item.startDate;
@@ -256,12 +259,21 @@ const renderList = (id, items, showPrivate = false) => {
                 default: color = 'grey';
             }
 
+            // 3. CREATE PRIORITY BADGE WITH COLORS
+            let pColor = '#777';
+            if (priority === 'High') pColor = '#d9534f'; // Red
+            if (priority === 'Medium') pColor = '#f0ad4e'; // Orange
+            if (priority === 'Low') pColor = '#5cb85c'; // Green
+
+            const priorityBadge = priority ? `<span style="font-size:0.8em; color:${pColor}; border:1px solid ${pColor}; padding:0 4px; border-radius:4px; margin-left:5px;">${priority}</span>` : '';
+
             const statusBadge = status ? `<span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px; margin-left:5px;">${status}</span>` : '';
             const milestoneHtml = milestone ? `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next Milestone: ${linkify(milestone)}</small>` : '';
 
+            // 4. ADDED ${priorityBadge} TO THE HTML OUTPUT BELOW
             html += `<li style="margin-bottom:15px;">
                 <div style="margin-bottom:2px;">
-                    <strong>${safeName}</strong>${statusBadge}
+                    <strong>${safeName}</strong>${statusBadge}${priorityBadge}
                 </div>
                 <small style="color:#666; display:block; margin-bottom:2px;">${safeNotes}</small>
                 ${goalHtml}
@@ -278,7 +290,6 @@ const renderList = (id, items, showPrivate = false) => {
     
     el.innerHTML = html + '</ol>';
 };
-
 
 // --- OUTLOOK DATA LOADER ---
 function loadOutlookData(reportId) {
