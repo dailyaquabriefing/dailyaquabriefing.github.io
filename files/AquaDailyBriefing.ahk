@@ -42,7 +42,30 @@ Main() {
     if !ProcessExist("OUTLOOK.EXE") {
         Run, outlook.exe
         WinWait, ahk_exe OUTLOOK.EXE
-        Sleep, 5000  ; give Outlook a moment to initialize
+        
+        ; -----------------------------------------------------------
+        ; DYNAMIC WAIT: Loop until Outlook COM is responsive
+        ; -----------------------------------------------------------
+        ; We try up to 60 times (60 seconds). 
+        ; This is faster than a fixed sleep if Outlook loads quickly, 
+        ; but waits longer if the machine is slow.
+        Loop, 60 
+        {
+            try {
+                ; Attempt to hook into the active Outlook instance
+                olApp := ComObjActive("Outlook.Application")
+                
+                ; Verify we can actually get the namespace (confirms internal loading is done)
+                namespace := olApp.GetNamespace("MAPI")
+                namespace.Logon("", "", true, false)
+                
+                ; If we made it here without an error, Outlook is truly ready.
+                break 
+            } catch {
+                ; Outlook is open but still loading/busy. Wait 1 second and retry.
+                Sleep, 1000 
+            }
+        }
     }
 
     ; -----------------------------------------------------------
