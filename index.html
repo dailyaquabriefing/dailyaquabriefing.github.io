@@ -156,6 +156,8 @@
             padding: 0;
             text-decoration: underline;
         }
+        
+        /* UPDATED: Container for comments */
         .comments-container {
             background: #fafafa;
             padding: 10px;
@@ -163,15 +165,23 @@
             margin-top: 5px;
             display: none;
         }
-        .comments-container.open { display: block; }
+        
+        /* UPDATED: When open, use Reverse Column Flexbox */
+        /* This moves the last item (Form) to the top, and reverses the comments (Newest on top) */
+        .comments-container.open { 
+            display: flex; 
+            flex-direction: column-reverse;
+            gap: 10px; /* Adds space between items */
+        }
 
         .comment-bubble {
             background: white;
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             padding: 8px;
-            margin-bottom: 8px;
             font-size: 0.9em;
+            /* Optional: Add left border to make bubbles distinct */
+            border-left: 3px solid #ccc;
         }
         .comment-header {
             font-size: 0.8em;
@@ -182,13 +192,20 @@
         }
         .comment-author { font-weight: bold; color: #333; }
 
-        /* Comment Form */
+        /* UPDATED: Comment Form */
         .comment-form {
             display: flex;
             gap: 5px;
-            margin-top: 10px;
             flex-wrap: wrap;
+            
+            /* Visual styling for the form when it is at the top */
+            background-color: #f0f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            border-bottom: 1px solid #d1d5db;
+            margin-bottom: 5px; /* Adds a little extra space below the form */
         }
+        
         .comment-input-name {
             flex: 1;
             min-width: 100px;

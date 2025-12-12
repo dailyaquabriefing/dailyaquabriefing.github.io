@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aqua Visitor System Help</title>
+    <style>
+        :root {
+            --primary-color: #2F5496;
+            --accent-color: #0563C1;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --sidebar-width: 280px;
+            --header-height: 60px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            margin: 0;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background-color: #fff;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        header .meta {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            margin-top: var(--header-height);
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        nav {
+            width: var(--sidebar-width);
+            background-color: #fff;
+            border-right: 1px solid #ddd;
+            position: fixed;
+            top: var(--header-height);
+            bottom: 0;
+            overflow-y: auto;
+            padding: 2rem 1rem;
+            display: none; /* Hidden on mobile by default */
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        nav li {
+            margin-bottom: 0.5rem;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #555;
+            display: block;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background 0.2s, color 0.2s;
+            font-size: 0.95rem;
+        }
+
+        nav a:hover, nav a.active {
+            background-color: #eef2f9;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        nav .nav-header {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            color: #999;
+            margin: 1.5rem 0 0.5rem 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            padding: 2rem;
+            margin-left: 0;
+            max-width: 1000px;
+        }
+
+        @media (min-width: 900px) {
+            nav { display: block; }
+            main { margin-left: var(--sidebar-width); }
+        }
+
+        /* Typography & Elements */
+        h1, h2, h3 {
+            color: var(--primary-color);
+        }
+
+        h2 {
+            margin-top: 2.5rem;
+            border-bottom: 2px solid #e1e4e8;
+            padding-bottom: 0.5rem;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .img-caption {
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Cards and Sections */
+        .card {
+            background: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .alert {
+            background-color: #eef2f9;
+            border-left: 4px solid var(--accent-color);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .alert-danger {
+            background-color: #fff5f5;
+            border-left-color: #dc3545;
+            color: #a71d2a;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: #fff;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Lists */
+        ol.steps {
+            counter-reset: step;
+            list-style: none;
+            padding: 0;
+        }
+
+        ol.steps > li {
+            position: relative;
+            padding-left: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        ol.steps > li::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 2rem;
+            height: 2rem;
+            background-color: var(--primary-color);
+            color: #fff;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 2rem;
+            font-weight: bold;
+        }
+
+        /* Back to top */
+        .back-to-top {
+            display: inline-block;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Aqua Visitor System</h1>
+    <div class="meta">
+        Last Updated: 11/15/2025 | <a href="https://aquavisitorsystem.github.io/">Go Home</a>
+    </div>
+</header>
+
+<div class="container">
+    <nav>
+        <div class="nav-header">Main Menu</div>
+        <ul>
+            <li><a href="#intro">Overview</a></li>
+            <li><a href="#requirements">1. Requirements</a></li>
+            <li><a href="#schedule">2. Schedule a Visitor</a></li>
+            <li><a href="#active-inactive">3. Active/In-Active Status</a></li>
+            <li><a href="#ipad-checkin">4. iPad Check-In/Out</a></li>
+            <li><a href="#videos">5 & 6. Training Videos</a></li>
+            <li><a href="#reports">7. Reports & Keywords</a></li>
+            <li><a href="#reset-data">8. Reset Visitor Data</a></li>
+            <li><a href="#badges">9 & 10. Badges & Printers</a></li>
+        </ul>
+        <div class="nav-header">Support</div>
+        <ul>
+            <li><a href="#it-support">IT Support Items</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="intro" class="card">
+            <h2>Overview</h2>
+            <p>The <strong>Visitor Management System (VMS)</strong> is comprised of a web-based scheduling app, iPad app, and name badge printer. Visitors receive a generated name badge with a QR code that allows them to check-in and check-out with a touchless experience.</p>
+            <p>Aqua employees schedule, send email invitations, receive email notifications when their visitor arrives, and can view multiple reports.</p>
+            
+            <div class="alert">
+                <strong>Have questions?</strong> Contact Chuck Konkol (ext. 4574) or email <a href="mailto:ckonkol@aqua-aerobic.com">ckonkol@aqua-aerobic.com</a>.
+            </div>
+            
+            <p style="text-align: center;">
+                <a href="Aqua%20Visitor%20Management%20System%20Instructions.pdf" class="btn">Download PDF Instructions</a>
+            </p>
+            
+            <img src="Aqua%20Visitor%20Check_files/image002.png" alt="VMS System Diagram">
+        </section>
+
+        <section id="requirements">
+            <h2>1. Requirements</h2>
+            <div class="card">
+                <p>To ensure the system works correctly, please ensure the following:</p>
+                <ul>
+                    <li>Use <a href="https://www.google.com/chrome/" target="_blank">Chrome Web Browser</a>.</li>
+                    <li>Set your <a href="https://support.xink.io/support/solutions/articles/1000174376-how-to-make-mailto-links-open-in-outlook-on-windows-and-macos" target="_blank">default mail app to Outlook</a>.</li>
+                    <li><a href="https://www.youtube.com/watch?v=SUiMpD26fNE" target="_blank">Watch the step-by-step video</a>.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="schedule">
+            <h2>2. Schedule a Visitor</h2>
+            <div class="card">
+                <ol class="steps">
+                    <li>
+                        <strong>Access the Scheduler:</strong> Go to <a href="https://aquavisitorsystem.github.io/" target="_blank">aquavisitorsystem.github.io</a> and click on <strong>Schedule Visitor</strong>.
+                        <br><img src="Aqua%20Visitor%20Check_files/image004.png" alt="Schedule Visitor Button">
+                    </li>
+                    <li>
+                        <strong>Enter Details:</strong> Fill in the required fields.
+                        <div class="alert">
+                            <strong>Unknown Guest Name?</strong> Enter <em>TBD</em> in the name fields. Guests can update their data upon arrival.
+                        </div>
+                        <p><strong>Multiple Dates:</strong> You can add up to 12 dates per visitor by clicking [Click to add/view more dates].</p>
+                    </li>
+                    <li>
+                        <strong>Save:</strong> Click the <strong>Schedule Visitor</strong> button.
+                        <br><img src="Aqua%20Visitor%20Check_files/image006.png" alt="Schedule Form">
+                    </li>
+                    <li>
+                        <strong>Send Invitation (Optional):</strong> Click <em>"Click here to create email to guest"</em>. This generates an email with the QR code.
+                        <br><img src="Aqua%20Visitor%20Check_files/image008.png" alt="Email Link">
+                    </li>
+                </ol>
+
+                <h3>Weekly Recurring Dates</h3>
+                <ol>
+                    <li>Enter required guest fields.</li>
+                    <li>Remove any individual dates if applicable.</li>
+                    <li>Select <strong>Weekly Recurring Dates</strong>.</li>
+                    <li>Select Start Date, End Date, Time, and Days of the week.</li>
+                    <li>Click <strong>Schedule Guest</strong>.</li>
+                </ol>
+                <img src="Aqua%20Visitor%20Check_files/image017.png" alt="Recurring Dates">
+
+                <h3>View/Edit Visitor Schedule</h3>
+                <p>To edit an existing visit:</p>
+                <ol>
+                    <li>Go to the website and click <strong>View Scheduled Visits</strong>.</li>
+                    <li>Enter your Aqua User ID (e.g., <em>ckonkol</em>).</li>
+                    <li>Click the <u>Click here</u> link next to the schedule you want to edit.</li>
+                    <li>Update the fields and click <strong>Update Visit</strong>.</li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="active-inactive">
+            <h2>3. Update Visitor Schedule: Active/In-Active</h2>
+            <div class="card">
+                <p>By default, schedules are active. If a visit is cancelled, you should mark it as In-Active.</p>
+                <ol>
+                    <li>Search for your schedule using your User ID.</li>
+                    <li>Select the schedule to edit.</li>
+                    <li>Click the link below <strong>Status</strong> to toggle between Active and In-Active.</li>
+                </ol>
+                <img src="Aqua%20Visitor%20Check_files/image026.png" alt="Status Toggle">
+                <div class="alert">
+                    <strong>Note:</strong> In-Active schedules are removed periodically. Contact IT if you need to restore a deleted schedule.
+                </div>
+            </div>
+        </section>
+
+        <section id="ipad-checkin">
+            <h2>4. Check-In/Check-Out Using iPad App</h2>
+            <div class="card">
+                <h3>Option A: QR Code</h3>
+                <p>Show your QR code to the iPad camera to scan instantly.</p>
+
+                <h3>Option B: Manual Tap</h3>
+                <ol>
+                    <li>Tap the green button on the iPad screen.</li>
+                    <li>Find your name/schedule and tap the <strong>HERE</strong> link.</li>
+                    <li>Update any details if necessary.</li>
+                    <li>Tap <strong>Tap Here to Check-in/Out</strong>.</li>
+                </ol>
+                <img src="Aqua%20Visitor%20Check_files/image027.png" alt="iPad Screen">
+                
+                <div class="alert">
+                    <strong>Checking Out?</strong> Upon check-out, please dispose of your name badge. The host will receive an email notification.
+                </div>
+            </div>
+        </section>
+
+        <section id="videos">
+            <h2>5 & 6. Training Videos</h2>
+            <div class="card">
+                <p><strong>For Employees:</strong> <a href="https://www.youtube.com/watch?v=72yKfactARA" target="_blank">How to use Aqua Visitor System</a></p>
+                <p><strong>For Visitors:</strong> <a href="https://youtu.be/3zCagxlj9Nw" target="_blank">How to check-in (Visitor Guide)</a></p>
+            </div>
+        </section>
+
+        <section id="reports">
+            <h2>7. Reports</h2>
+            <div class="card">
+                <p>Go to <strong>View Scheduled Visits</strong> and enter a keyword or User ID in the search box.</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Keyword</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>[Aqua User ID]</td>
+                            <td>Shows active schedules for that user (e.g., <em>ckonkol</em>).</td>
+                        </tr>
+                        <tr>
+                            <td><strong>today</strong></td>
+                            <td>Show today's schedule.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>myvms</strong></td>
+                            <td>Shows active schedules for your User ID.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>activitylog</strong></td>
+                            <td>Shows live visitor log.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>active</strong></td>
+                            <td>Shows all schedules greater or equal to today's date.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>name</strong></td>
+                            <td>Search by guest last name.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>company</strong></td>
+                            <td>Search by guest company name.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>logall</strong></td>
+                            <td>Get report of ALL check-in/check-out sessions.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>printjobs</strong></td>
+                            <td>Report of label usage and remaining labels.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="reset-data">
+            <h2>8. Reset Check-in/Check-out Data</h2>
+            <div class="card">
+                <p>Use this if the printer failed or there was a power issue and the status is incorrect.</p>
+                <ol>
+                    <li>Go to <strong>View Scheduled Visits</strong>.</li>
+                    <li>Search for <strong>today</strong>.</li>
+                    <li>Select the specific guest.</li>
+                    <li>Click the link: <em>Click here to reset check-in/check-out data</em>.</li>
+                </ol>
+                <img src="Aqua%20Visitor%20Check_files/image039.png" alt="Reset Link">
+            </div>
+        </section>
+
+        <section id="badges">
+            <h2>9 & 10. Name Badges & Printer</h2>
+            <div class="card">
+                <ul>
+                    <li><a href="https://www.amazon.com/dp/B015FWU660" target="_blank">Order Name Badges (Amazon)</a></li>
+                    <li><a href="https://support.brother.com/g/b/faqend.aspx?c=us&lang=en&prod=lpql1100eus&faqid=faqp00000397_006" target="_blank">How to Install/Change Name Badge Rolls</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="it-support">
+            <h2 style="color: #a71d2a;">IT Support Items (IT Use Only)</h2>
+            <div class="card alert-danger">
+                <h3>General Maintenance</h3>
+                <ul>
+                    <li><a href="https://support.brother.com/g/b/faqend.aspx?c=us&lang=en&prod=lpql1100eus&faqid=faqp00000397_006">Install/Change Name Badge Roll</a></li>
+                    <li><a href="https://www.amazon.com/dp/B015FWU660">Order Badges</a></li>
+                </ul>
+
+                <h3>Update App</h3>
+                <ol>
+                    <li>Close AquaCheck-In VMS App (See "Restart iPad" below for closing instructions).</li>
+                    <li>Open Safari and go to: <a href="https://aquavisitorsystem.github.io/install.html">aquavisitorsystem.github.io/install.html</a></li>
+                    <li>Tap <strong>Get Update!</strong> then <strong>Install</strong>.</li>
+                    <li>Go to <em>Settings > General > VPN & Device Management > Aqua-Aerobic Systems, Inc.</em> and tap <strong>Trust</strong>.</li>
+                </ol>
+
+                <h3>Setup & Guided Access</h3>
+                <ul>
+                    <li><strong>Wi-Fi:</strong> Ensure iPad is connected to printer Wi-Fi: <code>DIRECT-06442_QL-1110NWB</code>. (Internet comes from Cellular).</li>
+                    <li><strong>iPad/App Code:</strong> <code>6306</code></li>
+                    <li><strong>Start Guided Access:</strong> Triple tap the top-left button.</li>
+                    <li><strong>Exit Guided Access:</strong> Triple tap top-left button and enter code <code>6306</code>.</li>
+                </ul>
+
+                <h3>Restart iPad / Close App</h3>
+                <p>To close the app, perform a five-finger pinch on the screen.</p>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+</body>
+</html>
