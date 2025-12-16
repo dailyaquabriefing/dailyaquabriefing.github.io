@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Report Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #0078D4;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --bg-light: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            color: #333;
+            box-sizing: border-box;
+        }
+
+        /* Ensure padding doesn't expand width */
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        
+       /* Header Styling */
+        #header-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 4px solid var(--primary);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        #logo {
+            max-height: 60px;
+            width: auto;
+            flex-shrink: 0;
+        }
+        #report-title {
+            margin: 0;
+            font-size: 2.2em;
+            color: var(--text-dark);
+        }
+        #report-subtitle {
+            font-size: 1.1em;
+            color: var(--text-light);
+            margin: 0;
+            font-weight: normal;
+        }
+
+        /* Navigation */
+        #nav-links {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 4px;
+            font-size: 0.95em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        #nav-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        #nav-links a:hover { text-decoration: underline; }
+        
+        /* Visual Separator */
+        .nav-separator {
+            color: #ccc;
+            user-select: none;
+        }
+
+        /* Sections */
+        .hidden { display: none !important; }
+        
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+            margin-top: 30px;
+            font-size: 1.5rem;
+        }
+        
+        .section-content {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            min-height: 50px;
+            overflow-x: auto;
+        }
+        
+        /* ITEM STYLES */
+        .item-goal {
+            background: #e6fffa;
+            color: #004d40;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 6px;
+            margin-bottom: 4px;
+            font-size: 0.9em;
+            border: 1px solid #b2f5ea;
+            display: inline-block;
+        }
+        .item-attachment {
+            margin-top: 4px;
+            font-size: 0.9em;
+            background: #f0f4f8;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .item-attachment a {
+            color: #0078D4;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .item-attachment a:hover { text-decoration: underline; }
+        .item-it-comment {
+            background: #fff5f5;
+            color: #c0392b;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 6px;
+            margin-bottom: 4px;
+            font-size: 0.9em;
+            border: 1px solid #ffc9c9;
+            display: block;
+        }
+
+        /* COMMENT SECTION STYLES */
+        .comments-section {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #eee;
+        }
+        .comment-toggle {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 0.85em;
+            cursor: pointer;
+            padding: 0;
+            text-decoration: underline;
+        }
+        
+        /* UPDATED: Container for comments */
+        .comments-container {
+            background: #fafafa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        /* UPDATED: When open, use Reverse Column Flexbox */
+        /* This moves the last item (Form) to the top, and reverses the comments (Newest on top) */
+        .comments-container.open { 
+            display: flex; 
+            flex-direction: column-reverse;
+            gap: 10px; /* Adds space between items */
+        }
+
+        .comment-bubble {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 0.9em;
+            /* Optional: Add left border to make bubbles distinct */
+            border-left: 3px solid #ccc;
+        }
+        .comment-header {
+            font-size: 0.8em;
+            color: #777;
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .comment-author { font-weight: bold; color: #333; }
+
+        /* UPDATED: Comment Form */
+        .comment-form {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            
+            /* Visual styling for the form when it is at the top */
+            background-color: #f0f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            border-bottom: 1px solid #d1d5db;
+            margin-bottom: 5px; /* Adds a little extra space below the form */
+        }
+        
+        .comment-input-name {
+            flex: 1;
+            min-width: 100px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        .comment-input-text {
+            flex: 3;
+            min-width: 200px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+        .btn-post {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .btn-post:hover { background: #005a9e; }
+
+        /* Footer */
+        #last-updated {
+            margin-top: 40px;
+            font-size: 0.85em;
+            color: #999;
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        /* Message Box */
+        .message-box {
+            text-align: center;
+            padding: 40px;
+            background: #f0f4f8;
+            border-radius: 8px;
+            color: #555;
+        }
+
+        /* Buttons */
+        .action-btn {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 5px;
+            transition: background 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #005a9e; }
+        .btn-secondary { background: #fff; color: var(--primary); border: 2px solid var(--primary); }
+        .btn-secondary:hover { background: #eef7ff; }
+
+        /* User ID Input */
+        .userid-input {
+            padding: 12px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+            margin-right: 10px;
+        }
+        .userid-input:focus { border-color: var(--primary); outline: none; }
+
+        /* Lock Screen */
+        #lock-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #f4f7fa;
+            z-index: 9998;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .lock-box {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 300px;
+            max-width: 90%;
+        }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #ffffff;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loading-text {
+            font-size: 1.5rem;
+            color: var(--primary);
+            font-weight: bold;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            #header-section { flex-direction: column; text-align: center; gap: 10px; }
+            #logo { max-height: 50px; }
+            #report-title { font-size: 1.8em; }
+            #nav-links { flex-direction: column; align-items: stretch; padding: 10px; gap: 10px; }
+            #nav-links a { display: block; text-align: center; padding: 10px; background: white; border: 1px solid #eee; border-radius: 4px; }
+            .nav-separator { display: none; }
+            .userid-input { width: 100%; margin-right: 0; margin-bottom: 10px; }
+            .action-btn { width: 100%; margin: 5px 0; display: block; }
+            .message-box { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading Report...</div>
+    </div>
+
+    <div id="lock-screen" class="hidden">
+        <div class="lock-box">
+            <h2 style="color: #0078D4; margin-top:0;">Protected Report</h2>
+            <p style="margin-bottom: 20px;">Please enter passcode to view.</p>
+            <input type="password" id="unlock-pass" class="userid-input" placeholder="Passcode">
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button onclick="cancelUnlock()" class="action-btn btn-secondary" style="flex: 1;">Cancel</button>
+                <button onclick="attemptUnlock()" class="action-btn btn-primary" style="flex: 1;">Unlock</button>
+            </div>
+            <p id="unlock-error" style="color: red; font-size: 0.9em; display: none; margin-top:10px;">Incorrect Passcode</p>
+        </div>
+    </div>
+
+    <div id="header-section">
+        <a href="/"> <img id="logo" src="aqua-aerobics-logo.png" alt="Company Logo"></a>
+        <div>
+            <h1 id="report-title">Daily Briefing</h1>
+            <h3 id="report-subtitle">...</h3>
+        </div>
+    </div>
+
+    <div id="nav-links" class="hidden">
+        <a id="link-weekly" href="#">Weekly Report</a>
+        <span class="nav-separator">|</span>
+        <a id="link-daily" href="#">Daily Briefing</a>
+        <span class="nav-separator">|</span>
+        <a onclick="toggleAnalyticsView()" style="cursor:pointer; font-weight:bold;">📊 Analytics</a>
+        <span class="nav-separator">|</span>
+        <a href="admin.html" target="_blank" style="color: #d35400;"><strong>Admin Dashboard</strong></a>
+        <span class="nav-separator">|</span>
+        <a href="howtouse.html" target="_blank">How to Use</a>
+        <span class="nav-separator">|</span>
+        <a onclick="exportReportToExcel()" style="cursor:pointer; color:#27ae60; font-weight:bold;">&#128229; Export to Excel</a>
+    </div>
+
+    <div id="default-message" class="message-box">
+        <h2>Welcome to Aqua Briefing</h2>
+        <p>Enter your <strong>Aqua User ID</strong> below in <strong>lowercase</strong> to view your report.</p>
+        <div style="margin: 25px 0;">
+            <input type="text" id="userid-input" class="userid-input" placeholder="e.g. jdoe" autofocus>
+            <button onclick="viewReport()" class="action-btn btn-primary">View Briefing</button>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 30px auto; width: 60%;">
+        <div style="margin-top: 20px;">
+            <a href="admin.html" style="text-decoration:none;">
+                <button class="action-btn btn-secondary">Log In to Dashboard</button>
+            </a>
+            <a href="setup.html" style="text-decoration:none;">
+                <button class="action-btn btn-secondary">First Time User? Setup Here</button>
+            </a>
+        </div>
+    </div>
+
+    <div id="report-body" class="hidden">
+        
+        <div id="container-tasks">
+            <h2 id="header-tasks">1. Daily Tasks</h2>
+            <div id="content-tasks" class="section-content"></div>
+        </div>
+
+        <div id="container-projects">
+            <h2 id="header-projects">2. Active Projects</h2>
+            <div id="content-projects" class="section-content"></div>
+        </div>
+
+        <div id="container-active">
+            <h2 id="header-active">3. Active Tasks</h2>
+            <div id="content-active" class="section-content"></div>
+        </div>
+
+        <div id="container-meetings" class="hidden">
+            <h2 id="header-meetings">4. This Week's Meetings</h2>
+            <div id="content-meetings" class="section-content"></div>
+        </div>
+
+        <div id="container-emails" class="hidden">
+            <h2 id="header-emails">5. Unread Emails (Last 24h)</h2>
+            <div id="content-emails" class="section-content"></div>
+        </div>
+        
+        <div id="container-analytics" class="hidden" style="margin-top:20px;">
+            <h2 style="border-bottom:none; margin-bottom:10px;">Dashboard Analytics</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <h3 style="margin-top:0; text-align:center; color:#555;">Project Status</h3>
+                    <canvas id="chartStatus"></canvas>
+                </div>
+                <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <h3 style="margin-top:0; text-align:center; color:#555;">Priority Breakdown</h3>
+                    <canvas id="chartPriority"></canvas>
+                </div>
+                <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <h3 style="margin-top:0; text-align:center; color:#555;">Workload Distribution</h3>
+                    <canvas id="chartWorkload"></canvas>
+                </div>
+            </div>
+            <button onclick="closeAnalytics()" class="btn-secondary" style="margin-top:20px; padding:10px 20px; width:100%;">Back to List View</button>
+        </div>
+
+    </div>
+
+    <div id="last-updated"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+    
+    <script src="app.js"></script>
+</body>
+</html>

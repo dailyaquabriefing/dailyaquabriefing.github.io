@@ -303,13 +303,15 @@ function loadOutlookData(reportId) {
         if (doc.exists) {
             const data = doc.data();
             currentOutlookData = data;
-            headerMeetings.textContent = `4. Meetings (${data.meetings_count || 0})`;
-            headerEmails.textContent   = `5. Emails (${data.emails_count || 0})`;
+            // UPDATED: Removed "4." and "5."
+            headerMeetings.textContent = `Meetings (${data.meetings_count || 0})`;
+            headerEmails.textContent   = `Emails (${data.emails_count || 0})`;
             meetingsContent.innerHTML = linkify(data.meetings || "") || "<i>No meetings found.</i>";
             emailsContent.innerHTML   = linkify(data.emails || "")   || "<i>No unread emails.</i>";
         } else {
-            headerMeetings.textContent = `4. This Week's Meetings (0)`;
-            headerEmails.textContent   = `5. Unread Emails (0)`;
+            // UPDATED: Removed "4." and "5."
+            headerMeetings.textContent = `Meetings (0)`;
+            headerEmails.textContent   = `Unread Emails (0)`;
             meetingsContent.innerHTML = "<i>Waiting for Outlook Sync...</i>";
             emailsContent.innerHTML   = "<i>Waiting for Outlook Sync...</i>";
         }

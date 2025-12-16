@@ -26,7 +26,6 @@
             box-sizing: border-box;
         }
 
-        /* Ensure padding doesn't expand width */
         *, *:before, *:after {
             box-sizing: inherit;
         }
@@ -77,7 +76,6 @@
         }
         #nav-links a:hover { text-decoration: underline; }
         
-        /* Visual Separator */
         .nav-separator {
             color: #ccc;
             user-select: none;
@@ -86,14 +84,38 @@
         /* Sections */
         .hidden { display: none !important; }
         
-        h2 {
+        /* -----------------------------------------------------
+           COLLAPSIBLE SECTION STYLES
+           ----------------------------------------------------- */
+        h2.section-header {
             color: var(--primary);
             border-bottom: 2px solid #eee;
             padding-bottom: 8px;
             margin-top: 30px;
             font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* Arrow Indicator - Default is DOWN (Open) */
+        h2.section-header::after {
+            content: '▼'; 
+            font-size: 0.7em;
+            transition: transform 0.2s ease;
+            color: #aaa;
+            /* If class is NOT collapsed, arrow points down */
+            transform: rotate(0deg); 
+        }
+
+        /* Rotated arrow when collapsed (pointing LEFT/RIGHT) */
+        h2.section-header.collapsed::after {
+            transform: rotate(-90deg);
         }
         
+        /* The content box */
         .section-content {
             background: #fff;
             padding: 15px;
@@ -101,6 +123,19 @@
             border-radius: 4px;
             min-height: 50px;
             overflow-x: auto;
+            /* Smooth reveal */
+            display: block; 
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        /* Hide content when collapsed */
+        .section-content.collapsed {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         
         /* ITEM STYLES */
@@ -157,7 +192,6 @@
             text-decoration: underline;
         }
         
-        /* UPDATED: Container for comments */
         .comments-container {
             background: #fafafa;
             padding: 10px;
@@ -166,12 +200,10 @@
             display: none;
         }
         
-        /* UPDATED: When open, use Reverse Column Flexbox */
-        /* This moves the last item (Form) to the top, and reverses the comments (Newest on top) */
         .comments-container.open { 
             display: flex; 
             flex-direction: column-reverse;
-            gap: 10px; /* Adds space between items */
+            gap: 10px; 
         }
 
         .comment-bubble {
@@ -180,7 +212,6 @@
             border-radius: 4px;
             padding: 8px;
             font-size: 0.9em;
-            /* Optional: Add left border to make bubbles distinct */
             border-left: 3px solid #ccc;
         }
         .comment-header {
@@ -192,18 +223,15 @@
         }
         .comment-author { font-weight: bold; color: #333; }
 
-        /* UPDATED: Comment Form */
         .comment-form {
             display: flex;
             gap: 5px;
             flex-wrap: wrap;
-            
-            /* Visual styling for the form when it is at the top */
             background-color: #f0f4f8;
             padding: 10px;
             border-radius: 4px;
             border-bottom: 1px solid #d1d5db;
-            margin-bottom: 5px; /* Adds a little extra space below the form */
+            margin-bottom: 5px; 
         }
         
         .comment-input-name {
@@ -408,28 +436,28 @@
     <div id="report-body" class="hidden">
         
         <div id="container-tasks">
-            <h2 id="header-tasks">1. Daily Tasks</h2>
-            <div id="content-tasks" class="section-content"></div>
+            <h2 id="header-tasks" class="section-header collapsed" onclick="toggleSection(this)">1. Daily Tasks</h2>
+            <div id="content-tasks" class="section-content collapsed"></div>
         </div>
 
         <div id="container-projects">
-            <h2 id="header-projects">2. Active Projects</h2>
-            <div id="content-projects" class="section-content"></div>
+            <h2 id="header-projects" class="section-header collapsed" onclick="toggleSection(this)">2. Active Projects</h2>
+            <div id="content-projects" class="section-content collapsed"></div>
         </div>
 
         <div id="container-active">
-            <h2 id="header-active">3. Active Tasks</h2>
-            <div id="content-active" class="section-content"></div>
+            <h2 id="header-active" class="section-header collapsed" onclick="toggleSection(this)">3. Active Tasks</h2>
+            <div id="content-active" class="section-content collapsed"></div>
         </div>
 
         <div id="container-meetings" class="hidden">
-            <h2 id="header-meetings">4. This Week's Meetings</h2>
-            <div id="content-meetings" class="section-content"></div>
+            <h2 id="header-meetings" class="section-header collapsed" onclick="toggleSection(this)">4. Meetings</h2>
+            <div id="content-meetings" class="section-content collapsed"></div>
         </div>
 
         <div id="container-emails" class="hidden">
-            <h2 id="header-emails">5. Unread Emails (Last 24h)</h2>
-            <div id="content-emails" class="section-content"></div>
+            <h2 id="header-emails" class="section-header collapsed" onclick="toggleSection(this)">5. Emails</h2>
+            <div id="content-emails" class="section-content collapsed"></div>
         </div>
         
         <div id="container-analytics" class="hidden" style="margin-top:20px;">
@@ -460,5 +488,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     
     <script src="app.js"></script>
+
+    <script>
+        function toggleSection(headerElement) {
+            // Toggle the arrow rotation on the header
+            headerElement.classList.toggle('collapsed');
+            
+            // Toggle the visibility of the content (next sibling)
+            const content = headerElement.nextElementSibling;
+            if (content && content.classList.contains('section-content')) {
+                content.classList.toggle('collapsed');
+            }
+        }
+    </script>
 </body>
 </html>
