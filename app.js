@@ -146,14 +146,12 @@ const renderList = (id, items, showPrivate = false) => {
     let html = '<ol style="padding-left:20px;">';
     
     items.forEach((item, index) => {
-        // 1. ADDED 'priority' TO THIS LINE
         let name, notes = '', status, priority = '', milestone = '', tester = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '', publicComments = [];
         
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
             notes = item.notes || '';
             status = item.status;
-            // 2. EXTRACT PRIORITY HERE
             priority = item.priority; 
             milestone = item.milestone;
             tester = item.tester;
@@ -259,7 +257,6 @@ const renderList = (id, items, showPrivate = false) => {
                 default: color = 'grey';
             }
 
-            // 3. CREATE PRIORITY BADGE WITH COLORS
             let pColor = '#777';
             if (priority === 'High') pColor = '#d9534f'; // Red
             if (priority === 'Medium') pColor = '#f0ad4e'; // Orange
@@ -270,7 +267,6 @@ const renderList = (id, items, showPrivate = false) => {
             const statusBadge = status ? `<span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px; margin-left:5px;">${status}</span>` : '';
             const milestoneHtml = milestone ? `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next Milestone: ${linkify(milestone)}</small>` : '';
 
-            // 4. ADDED ${priorityBadge} TO THE HTML OUTPUT BELOW
             html += `<li style="margin-bottom:15px;">
                 <div style="margin-bottom:2px;">
                     <strong>${safeName}</strong>${statusBadge}${priorityBadge}
@@ -303,13 +299,11 @@ function loadOutlookData(reportId) {
         if (doc.exists) {
             const data = doc.data();
             currentOutlookData = data;
-            // UPDATED: Removed "4." and "5."
             headerMeetings.textContent = `Meetings (${data.meetings_count || 0})`;
             headerEmails.textContent   = `Emails (${data.emails_count || 0})`;
             meetingsContent.innerHTML = linkify(data.meetings || "") || "<i>No meetings found.</i>";
             emailsContent.innerHTML   = linkify(data.emails || "")   || "<i>No unread emails.</i>";
         } else {
-            // UPDATED: Removed "4." and "5."
             headerMeetings.textContent = `Meetings (0)`;
             headerEmails.textContent   = `Unread Emails (0)`;
             meetingsContent.innerHTML = "<i>Waiting for Outlook Sync...</i>";
@@ -451,6 +445,11 @@ function closeAnalytics() {
 function renderPublicAnalytics() {
     if (!currentReportData) return;
 
+    // Register DataLabels Plugin (Safe check)
+    if (typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+    }
+
     // 1. Consolidate Data (Safe Public Data Only)
     const projects = currentReportData.structuredProjects || currentReportData.projects || [];
     const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
@@ -472,6 +471,24 @@ function renderPublicAnalytics() {
         if (prioCounts.hasOwnProperty(p)) prioCounts[p]++;
     });
 
+    // --- CALCULATE TOTALS AND UPDATE HEADERS ---
+    
+    // Project Status Total
+    const totalStatus = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+    const statusHeader = document.getElementById('chart-header-status');
+    if(statusHeader) statusHeader.textContent = `Project Status (Total: ${totalStatus})`;
+
+    // Workload Total
+    const totalWorkload = daily.length + projects.length + active.length;
+    const workloadHeader = document.getElementById('chart-header-workload');
+    if(workloadHeader) workloadHeader.textContent = `Workload Distribution (Total: ${totalWorkload})`;
+
+    // Priority Total (Optional, but good for consistency)
+    const totalPriority = Object.values(prioCounts).reduce((a, b) => a + b, 0);
+    const priorityHeader = document.getElementById('chart-header-priority');
+    if(priorityHeader) priorityHeader.textContent = `Priority Breakdown (Total: ${totalPriority})`;
+
+
     // 3. Destroy Old Charts
     if (statusChart) statusChart.destroy();
     if (priorityChart) priorityChart.destroy();
@@ -487,21 +504,44 @@ function renderPublicAnalytics() {
                 data: Object.values(statusCounts),
                 backgroundColor: ['#28a745', '#dc3545', '#17a2b8', '#6c757d', '#e2e6ea']
             }]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    color: '#ffffff',
+                    font: { weight: 'bold' }
+                }
+            }
         }
     });
 
     // Priority Chart
+    const pKeys = Object.keys(prioCounts);
+    const pValues = Object.values(prioCounts);
+    
+    // Create Custom Labels: "High (9)", "Medium (3)", "Low (13)"
+    const pLabels = pKeys.map((key, i) => `${key} (${pValues[i]})`);
+
     priorityChart = new Chart(document.getElementById('chartPriority'), {
         type: 'bar',
         data: {
-            labels: Object.keys(prioCounts),
+            labels: pLabels, // Use the new labels with counts
             datasets: [{
                 label: 'Count',
-                data: Object.values(prioCounts),
+                data: pValues,
                 backgroundColor: ['#dc3545', '#ffc107', '#28a745']
             }]
         },
-        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+        options: { 
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+            plugins: {
+                legend: { display: false }, 
+                // DISABLE DataLabels for Bar Chart (since we moved count to the Axis)
+                datalabels: {
+                    display: false
+                }
+            }
+        }
     });
 
     // Workload Chart
@@ -513,6 +553,14 @@ function renderPublicAnalytics() {
                 data: [daily.length, projects.length, active.length],
                 backgroundColor: ['#007bff', '#6610f2', '#fd7e14']
             }]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    color: '#ffffff',
+                    font: { weight: 'bold' }
+                }
+            }
         }
     });
 }
