@@ -738,26 +738,42 @@ function exportReportToExcel() {
             prioCounts[p] = (prioCounts[p] || 0) + 1;
         });
 
-        const rows = [
-            { Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length },
-            { Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length },
-            { Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length },
-            { Category: "", Metric: "", Count: "" }
-        ];
+        // --- CALCULATE TOTALS ---
+        const totalWorkload = daily.length + projects.length + active.length;
+        const totalStatus = allItems.length;
+        const totalPriority = allItems.length;
 
-        Object.keys(statusCounts).forEach(k => rows.push({ Category: "STATUS BREAKDOWN", Metric: k, Count: statusCounts[k] }));
-        rows.push({ Category: "", Metric: "", Count: "" });
-        Object.keys(prioCounts).forEach(k => rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] }));
+        const rows = [];
 
-        // --- NEW: FOOTER ROWS ---
-        // 1. Spacing (Two empty rows)
+        // --- WORKLOAD SECTION ---
+        rows.push({ Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length });
+        rows.push({ Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length });
+        rows.push({ Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length });
+        // Add Total Row
+        rows.push({ Category: "WORKLOAD", Metric: "Total", Count: totalWorkload });
+        // Spacer
+        rows.push({ Category: "", Metric: "", Count: "" });
+
+        // --- STATUS SECTION ---
+        Object.keys(statusCounts).forEach(k => {
+            rows.push({ Category: "STATUS BREAKDOWN", Metric: k, Count: statusCounts[k] });
+        });
+        // Add Total Row
+        rows.push({ Category: "STATUS BREAKDOWN", Metric: "Total", Count: totalStatus });
+        // Spacer
+        rows.push({ Category: "", Metric: "", Count: "" });
+
+        // --- PRIORITY SECTION ---
+        Object.keys(prioCounts).forEach(k => {
+            rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] });
+        });
+        // Add Total Row
+        rows.push({ Category: "PRIORITY BREAKDOWN", Metric: "Total", Count: totalPriority });
+
+        // --- FOOTER ROWS ---
         rows.push({ Category: "", Metric: "", Count: "" });
         rows.push({ Category: "", Metric: "", Count: "" });
-        
-        // 2. Report ID (Label in Col A, ID in Col B)
         rows.push({ Category: "Report for:", Metric: targetId || "Unknown", Count: "" });
-        
-        // 3. Current Date/Time (Label in Col A, Date in Col B)
         rows.push({ Category: "Date Created:", Metric: new Date().toLocaleString(), Count: "" });
 
         return rows;
