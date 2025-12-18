@@ -146,7 +146,7 @@ const renderList = (id, items, showPrivate = false) => {
     let html = '<ol style="padding-left:20px;">';
     
     items.forEach((item, index) => {
-        let name, notes = '', status, priority = '', milestone = '', tester = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '', publicComments = [];
+    let name, notes = '', status, priority = '', milestone = '', tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '', publicComments = [];
         
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
@@ -155,6 +155,7 @@ const renderList = (id, items, showPrivate = false) => {
             priority = item.priority; 
             milestone = item.milestone;
             tester = item.tester;
+            collaborators = item.collaborators;
             startDate = item.startDate;
             endDate = item.endDate;
             lastUpdated = item.lastUpdated;
@@ -187,8 +188,13 @@ const renderList = (id, items, showPrivate = false) => {
         }
 
         if (tester) {
-            metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#eef; color:#336; padding:1px 6px; border-radius:4px; border:1px solid #dde;">👤 Tester: ${tester}</span></div>`;
+          metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#eef; color:#336; padding:1px 6px; border-radius:4px; border:1px solid #dde;">👤 Tester: ${tester}</span></div>`;
         }
+
+// --- INSERT THIS NEW BLOCK ---
+if (collaborators) {
+    metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#fff3cd; color:#856404; padding:1px 6px; border-radius:4px; border:1px solid #ffeeba;">👥 Team: ${collaborators}</span></div>`;
+}
         
         // Goal and Attachment HTML
         let goalHtml = '';
@@ -662,6 +668,7 @@ function exportReportToExcel() {
                 End: item.endDate || "",
                 Updated: item.lastUpdated || "",
                 Tester: item.tester || "",
+                Collaborators: item.collaborators || "",
                 Notes: item.notes || "",
                 Public_Comments: commentsStr 
             };

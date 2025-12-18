@@ -416,6 +416,11 @@
                 <input type="text" id="m-tester" class="w-full" placeholder="e.g. QA Team">
             </div>
 
+<div class="form-group">
+    <label>Collaborators and teams</label>
+    <input type="text" id="m-collaborators" class="w-full" placeholder="e.g. Design Team, John Smith">
+</div>
+
             <div class="date-grid">
                 <div class="form-group">
                     <label>Start Date</label>
@@ -861,6 +866,8 @@ function deleteComment(commentIndex) {
             
             // Populate New Fields
             document.getElementById('m-tester').value = item.tester || '';
+           // 2. ADD THIS LINE BELOW IT:
+            document.getElementById('m-collaborators').value = item.collaborators || '';
             document.getElementById('m-start-date').value = item.startDate || '';
             document.getElementById('m-last-updated').value = item.lastUpdated || '';
             document.getElementById('m-end-date').value = item.endDate || '';
@@ -895,6 +902,7 @@ function deleteComment(commentIndex) {
                 milestone: document.getElementById('m-milestone').value,
                 notes: document.getElementById('m-notes').value,
                 tester: document.getElementById('m-tester').value,
+                collaborators: document.getElementById('m-collaborators').value,
                 startDate: document.getElementById('m-start-date').value,
                 lastUpdated: document.getElementById('m-last-updated').value,
                 endDate: document.getElementById('m-end-date').value,
