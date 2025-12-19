@@ -147,7 +147,7 @@ const renderList = (id, items, showPrivate = false) => {
     
     items.forEach((item, index) => {
     let name, notes = '', status, priority = '', milestone = '', tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '', publicComments = [];
-        
+    let dailyChecks = item.dailyChecks || [];    
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
             notes = item.notes || '';
@@ -174,6 +174,47 @@ const renderList = (id, items, showPrivate = false) => {
         const safeNotes = linkify(notes);
         const uniqueId = `${listType}-${index}`;
 
+        // --- DAILY CHECK LOGIC (NEW) ---
+        let checkHtml = '';
+        if (dailyChecks.length > 0) {
+            // Sort to get latest check first
+            dailyChecks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const latest = dailyChecks[0];
+            
+            // Check if done today
+            const checkDate = new Date(latest.timestamp).toDateString();
+            const todayDate = new Date().toDateString();
+            const isToday = checkDate === todayDate;
+
+            // Determine Styles
+            let badgeColor = '#6c757d'; // Default Gray (Skipped/Not Checked)
+            let icon = '⚪';
+            
+            if (latest.status === 'Verified') {
+                badgeColor = '#28a745'; // Green
+                icon = '✅';
+            } else if (latest.status === 'Issues Found') {
+                badgeColor = '#dc3545'; // Red
+                icon = '⚠️';
+            }
+
+            // Format Date Display
+            const timeStr = new Date(latest.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const dateDisplay = isToday ? `Today at ${timeStr}` : new Date(latest.timestamp).toLocaleDateString();
+
+            // Build HTML Widget
+            checkHtml = `
+                <div style="margin-top:6px; background:#fff; border:1px solid ${badgeColor}; border-left: 5px solid ${badgeColor}; padding:6px 10px; border-radius:4px; display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:1.2em;">${icon}</span>
+                    <div style="line-height:1.2;">
+                        <div style="font-weight:bold; color:${badgeColor}; font-size:0.9em; text-transform:uppercase;">${latest.status}</div>
+                        <div style="font-size:0.85em; color:#555;">${latest.note ? linkify(latest.note) : 'System Operational'}</div>
+                        <div style="font-size:0.75em; color:#999;">Checked: ${dateDisplay}</div>
+                    </div>
+                </div>
+            `;
+        }
+
         // Meta Data HTML
         let metaHtml = '';
         let dateParts = [];
@@ -191,10 +232,9 @@ const renderList = (id, items, showPrivate = false) => {
           metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#eef; color:#336; padding:1px 6px; border-radius:4px; border:1px solid #dde;">👤 Tester: ${tester}</span></div>`;
         }
 
-// --- INSERT THIS NEW BLOCK ---
-if (collaborators) {
-    metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#fff3cd; color:#856404; padding:1px 6px; border-radius:4px; border:1px solid #ffeeba;">👥 Team: ${collaborators}</span></div>`;
-}
+        if (collaborators) {
+            metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#fff3cd; color:#856404; padding:1px 6px; border-radius:4px; border:1px solid #ffeeba;">👥 Team: ${collaborators}</span></div>`;
+        }
         
         // Goal and Attachment HTML
         let goalHtml = '';
@@ -277,6 +317,7 @@ if (collaborators) {
                 <div style="margin-bottom:2px;">
                     <strong>${safeName}</strong>${statusBadge}${priorityBadge}
                 </div>
+                ${checkHtml}
                 <small style="color:#666; display:block; margin-bottom:2px;">${safeNotes}</small>
                 ${goalHtml}
                 ${attachmentHtml}
@@ -634,6 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- EXPORT FUNCTION (Requires xlsx-js-style library) ---
+// --- EXPORT FUNCTION (Requires xlsx-js-style library) ---
 function exportReportToExcel() {
     if (!currentReportData) {
         alert("No data loaded to export.");
@@ -644,8 +686,8 @@ function exportReportToExcel() {
     const formatForExcel = (list) => {
         if (!Array.isArray(list)) return [];
         return list.map(item => {
+            // 1. Format Comments
             let commentsStr = "";
-            // Use \r\n for line breaks which Excel recognizes inside cells
             if (item.publicComments && item.publicComments.length > 0) {
                 commentsStr = [...item.publicComments].reverse().map(c => {
                     let timeStr = "N/A";
@@ -657,10 +699,38 @@ function exportReportToExcel() {
                 }).join("\r\n");
             }
 
-            // Define the base row order (Attachment removed from middle)
+            // 2. Format Daily Checks (NEW)
+            let checkStatus = "";
+            let checkNote = "";
+            let checkHistoryStr = "";
+
+            if (item.dailyChecks && item.dailyChecks.length > 0) {
+                // Sort Descending (Newest first)
+                const sortedChecks = [...item.dailyChecks].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Get Latest Data for main columns
+                const latest = sortedChecks[0];
+                checkStatus = latest.status;
+                checkNote = latest.note || "";
+
+                // Format History for the history column
+                checkHistoryStr = sortedChecks.map(c => {
+                     let d = "N/A";
+                     if (c.timestamp) {
+                         const dateObj = new Date(c.timestamp);
+                         d = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                     }
+                     const n = c.note ? ` - ${c.note}` : "";
+                     return `[${d}] [${c.status}]${n}`;
+                }).join("\r\n");
+            }
+
+            // 3. Build Row Object
             let row = {
                 Name: item.name,
                 Status: item.status || "",
+                Daily_Check_Status: checkStatus, // <--- NEW COLUMN
+                Daily_Check_Note: checkNote,     // <--- NEW COLUMN
                 Priority: item.priority || "",
                 Goal: item.goal || "",
                 Milestone: item.milestone || "",
@@ -670,7 +740,8 @@ function exportReportToExcel() {
                 Tester: item.tester || "",
                 Collaborators: item.collaborators || "",
                 Notes: item.notes || "",
-                Public_Comments: commentsStr 
+                Public_Comments: commentsStr,
+                Daily_Check_History: checkHistoryStr // <--- NEW COLUMN
             };
 
             // Add Private Comments next (if applicable)
@@ -704,7 +775,7 @@ function exportReportToExcel() {
         // 2. Set Column Width (approx 60 chars)
         if (!ws['!cols']) ws['!cols'] = [];
         // Fill empty slots to prevent sparse array errors
-        for (let i = 0; i <= range.e.c; i++) { if (!ws['!cols'][i]) ws['!cols'][i] = { wch: 10 }; }
+        for (let i = 0; i <= range.e.c; i++) { if (!ws['!cols'][i]) ws['!cols'][i] = { wch: 15 }; } // Default width
         ws['!cols'][colIndex] = { wch: 60 }; 
 
         // 3. Iterate Rows and Apply Wrap Style
@@ -756,25 +827,20 @@ function exportReportToExcel() {
         rows.push({ Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length });
         rows.push({ Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length });
         rows.push({ Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length });
-        // Add Total Row
         rows.push({ Category: "WORKLOAD", Metric: "Total", Count: totalWorkload });
-        // Spacer
         rows.push({ Category: "", Metric: "", Count: "" });
 
         // --- STATUS SECTION ---
         Object.keys(statusCounts).forEach(k => {
             rows.push({ Category: "STATUS BREAKDOWN", Metric: k, Count: statusCounts[k] });
         });
-        // Add Total Row
         rows.push({ Category: "STATUS BREAKDOWN", Metric: "Total", Count: totalStatus });
-        // Spacer
         rows.push({ Category: "", Metric: "", Count: "" });
 
         // --- PRIORITY SECTION ---
         Object.keys(prioCounts).forEach(k => {
             rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] });
         });
-        // Add Total Row
         rows.push({ Category: "PRIORITY BREAKDOWN", Metric: "Total", Count: totalPriority });
 
         // --- FOOTER ROWS ---
@@ -801,8 +867,9 @@ function exportReportToExcel() {
         if (formattedData.length > 0) {
             const ws = XLSX.utils.json_to_sheet(formattedData);
             
-            // Apply Styling
+            // Apply Styling to Multiline Columns
             applyColumnStyles(ws, "Public_Comments");
+            applyColumnStyles(ws, "Daily_Check_History"); // <--- Style the new History column
             if(currentShowPrivate) applyColumnStyles(ws, "IT_Private_Comments");
 
             XLSX.utils.book_append_sheet(wb, ws, sheetObj.name);

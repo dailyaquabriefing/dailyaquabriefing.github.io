@@ -256,6 +256,24 @@
 .admin-comment-content { flex-grow: 1; }
 .admin-comment-meta { font-size: 0.8em; color: #666; margin-bottom: 4px; font-weight: bold; }
 .admin-comment-text { font-size: 0.9em; color: #333; white-space: pre-wrap; }
+/* --- DAILY CHECK STYLES --- */
+.check-history-item {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.check-badge-admin {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8em;
+}
+.cb-verified { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.cb-issues { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+.cb-skipped { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
 .btn-del-comment {
     background: #fff5f5; color: #dc3545; border: 1px solid #dc3545;
     padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; white-space: nowrap;
@@ -465,6 +483,24 @@
                 <div id="m-comments-list" style="max-height: 250px; overflow-y: auto; background:#fff; padding:5px;">
                     </div>
             </div>
+			
+			<div class="form-group" style="background:#f9f9f9; padding:15px; border:1px solid #e0e0e0; border-radius:6px; margin-bottom:15px;">
+    <label>📋 Daily Operational Check</label>
+    
+    <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+        <select id="dc-status" style="width:140px; padding:6px;">
+            <option value="Verified">✅ Verified</option>
+            <option value="Issues Found">⚠️ Issues Found</option>
+            <option value="Not Checked">⚪ Not Checked</option>
+        </select>
+        <input type="text" id="dc-note" placeholder="Note (Required if Issues Found)" style="flex-grow:1; padding:6px;">
+        <button class="btn btn-primary" style="padding:6px 12px; font-size:0.9em;" onclick="addDailyCheck()">Log Check</button>
+    </div>
+
+    <label style="font-size:0.8em; color:#666; margin-top:10px;">Check History:</label>
+    <div id="dc-history-list" style="max-height: 150px; overflow-y: auto; background:#fff; border:1px solid #ddd; border-radius:4px;">
+        </div>
+</div>
 
             <div class="form-group">
                 <label>Notes</label>
@@ -817,6 +853,7 @@ function deleteComment(commentIndex) {
 
         // --- EDIT MODAL LOGIC ---
         let editIndex = -1;
+		let tempDailyChecks = []; // Store checks temporarily while modal is open
         function openModal(type, index = -1) {
             const modal = document.getElementById('edit-modal');
             document.getElementById('modal-type').value = type;
@@ -856,6 +893,20 @@ function deleteComment(commentIndex) {
                 const list = type === 'project' ? localData.projects : (type === 'active' ? localData.activeTasks : localData.dailyTasks);
                 item = list[index];
             }
+			
+			// --- INSERT THIS BLOCK ---
+    // Load Daily Checks
+    if (!isNew) {
+        const list = type === 'project' ? localData.projects : (type === 'active' ? localData.activeTasks : localData.dailyTasks);
+        tempDailyChecks = list[index].dailyChecks || [];
+    } else {
+        tempDailyChecks = [];
+    }
+    renderCheckHistory(); // Call the renderer
+    document.getElementById('dc-note').value = ""; // Clear input
+    document.getElementById('dc-status').value = "Verified"; // Reset select
+    // -------------------------
+			
             
             // Populate Fields
             document.getElementById('m-name').value = item.name || '';
@@ -908,7 +959,8 @@ function deleteComment(commentIndex) {
                 endDate: document.getElementById('m-end-date').value,
                 goal: document.getElementById('m-goal').value,
                 attachment: document.getElementById('m-attachment').value,
-                itComments: document.getElementById('m-it-comments').value
+                itComments: document.getElementById('m-it-comments').value,
+				dailyChecks: tempDailyChecks
             };
 
             const complexData = {
@@ -953,6 +1005,69 @@ function deleteComment(commentIndex) {
         
         // --- FILE UPLOAD LOGIC ---
         const storage = firebase.storage();
+		
+		function renderCheckHistory() {
+    const container = document.getElementById('dc-history-list');
+    container.innerHTML = '';
+
+    if (tempDailyChecks.length === 0) {
+        container.innerHTML = '<div style="padding:10px; color:#999; font-style:italic;">No history recorded.</div>';
+        return;
+    }
+
+    // Sort by date descending (newest first)
+    tempDailyChecks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    tempDailyChecks.forEach((check, index) => {
+        let badgeClass = 'cb-skipped';
+        if(check.status === 'Verified') badgeClass = 'cb-verified';
+        if(check.status === 'Issues Found') badgeClass = 'cb-issues';
+
+        const dateStr = new Date(check.timestamp).toLocaleString();
+
+        const div = document.createElement('div');
+        div.className = 'check-history-item';
+        div.innerHTML = `
+            <div>
+                <span class="check-badge-admin ${badgeClass}">${check.status}</span>
+                <span style="color:#555; margin-left:5px;">${check.note ? '- ' + check.note : ''}</span>
+                <div style="font-size:0.75em; color:#999; margin-top:2px;">${dateStr}</div>
+            </div>
+            <button onclick="removeDailyCheck(${index})" style="color:red; background:none; border:none; cursor:pointer;">&times;</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function addDailyCheck() {
+    const status = document.getElementById('dc-status').value;
+    const note = document.getElementById('dc-note').value.trim();
+
+    if (status === 'Issues Found' && !note) {
+        alert("Please add a note describing the issue.");
+        return;
+    }
+
+    const newCheck = {
+        status: status,
+        note: note,
+        timestamp: new Date().toISOString()
+    };
+
+    // Add to the TOP of the array
+    tempDailyChecks.unshift(newCheck);
+    
+    // Clear inputs
+    document.getElementById('dc-note').value = "";
+    
+    renderCheckHistory();
+}
+
+function removeDailyCheck(index) {
+    if(!confirm("Remove this log entry?")) return;
+    tempDailyChecks.splice(index, 1);
+    renderCheckHistory();
+}
 
         function uploadFile() {
             const fileInput = document.getElementById('file-upload-input');
