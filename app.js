@@ -675,7 +675,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- EXPORT FUNCTION (Requires xlsx-js-style library) ---
-// --- EXPORT FUNCTION (Requires xlsx-js-style library) ---
 function exportReportToExcel() {
     if (!currentReportData) {
         alert("No data loaded to export.");
@@ -686,7 +685,7 @@ function exportReportToExcel() {
     const formatForExcel = (list) => {
         if (!Array.isArray(list)) return [];
         return list.map(item => {
-            // 1. Format Comments
+            // 1. Format Comments (Join with \r\n for splitting later)
             let commentsStr = "";
             if (item.publicComments && item.publicComments.length > 0) {
                 commentsStr = [...item.publicComments].reverse().map(c => {
@@ -699,7 +698,7 @@ function exportReportToExcel() {
                 }).join("\r\n");
             }
 
-            // 2. Format Daily Checks (NEW)
+            // 2. Format Daily Checks (Join with \r\n for splitting later)
             let checkStatus = "";
             let checkNote = "";
             let checkHistoryStr = "";
@@ -729,8 +728,8 @@ function exportReportToExcel() {
             let row = {
                 Name: item.name,
                 Status: item.status || "",
-                Daily_Check_Status: checkStatus, // <--- NEW COLUMN
-                Daily_Check_Note: checkNote,     // <--- NEW COLUMN
+                Daily_Check_Status: checkStatus,
+                Daily_Check_Note: checkNote,
                 Priority: item.priority || "",
                 Goal: item.goal || "",
                 Milestone: item.milestone || "",
@@ -741,7 +740,7 @@ function exportReportToExcel() {
                 Collaborators: item.collaborators || "",
                 Notes: item.notes || "",
                 Public_Comments: commentsStr,
-                Daily_Check_History: checkHistoryStr // <--- NEW COLUMN
+                Daily_Check_History: checkHistoryStr
             };
 
             // Add Private Comments next (if applicable)
@@ -756,7 +755,7 @@ function exportReportToExcel() {
         });
     };
 
-    // --- HELPER 2: APPLY STYLES (WRAP TEXT) ---
+    // --- HELPER 2: APPLY STYLES (WRAP TEXT & ROW HEIGHT) ---
     const applyColumnStyles = (ws, targetHeader) => {
         if (!ws['!ref']) return;
         const range = XLSX.utils.decode_range(ws['!ref']);
@@ -772,27 +771,62 @@ function exportReportToExcel() {
         }
         if (colIndex === -1) return; // Header not found
 
-        // 2. Set Column Width (approx 60 chars)
+        // 2. Set Column Width
         if (!ws['!cols']) ws['!cols'] = [];
-        // Fill empty slots to prevent sparse array errors
-        for (let i = 0; i <= range.e.c; i++) { if (!ws['!cols'][i]) ws['!cols'][i] = { wch: 15 }; } // Default width
-        ws['!cols'][colIndex] = { wch: 60 }; 
+        // Fill empty slots to avoid sparse array issues
+        for (let i = 0; i <= range.e.c; i++) { if (!ws['!cols'][i]) ws['!cols'][i] = { wch: 15 }; } 
+        
+        // Use 60 characters width for these columns
+        const COLUMN_WIDTH_CHARS = 60;
+        ws['!cols'][colIndex] = { wch: COLUMN_WIDTH_CHARS }; 
 
-        // 3. Iterate Rows and Apply Wrap Style
+        // 3. Iterate Rows: Apply Wrap and Restrict Height
+        if (!ws['!rows']) ws['!rows'] = []; // Initialize rows array
+
         for (let R = range.s.r + 1; R <= range.e.r; ++R) {
             const address = XLSX.utils.encode_cell({ r: R, c: colIndex });
             
-            // If cell doesn't exist (empty), create it so styling applies
+            // If cell doesn't exist (empty), create it
             if (!ws[address]) ws[address] = { t: 's', v: '' };
 
-            // Apply Style Object
+            // Apply Style Object (Wrap Text)
             if (!ws[address].s) ws[address].s = {};
-            
-            ws[address].s.alignment = { 
-                wrapText: true, 
-                vertical: 'top', 
-                horizontal: 'left' 
-            };
+            ws[address].s.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
+
+            // --- HEIGHT LIMIT LOGIC ---
+            // Applies to Comments and History columns
+            if (targetHeader === "Public_Comments" || targetHeader === "Daily_Check_History") {
+                 const cellText = ws[address].v ? String(ws[address].v) : "";
+                 
+                 // Split by delimiter to get actual entries
+                 const entries = cellText.split(/\r\n/);
+
+                 // Only restrict height if there are more than 5 logical entries
+                 if (entries.length > 5) {
+                     // 1. Get the top 5 entries
+                     const topFive = entries.slice(0, 4);
+                     
+                     // 2. Calculate Visual Lines (accounting for wrapping)
+                     let estimatedVisualLines = 0;
+                     topFive.forEach(entry => {
+                         // Length divided by column width, rounded up. Minimum 1 line.
+                         const lines = Math.ceil(entry.length / COLUMN_WIDTH_CHARS) || 1;
+                         estimatedVisualLines += lines;
+                     });
+
+                     // 3. Calculate Pixels (approx 16px per line in Excel)
+                     // Adding a small buffer (10px) for padding
+                     const PX_PER_LINE = 16;
+                     const requiredHeight = (estimatedVisualLines * PX_PER_LINE) + 10;
+
+                     // 4. Update Row Height
+                     // We use Math.max to ensure we don't shrink the row if *another* // column (processed previously) needed more height.
+                     if (!ws['!rows'][R]) ws['!rows'][R] = {};
+                     
+                     const currentH = ws['!rows'][R].hpx || 0;
+                     ws['!rows'][R].hpx = Math.max(currentH, requiredHeight);
+                 }
+            }
         }
     };
 
@@ -816,34 +850,28 @@ function exportReportToExcel() {
             prioCounts[p] = (prioCounts[p] || 0) + 1;
         });
 
-        // --- CALCULATE TOTALS ---
         const totalWorkload = daily.length + projects.length + active.length;
         const totalStatus = allItems.length;
         const totalPriority = allItems.length;
 
         const rows = [];
-
-        // --- WORKLOAD SECTION ---
         rows.push({ Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length });
         rows.push({ Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length });
         rows.push({ Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length });
         rows.push({ Category: "WORKLOAD", Metric: "Total", Count: totalWorkload });
         rows.push({ Category: "", Metric: "", Count: "" });
 
-        // --- STATUS SECTION ---
         Object.keys(statusCounts).forEach(k => {
             rows.push({ Category: "STATUS BREAKDOWN", Metric: k, Count: statusCounts[k] });
         });
         rows.push({ Category: "STATUS BREAKDOWN", Metric: "Total", Count: totalStatus });
         rows.push({ Category: "", Metric: "", Count: "" });
 
-        // --- PRIORITY SECTION ---
         Object.keys(prioCounts).forEach(k => {
             rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] });
         });
         rows.push({ Category: "PRIORITY BREAKDOWN", Metric: "Total", Count: totalPriority });
-
-        // --- FOOTER ROWS ---
+        
         rows.push({ Category: "", Metric: "", Count: "" });
         rows.push({ Category: "", Metric: "", Count: "" });
         rows.push({ Category: "Report for:", Metric: targetId || "Unknown", Count: "" });
@@ -869,7 +897,7 @@ function exportReportToExcel() {
             
             // Apply Styling to Multiline Columns
             applyColumnStyles(ws, "Public_Comments");
-            applyColumnStyles(ws, "Daily_Check_History"); // <--- Style the new History column
+            applyColumnStyles(ws, "Daily_Check_History"); 
             if(currentShowPrivate) applyColumnStyles(ws, "IT_Private_Comments");
 
             XLSX.utils.book_append_sheet(wb, ws, sheetObj.name);
