@@ -178,14 +178,24 @@ const renderList = (id, items, showPrivate = false) => {
         const safeNotes = linkify(notes);
         const uniqueId = `${listType}-${index}`;
 
-        // --- NEW: CHECK IF UPDATED TODAY ---
+        // --- NEW: CHECK IF UPDATED TODAY OR RECENTLY (7 Days) ---
         let updatedBadge = '';
         if (lastUpdated) {
             const upDate = new Date(lastUpdated);
             const today = new Date();
-            // Compare Day, Month, Year
-            if (upDate.setHours(0,0,0,0) === today.setHours(0,0,0,0)) {
+            
+            // Compare dates specifically without time
+            const upDateString = upDate.toDateString();
+            const todayString = today.toDateString();
+            
+            // Calculate time difference for "Recently" check
+            const diffTime = Math.abs(today - upDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+            if (upDateString === todayString) {
                 updatedBadge = '<span class="badge-updated">✨ Updated Today</span>';
+            } else if (diffDays <= 7) {
+                updatedBadge = '<span class="badge-recent">🔄 Updated Recently</span>';
             }
         }
 
