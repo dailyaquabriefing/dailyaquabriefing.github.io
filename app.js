@@ -178,6 +178,17 @@ const renderList = (id, items, showPrivate = false) => {
         const safeNotes = linkify(notes);
         const uniqueId = `${listType}-${index}`;
 
+        // --- NEW: CHECK IF UPDATED TODAY ---
+        let updatedBadge = '';
+        if (lastUpdated) {
+            const upDate = new Date(lastUpdated);
+            const today = new Date();
+            // Compare Day, Month, Year
+            if (upDate.setHours(0,0,0,0) === today.setHours(0,0,0,0)) {
+                updatedBadge = '<span class="badge-updated">✨ Updated Today</span>';
+            }
+        }
+
         // --- DAILY CHECK LOGIC (NEW) ---
         let checkHtml = '';
         if (dailyChecks.length > 0) {
@@ -319,7 +330,7 @@ const renderList = (id, items, showPrivate = false) => {
 
             html += `<li style="margin-bottom:15px;">
                 <div style="margin-bottom:2px;">
-                    <strong>${safeName}</strong>${statusBadge}${priorityBadge}
+                    <strong>${safeName}</strong>${statusBadge}${priorityBadge}${updatedBadge}
                 </div>
                 ${checkHtml}
                 <small style="color:#666; display:block; margin-bottom:2px;">${safeNotes}</small>
@@ -782,7 +793,13 @@ function exportReportToExcel() {
         
         // Use 60 characters width for these columns
         const COLUMN_WIDTH_CHARS = 60;
-        ws['!cols'][colIndex] = { wch: COLUMN_WIDTH_CHARS }; 
+        
+        // --- NEW: Fix Width for Updated Column ---
+        if (targetHeader === "Updated") {
+             ws['!cols'][colIndex] = { wch: 25 }; 
+        } else {
+             ws['!cols'][colIndex] = { wch: COLUMN_WIDTH_CHARS }; 
+        }
 
         // 3. Iterate Rows: Apply Wrap and Restrict Height
         if (!ws['!rows']) ws['!rows'] = []; // Initialize rows array
@@ -901,7 +918,10 @@ function exportReportToExcel() {
             
             // Apply Styling to Multiline Columns
             applyColumnStyles(ws, "Public_Comments");
-            applyColumnStyles(ws, "Daily_Check_History"); 
+            applyColumnStyles(ws, "Daily_Check_History");
+            // --- NEW: Apply Width fix to Updated Column ---
+            applyColumnStyles(ws, "Updated"); 
+            
             if(currentShowPrivate) applyColumnStyles(ws, "IT_Private_Comments");
 
             XLSX.utils.book_append_sheet(wb, ws, sheetObj.name);
