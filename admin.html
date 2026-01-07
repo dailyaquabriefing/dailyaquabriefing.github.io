@@ -771,7 +771,7 @@
                 id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 9),
                 name: val
             };
-            localData.dailyTasks.push(newTask);
+            localData.dailyTasks.unshift(newTask);
             input.value = '';
             pushData();
         }
@@ -975,7 +975,8 @@ function deleteComment(commentIndex) {
                     ...commonData,
                     ...complexData 
                 };
-                list.push(newItem); 
+                // Use unshift to add to the TOP of the array
+                list.unshift(newItem);
             } else { 
                 // Edit Existing
                 const existingItem = list[editIndex];
