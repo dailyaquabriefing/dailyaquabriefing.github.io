@@ -445,8 +445,8 @@
                     <input type="date" id="m-start-date" class="w-full">
                 </div>
                 <div class="form-group">
-                    <label>Last Updated</label>
-                    <input type="date" id="m-last-updated" class="w-full">
+                    <label>Last Updated (Auto-updates on Save)</label>
+                    <input type="text" id="m-last-updated" class="w-full" placeholder="YYYY-MM-DD HH:MM">
                 </div>
                 <div class="form-group">
                     <label>End Date</label>
@@ -646,12 +646,13 @@
 
         function pushData() {
             if (!managedReportId) return;
+            // The pushData function updates the document-level lastUpdated
             db.collection('briefings').doc(managedReportId).set({
                 structuredDailyTasks: localData.dailyTasks,
                 structuredProjects: localData.projects,
                 structuredActiveTasks: localData.activeTasks,
                 passcode: localData.passcode,
-                lastUpdated: new Date().toISOString(),
+                lastUpdated: new Date().toISOString(), // Updates Global Report Time
                 reportId: managedReportId,
                 tasks_count: localData.dailyTasks.length,
                 projects_count: localData.projects.length,
@@ -682,6 +683,7 @@
                 let extraInfo = [];
                 if(task.tester) extraInfo.push(`Tester: ${task.tester}`);
                 if(task.endDate) extraInfo.push(`End: ${task.endDate}`);
+                if(task.lastUpdated) extraInfo.push(`Updated: ${task.lastUpdated}`);
                 if(task.goal) extraInfo.push(`Goal: ${task.goal}`);
                 if(task.attachment) extraInfo.push(`(Has Attachment)`);
                 if(task.itComments) extraInfo.push(`🔒 (Has Private Note)`);
@@ -720,6 +722,7 @@
                 // Format dates for preview
                 let dates = [];
                 if(item.startDate) dates.push(`Start: ${item.startDate}`);
+                if(item.lastUpdated) dates.push(`Updated: ${item.lastUpdated}`);
                 if(item.endDate) dates.push(`End: ${item.endDate}`);
                 const dateStr = dates.length ? `<br><span>${dates.join(' • ')}</span>` : '';
                 const testerStr = item.tester ? `<br><strong>Tester:</strong> ${item.tester}` : '';
@@ -769,7 +772,8 @@
             if (!val) return;
             const newTask = {
                 id: 'task_' + Date.now() + Math.random().toString(36).substring(2, 9),
-                name: val
+                name: val,
+                lastUpdated: new Date().toLocaleString() // Auto-update for quick add
             };
             localData.dailyTasks.unshift(newTask);
             input.value = '';
@@ -843,6 +847,9 @@ function deleteComment(commentIndex) {
 
     // Remove comment from array
     item.publicComments.splice(commentIndex, 1);
+    
+    // Auto-update item timestamp on comment deletion
+    item.lastUpdated = new Date().toLocaleString();
 
     // Save to Firestore IMMEDIATELY
     pushData();
@@ -920,7 +927,10 @@ function deleteComment(commentIndex) {
            // 2. ADD THIS LINE BELOW IT:
             document.getElementById('m-collaborators').value = item.collaborators || '';
             document.getElementById('m-start-date').value = item.startDate || '';
-            document.getElementById('m-last-updated').value = item.lastUpdated || '';
+            
+            // Populate Last Updated (or current time if empty/new)
+            document.getElementById('m-last-updated').value = item.lastUpdated || new Date().toLocaleString();
+            
             document.getElementById('m-end-date').value = item.endDate || '';
             document.getElementById('m-goal').value = item.goal || '';
             document.getElementById('m-attachment').value = item.attachment || '';
@@ -955,7 +965,10 @@ function deleteComment(commentIndex) {
                 tester: document.getElementById('m-tester').value,
                 collaborators: document.getElementById('m-collaborators').value,
                 startDate: document.getElementById('m-start-date').value,
-                lastUpdated: document.getElementById('m-last-updated').value,
+                
+                // AUTOMATIC UPDATE: Set lastUpdated to current date & time
+                lastUpdated: new Date().toLocaleString(),
+                
                 endDate: document.getElementById('m-end-date').value,
                 goal: document.getElementById('m-goal').value,
                 attachment: document.getElementById('m-attachment').value,
@@ -1118,7 +1131,7 @@ function removeDailyCheck(index) {
                     statusEl.style.color = "red";
                     alert("Upload failed: " + error.message);
                 },
-                () => {
+                (snapshot) => {
                     // Success! Get the URL
                     uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
                        statusEl.textContent = "✅ Upload Complete!";

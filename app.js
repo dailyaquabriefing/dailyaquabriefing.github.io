@@ -103,9 +103,13 @@ window.postComment = function(listType, itemIndex, uniqueId) {
         }
 
         listData[itemIndex].publicComments.push(newComment);
+        
+        // --- NEW: Update specific item timestamp on new comment ---
+        listData[itemIndex].lastUpdated = new Date().toLocaleString();
 
         docRef.update({
-            [listKey]: listData
+            [listKey]: listData,
+            lastUpdated: new Date().toISOString() // --- NEW: Update global document timestamp ---
         }).then(() => {
             renderList(containerId, listData, currentShowPrivate);
             const newContainer = document.getElementById('comments-' + uniqueId);
