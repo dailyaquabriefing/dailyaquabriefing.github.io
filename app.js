@@ -373,7 +373,7 @@ const renderList = (id, items, showPrivate = false) => {
             `;
         });
 
-        // MODIFIED: QUILL EDITOR CONTAINER
+        // MODIFIED: QUILL EDITOR CONTAINER REPLACES INPUT
         const commentsSectionHtml = `
             <div class="comments-section">
                 <button class="comment-toggle" onclick="toggleComments('comments-${uniqueId}')">${commentLabel}</button>
