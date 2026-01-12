@@ -150,7 +150,7 @@ const renderList = (id, items, showPrivate = false) => {
     let html = '<ol style="padding-left:20px;">';
     
     items.forEach((item, index) => {
-    let name, notes = '', status, priority = '', milestone = '', tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachment = '', itComments = '', publicComments = [];
+    let name, notes = '', status, priority = '', milestone = '', tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
     let dailyChecks = item.dailyChecks || [];    
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
@@ -164,7 +164,15 @@ const renderList = (id, items, showPrivate = false) => {
             endDate = item.endDate;
             lastUpdated = item.lastUpdated;
             goal = item.goal;
-            attachment = item.attachment;
+            
+            // --- ATTACHMENTS HANDLING ---
+            // Support new Array or Fallback to old String
+            if (item.attachments && Array.isArray(item.attachments)) {
+                attachments = item.attachments;
+            } else if (item.attachment) {
+                attachments = [{ name: "Resource", url: item.attachment }];
+            }
+
             itComments = item.itComments;
             publicComments = item.publicComments || [];
 
@@ -261,15 +269,20 @@ const renderList = (id, items, showPrivate = false) => {
             metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#fff3cd; color:#856404; padding:1px 6px; border-radius:4px; border:1px solid #ffeeba;">👥 Team: ${collaborators}</span></div>`;
         }
         
-        // Goal and Attachment HTML
+        // Goal
         let goalHtml = '';
         if (goal) {
             goalHtml = `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>`;
         }
         
+        // --- MULTIPLE ATTACHMENTS RENDER ---
         let attachmentHtml = '';
-        if (attachment) {
-            attachmentHtml = `<div class="item-attachment">🔗 <a href="${attachment}" target="_blank">View Resource</a></div>`;
+        if (attachments.length > 0) {
+            attachmentHtml = '<div style="margin-top:4px;">';
+            attachments.forEach(att => {
+                attachmentHtml += `<div class="item-attachment">🔗 <a href="${att.url}" target="_blank">${att.name}</a></div> `;
+            });
+            attachmentHtml += '</div>';
         }
 
         // IT Comments HTML (Only if showPrivate is true)
@@ -723,21 +736,17 @@ function exportReportToExcel() {
                 }).join("\r\n");
             }
 
-            // 2. Format Daily Checks (Join with \r\n for splitting later)
+            // 2. Format Daily Checks
             let checkStatus = "";
             let checkNote = "";
             let checkHistoryStr = "";
 
             if (item.dailyChecks && item.dailyChecks.length > 0) {
-                // Sort Descending (Newest first)
                 const sortedChecks = [...item.dailyChecks].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                
-                // Get Latest Data for main columns
                 const latest = sortedChecks[0];
                 checkStatus = latest.status;
                 checkNote = latest.note || "";
 
-                // Format History for the history column
                 checkHistoryStr = sortedChecks.map(c => {
                      let d = "N/A";
                      if (c.timestamp) {
@@ -748,8 +757,15 @@ function exportReportToExcel() {
                      return `[${d}] [${c.status}]${n}`;
                 }).join("\r\n");
             }
+            
+            // 3. Format Attachments
+            let attachmentStr = "";
+            const atts = item.attachments || (item.attachment ? [{name:'Attachment', url:item.attachment}] : []);
+            if (atts.length > 0) {
+                attachmentStr = atts.map(a => `[${a.name}] ${a.url}`).join("\r\n");
+            }
 
-            // 3. Build Row Object
+            // 4. Build Row Object
             let row = {
                 Name: item.name,
                 Status: item.status || "",
@@ -774,7 +790,7 @@ function exportReportToExcel() {
             }
 
             // Add Attachment LAST
-            row.Attachment = item.attachment || "";
+            row.Attachment = attachmentStr;
 
             return row;
         });
@@ -825,8 +841,8 @@ function exportReportToExcel() {
             ws[address].s.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
 
             // --- HEIGHT LIMIT LOGIC ---
-            // Applies to Comments and History columns
-            if (targetHeader === "Public_Comments" || targetHeader === "Daily_Check_History") {
+            // Applies to Comments, History AND Attachments
+            if (targetHeader === "Public_Comments" || targetHeader === "Daily_Check_History" || targetHeader === "Attachment") {
                  const cellText = ws[address].v ? String(ws[address].v) : "";
                  
                  // Split by delimiter to get actual entries
@@ -931,6 +947,8 @@ function exportReportToExcel() {
             applyColumnStyles(ws, "Daily_Check_History");
             // --- NEW: Apply Width fix to Updated Column ---
             applyColumnStyles(ws, "Updated"); 
+            // Apply to Attachments
+            applyColumnStyles(ws, "Attachment");
             
             if(currentShowPrivate) applyColumnStyles(ws, "IT_Private_Comments");
 
