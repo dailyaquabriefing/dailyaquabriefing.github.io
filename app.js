@@ -38,6 +38,14 @@ function linkify(htmlContent) {
     return newText;
 }
 
+// STRIP HTML HELPER FOR EXCEL EXPORT
+function stripHtml(html) {
+   if (!html) return "";
+   let tmp = document.createElement("DIV");
+   tmp.innerHTML = html;
+   return tmp.textContent || tmp.innerText || "";
+}
+
 // Toggle comment visibility
 window.toggleComments = function(id) {
     const el = document.getElementById(id);
@@ -104,12 +112,12 @@ window.postComment = function(listType, itemIndex, uniqueId) {
 
         listData[itemIndex].publicComments.push(newComment);
         
-        // --- NEW: Update specific item timestamp on new comment ---
+        // Update specific item timestamp on new comment
         listData[itemIndex].lastUpdated = new Date().toLocaleString();
 
         docRef.update({
             [listKey]: listData,
-            lastUpdated: new Date().toISOString() // --- NEW: Update global document timestamp ---
+            lastUpdated: new Date().toISOString()
         }).then(() => {
             renderList(containerId, listData, currentShowPrivate);
             const newContainer = document.getElementById('comments-' + uniqueId);
@@ -165,8 +173,6 @@ const renderList = (id, items, showPrivate = false) => {
             lastUpdated = item.lastUpdated;
             goal = item.goal;
             
-            // --- ATTACHMENTS HANDLING ---
-            // Support new Array or Fallback to old String
             if (item.attachments && Array.isArray(item.attachments)) {
                 attachments = item.attachments;
             } else if (item.attachment) {
@@ -183,20 +189,24 @@ const renderList = (id, items, showPrivate = false) => {
         }
 
         const safeName = linkify(name);
-        const safeNotes = linkify(notes);
+        
+        // RICH TEXT HANDLING
+        // Check if content looks like HTML (starts with <). If so, trust it (it's from Admin Rich Editor).
+        // Otherwise, run linkify() for backward compatibility with old plain-text reports.
+        let safeNotes = notes;
+        if (!notes.trim().startsWith('<')) {
+             safeNotes = linkify(notes);
+        }
+
         const uniqueId = `${listType}-${index}`;
 
-        // --- NEW: CHECK IF UPDATED TODAY OR RECENTLY (7 Days) ---
+        // --- UPDATED BADGES ---
         let updatedBadge = '';
         if (lastUpdated) {
             const upDate = new Date(lastUpdated);
             const today = new Date();
-            
-            // Compare dates specifically without time
             const upDateString = upDate.toDateString();
             const todayString = today.toDateString();
-            
-            // Calculate time difference for "Recently" check
             const diffTime = Math.abs(today - upDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 
@@ -207,35 +217,29 @@ const renderList = (id, items, showPrivate = false) => {
             }
         }
 
-        // --- DAILY CHECK LOGIC (NEW) ---
+        // --- DAILY CHECK LOGIC ---
         let checkHtml = '';
         if (dailyChecks.length > 0) {
-            // Sort to get latest check first
             dailyChecks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             const latest = dailyChecks[0];
-            
-            // Check if done today
             const checkDate = new Date(latest.timestamp).toDateString();
             const todayDate = new Date().toDateString();
             const isToday = checkDate === todayDate;
 
-            // Determine Styles
-            let badgeColor = '#6c757d'; // Default Gray (Skipped/Not Checked)
+            let badgeColor = '#6c757d'; 
             let icon = '⚪';
             
             if (latest.status === 'Verified') {
-                badgeColor = '#28a745'; // Green
+                badgeColor = '#28a745'; 
                 icon = '✅';
             } else if (latest.status === 'Issues Found') {
-                badgeColor = '#dc3545'; // Red
+                badgeColor = '#dc3545'; 
                 icon = '⚠️';
             }
 
-            // Format Date Display
             const timeStr = new Date(latest.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             const dateDisplay = isToday ? `Today at ${timeStr}` : new Date(latest.timestamp).toLocaleDateString();
 
-            // Build HTML Widget
             checkHtml = `
                 <div style="margin-top:6px; background:#fff; border:1px solid ${badgeColor}; border-left: 5px solid ${badgeColor}; padding:6px 10px; border-radius:4px; display:flex; align-items:center; gap:8px;">
                     <span style="font-size:1.2em;">${icon}</span>
@@ -275,7 +279,7 @@ const renderList = (id, items, showPrivate = false) => {
             goalHtml = `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>`;
         }
         
-        // --- MULTIPLE ATTACHMENTS RENDER ---
+        // Attachments
         let attachmentHtml = '';
         if (attachments.length > 0) {
             attachmentHtml = '<div style="margin-top:4px;">';
@@ -288,10 +292,15 @@ const renderList = (id, items, showPrivate = false) => {
         // IT Comments HTML (Only if showPrivate is true)
         let itCommentsHtml = '';
         if (itComments && showPrivate) {
-            itCommentsHtml = `<div class="item-it-comment">🔒 <strong>IT Only:</strong> ${linkify(itComments)}</div>`;
+            // RICH TEXT HANDLING FOR PRIVATE NOTES
+            let safeIT = itComments;
+            if (!itComments.trim().startsWith('<')) {
+                safeIT = linkify(itComments);
+            }
+            itCommentsHtml = `<div class="item-it-comment">🔒 <strong>IT Only:</strong> ${safeIT}</div>`;
         }
 
-        // --- COMMENTS HTML ---
+        // Comments HTML
         const commentCount = publicComments.length;
         const commentLabel = commentCount > 0 ? `💬 View/Add Comments (${commentCount})` : `💬 Add Question/Comment`;
         
@@ -327,7 +336,7 @@ const renderList = (id, items, showPrivate = false) => {
             </div>
         `;
 
-        // --- RENDER ITEM ---
+        // Render Item
         if (typeof item === 'object') {
             let color;
             switch (status) {
@@ -342,9 +351,9 @@ const renderList = (id, items, showPrivate = false) => {
             }
 
             let pColor = '#777';
-            if (priority === 'High') pColor = '#d9534f'; // Red
-            if (priority === 'Medium') pColor = '#f0ad4e'; // Orange
-            if (priority === 'Low') pColor = '#5cb85c'; // Green
+            if (priority === 'High') pColor = '#d9534f'; 
+            if (priority === 'Medium') pColor = '#f0ad4e'; 
+            if (priority === 'Low') pColor = '#5cb85c'; 
 
             const priorityBadge = priority ? `<span style="font-size:0.8em; color:${pColor}; border:1px solid ${pColor}; padding:0 4px; border-radius:4px; margin-left:5px;">${priority}</span>` : '';
 
@@ -356,7 +365,7 @@ const renderList = (id, items, showPrivate = false) => {
                     <strong>${safeName}</strong>${statusBadge}${priorityBadge}${updatedBadge}
                 </div>
                 ${checkHtml}
-                <small style="color:#666; display:block; margin-bottom:2px;">${safeNotes}</small>
+                <div style="color:#666; margin-bottom:2px;">${safeNotes}</div>
                 ${goalHtml}
                 ${attachmentHtml}
                 ${itCommentsHtml}
@@ -498,29 +507,21 @@ let priorityChart = null;
 let workloadChart = null;
 
 function toggleAnalyticsView() {
-    // Hide Lists
     document.getElementById('container-tasks').classList.add('hidden');
     document.getElementById('container-projects').classList.add('hidden');
     document.getElementById('container-active').classList.add('hidden');
     document.getElementById('container-meetings').classList.add('hidden');
     document.getElementById('container-emails').classList.add('hidden');
-    
-    // Show Analytics
     document.getElementById('container-analytics').classList.remove('hidden');
-    
     renderPublicAnalytics();
 }
 
 function closeAnalytics() {
-    // Hide Analytics
     document.getElementById('container-analytics').classList.add('hidden');
-    
-    // Show Lists
     document.getElementById('container-tasks').classList.remove('hidden');
     document.getElementById('container-projects').classList.remove('hidden');
     document.getElementById('container-active').classList.remove('hidden');
     
-    // Restore Outlook sections ONLY if we are in private mode
     if (currentShowPrivate) {
         document.getElementById('container-meetings').classList.remove('hidden');
         document.getElementById('container-emails').classList.remove('hidden');
@@ -530,19 +531,16 @@ function closeAnalytics() {
 function renderPublicAnalytics() {
     if (!currentReportData) return;
 
-    // Register DataLabels Plugin (Safe check)
     if (typeof ChartDataLabels !== 'undefined') {
         Chart.register(ChartDataLabels);
     }
 
-    // 1. Consolidate Data (Safe Public Data Only)
     const projects = currentReportData.structuredProjects || currentReportData.projects || [];
     const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
     const daily = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
     
     const allItems = [...projects, ...active];
 
-    // 2. Calculate Counts
     const statusCounts = { 'On Track': 0, 'Delayed': 0, 'Completed': 0, 'On-Hold': 0, 'Other': 0 };
     allItems.forEach(item => {
         const s = item.status || 'Other';
@@ -555,32 +553,23 @@ function renderPublicAnalytics() {
         const p = item.priority || 'Low';
         if (prioCounts.hasOwnProperty(p)) prioCounts[p]++;
     });
-
-    // --- CALCULATE TOTALS AND UPDATE HEADERS ---
     
-    // Project Status Total
     const totalStatus = Object.values(statusCounts).reduce((a, b) => a + b, 0);
     const statusHeader = document.getElementById('chart-header-status');
     if(statusHeader) statusHeader.textContent = `Project Status (Total: ${totalStatus})`;
 
-    // Workload Total
     const totalWorkload = daily.length + projects.length + active.length;
     const workloadHeader = document.getElementById('chart-header-workload');
     if(workloadHeader) workloadHeader.textContent = `Workload Distribution (Total: ${totalWorkload})`;
 
-    // Priority Total (Optional, but good for consistency)
     const totalPriority = Object.values(prioCounts).reduce((a, b) => a + b, 0);
     const priorityHeader = document.getElementById('chart-header-priority');
     if(priorityHeader) priorityHeader.textContent = `Priority Breakdown (Total: ${totalPriority})`;
 
-
-    // 3. Destroy Old Charts
     if (statusChart) statusChart.destroy();
     if (priorityChart) priorityChart.destroy();
     if (workloadChart) workloadChart.destroy();
 
-    // 4. Render Charts
-    // Status Chart
     statusChart = new Chart(document.getElementById('chartStatus'), {
         type: 'doughnut',
         data: {
@@ -600,17 +589,14 @@ function renderPublicAnalytics() {
         }
     });
 
-    // Priority Chart
     const pKeys = Object.keys(prioCounts);
     const pValues = Object.values(prioCounts);
-    
-    // Create Custom Labels: "High (9)", "Medium (3)", "Low (13)"
     const pLabels = pKeys.map((key, i) => `${key} (${pValues[i]})`);
 
     priorityChart = new Chart(document.getElementById('chartPriority'), {
         type: 'bar',
         data: {
-            labels: pLabels, // Use the new labels with counts
+            labels: pLabels,
             datasets: [{
                 label: 'Count',
                 data: pValues,
@@ -621,7 +607,6 @@ function renderPublicAnalytics() {
             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
             plugins: {
                 legend: { display: false }, 
-                // DISABLE DataLabels for Bar Chart (since we moved count to the Axis)
                 datalabels: {
                     display: false
                 }
@@ -629,7 +614,6 @@ function renderPublicAnalytics() {
         }
     });
 
-    // Workload Chart
     workloadChart = new Chart(document.getElementById('chartWorkload'), {
         type: 'pie',
         data: {
@@ -723,7 +707,7 @@ function exportReportToExcel() {
     const formatForExcel = (list) => {
         if (!Array.isArray(list)) return [];
         return list.map(item => {
-            // 1. Format Comments (Join with \r\n for splitting later)
+            // 1. Format Public Comments (Text Only)
             let commentsStr = "";
             if (item.publicComments && item.publicComments.length > 0) {
                 commentsStr = [...item.publicComments].reverse().map(c => {
@@ -732,7 +716,8 @@ function exportReportToExcel() {
                         const d = new Date(c.timestamp);
                         timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     }
-                    return `[${timeStr}]: [${c.author}]: ${c.text}`;
+                    // Strip HTML from comments just in case
+                    return `[${timeStr}]: [${c.author}]: ${stripHtml(c.text)}`;
                 }).join("\r\n");
             }
 
@@ -753,7 +738,7 @@ function exportReportToExcel() {
                          const dateObj = new Date(c.timestamp);
                          d = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                      }
-                     const n = c.note ? ` - ${c.note}` : "";
+                     const n = c.note ? ` - ${stripHtml(c.note)}` : "";
                      return `[${d}] [${c.status}]${n}`;
                 }).join("\r\n");
             }
@@ -770,7 +755,7 @@ function exportReportToExcel() {
                 Name: item.name,
                 Status: item.status || "",
                 Daily_Check_Status: checkStatus,
-                Daily_Check_Note: checkNote,
+                Daily_Check_Note: stripHtml(checkNote),
                 Priority: item.priority || "",
                 Goal: item.goal || "",
                 Milestone: item.milestone || "",
@@ -779,14 +764,18 @@ function exportReportToExcel() {
                 Updated: item.lastUpdated || "",
                 Tester: item.tester || "",
                 Collaborators: item.collaborators || "",
-                Notes: item.notes || "",
+                
+                // --- STRIP HTML FROM NOTES ---
+                Notes: stripHtml(item.notes || ""),
+                
                 Public_Comments: commentsStr,
                 Daily_Check_History: checkHistoryStr
             };
 
             // Add Private Comments next (if applicable)
             if (currentShowPrivate) {
-                row.IT_Private_Comments = item.itComments || "";
+                // --- STRIP HTML FROM IT COMMENTS ---
+                row.IT_Private_Comments = stripHtml(item.itComments || "");
             }
 
             // Add Attachment LAST
@@ -814,13 +803,10 @@ function exportReportToExcel() {
 
         // 2. Set Column Width
         if (!ws['!cols']) ws['!cols'] = [];
-        // Fill empty slots to avoid sparse array issues
         for (let i = 0; i <= range.e.c; i++) { if (!ws['!cols'][i]) ws['!cols'][i] = { wch: 15 }; } 
         
-        // Use 60 characters width for these columns
         const COLUMN_WIDTH_CHARS = 60;
         
-        // --- NEW: Fix Width for Updated Column ---
         if (targetHeader === "Updated") {
              ws['!cols'][colIndex] = { wch: 25 }; 
         } else {
@@ -828,48 +814,31 @@ function exportReportToExcel() {
         }
 
         // 3. Iterate Rows: Apply Wrap and Restrict Height
-        if (!ws['!rows']) ws['!rows'] = []; // Initialize rows array
+        if (!ws['!rows']) ws['!rows'] = []; 
 
         for (let R = range.s.r + 1; R <= range.e.r; ++R) {
             const address = XLSX.utils.encode_cell({ r: R, c: colIndex });
             
-            // If cell doesn't exist (empty), create it
             if (!ws[address]) ws[address] = { t: 's', v: '' };
 
-            // Apply Style Object (Wrap Text)
             if (!ws[address].s) ws[address].s = {};
             ws[address].s.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
 
             // --- HEIGHT LIMIT LOGIC ---
-            // Applies to Comments, History AND Attachments
-            if (targetHeader === "Public_Comments" || targetHeader === "Daily_Check_History" || targetHeader === "Attachment") {
+            if (targetHeader === "Public_Comments" || targetHeader === "Daily_Check_History" || targetHeader === "Attachment" || targetHeader === "Notes" || targetHeader === "IT_Private_Comments") {
                  const cellText = ws[address].v ? String(ws[address].v) : "";
-                 
-                 // Split by delimiter to get actual entries
                  const entries = cellText.split(/\r\n/);
 
-                 // Only restrict height if there are more than 5 logical entries
                  if (entries.length > 5) {
-                     // 1. Get the top 5 entries
                      const topFive = entries.slice(0, 4);
-                     
-                     // 2. Calculate Visual Lines (accounting for wrapping)
                      let estimatedVisualLines = 0;
                      topFive.forEach(entry => {
-                         // Length divided by column width, rounded up. Minimum 1 line.
                          const lines = Math.ceil(entry.length / COLUMN_WIDTH_CHARS) || 1;
                          estimatedVisualLines += lines;
                      });
-
-                     // 3. Calculate Pixels (approx 16px per line in Excel)
-                     // Adding a small buffer (10px) for padding
                      const PX_PER_LINE = 16;
                      const requiredHeight = (estimatedVisualLines * PX_PER_LINE) + 10;
-
-                     // 4. Update Row Height
-                     // We use Math.max to ensure we don't shrink the row if *another* // column (processed previously) needed more height.
                      if (!ws['!rows'][R]) ws['!rows'][R] = {};
-                     
                      const currentH = ws['!rows'][R].hpx || 0;
                      ws['!rows'][R].hpx = Math.max(currentH, requiredHeight);
                  }
@@ -942,13 +911,12 @@ function exportReportToExcel() {
         if (formattedData.length > 0) {
             const ws = XLSX.utils.json_to_sheet(formattedData);
             
-            // Apply Styling to Multiline Columns
+            // Apply Styling
             applyColumnStyles(ws, "Public_Comments");
             applyColumnStyles(ws, "Daily_Check_History");
-            // --- NEW: Apply Width fix to Updated Column ---
             applyColumnStyles(ws, "Updated"); 
-            // Apply to Attachments
             applyColumnStyles(ws, "Attachment");
+            applyColumnStyles(ws, "Notes"); // Added Notes Style for height restriction
             
             if(currentShowPrivate) applyColumnStyles(ws, "IT_Private_Comments");
 
@@ -960,11 +928,11 @@ function exportReportToExcel() {
     if (currentShowPrivate && currentOutlookData) {
         const outlookRows = [];
         if(currentOutlookData.meetings) {
-             const cleanMeetings = currentOutlookData.meetings.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>?/gm, '');
+             const cleanMeetings = stripHtml(currentOutlookData.meetings);
              outlookRows.push({ Type: "MEETINGS", Content: cleanMeetings });
         }
         if(currentOutlookData.emails) {
-             const cleanEmails = currentOutlookData.emails.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>?/gm, '');
+             const cleanEmails = stripHtml(currentOutlookData.emails);
              outlookRows.push({ Type: "EMAILS", Content: cleanEmails });
         }
         if (outlookRows.length > 0) {

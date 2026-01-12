@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Briefing Admin</title>
+    
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    
     <style>
         :root {
             --primary: #0078D4;
@@ -178,11 +181,9 @@
             width: 90%;
             max-width: 600px;
             margin: 20px auto;
-            
-            /* --- NEW: FIX FOR TALL FORMS --- */
-            max-height: 90vh;      /* Limits height to 90% of the viewport */
-            overflow-y: auto;      /* Adds a scrollbar inside the modal if needed */
-            position: relative;    /* Keeps everything contained */
+            max-height: 90vh;      
+            overflow-y: auto;      
+            position: relative;    
         }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;}
@@ -301,6 +302,18 @@
             padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8em; white-space: nowrap;
         }
         .btn-del-comment:hover { background: #dc3545; color: white; }
+
+        /* --- QUILL EDITOR OVERRIDES --- */
+        .ql-editor { 
+            min-height: 120px; 
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            font-size: 1rem;
+        }
+        .ql-toolbar {
+            background: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -491,7 +504,7 @@
 
             <div id="m-it-comments-container" class="private-field-group">
                 <label class="private-label">🔒 IT Team Only Comments (Visible only via Passcode)</label>
-                <textarea id="m-it-comments" class="w-full" rows="2" placeholder="Internal notes for IT team..."></textarea>
+                <div id="editor-container-it" style="background:white;"></div>
             </div>
 
             <div id="m-comments-wrapper" class="form-group" style="border-top: 4px solid #f1f1f1; margin-top: 15px; padding-top: 15px;">
@@ -501,26 +514,26 @@
             </div>
 			
 			<div class="form-group" style="background:#f9f9f9; padding:15px; border:1px solid #e0e0e0; border-radius:6px; margin-bottom:15px;">
-    <label>📋 Daily Operational Check</label>
-    
-    <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
-        <select id="dc-status" style="width:140px; padding:6px;">
-            <option value="Verified">✅ Verified</option>
-            <option value="Issues Found">⚠️ Issues Found</option>
-            <option value="Not Checked">⚪ Not Checked</option>
-        </select>
-        <input type="text" id="dc-note" placeholder="Note (Required if Issues Found)" style="flex-grow:1; padding:6px;">
-        <button class="btn btn-primary" style="padding:6px 12px; font-size:0.9em;" onclick="addDailyCheck()">Log Check</button>
-    </div>
+                <label>📋 Daily Operational Check</label>
+                
+                <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
+                    <select id="dc-status" style="width:140px; padding:6px;">
+                        <option value="Verified">✅ Verified</option>
+                        <option value="Issues Found">⚠️ Issues Found</option>
+                        <option value="Not Checked">⚪ Not Checked</option>
+                    </select>
+                    <input type="text" id="dc-note" placeholder="Note (Required if Issues Found)" style="flex-grow:1; padding:6px;">
+                    <button class="btn btn-primary" style="padding:6px 12px; font-size:0.9em;" onclick="addDailyCheck()">Log Check</button>
+                </div>
 
-    <label style="font-size:0.8em; color:#666; margin-top:10px;">Check History:</label>
-    <div id="dc-history-list" style="max-height: 150px; overflow-y: auto; background:#fff; border:1px solid #ddd; border-radius:4px;">
-        </div>
-</div>
+                <label style="font-size:0.8em; color:#666; margin-top:10px;">Check History:</label>
+                <div id="dc-history-list" style="max-height: 150px; overflow-y: auto; background:#fff; border:1px solid #ddd; border-radius:4px;">
+                </div>
+            </div>
 
             <div class="form-group">
                 <label>Notes</label>
-                <textarea id="m-notes" class="w-full" rows="3"></textarea>
+                <div id="editor-container-notes" style="background:white;"></div>
             </div>
 
             <div style="text-align: right; margin-top: 20px;">
@@ -534,6 +547,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script>
+    
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
     <script>
         // --- CONFIGURATION ---
@@ -563,6 +578,34 @@
             activeTasks: [],
             passcode: ""
         };
+        
+        // --- EDITOR INSTANCES ---
+        let quillIT;
+        let quillNotes;
+
+        // Initialize Editors when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+             const toolbarOptions = [
+                ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'header': [1, 2, 3, false] }],
+                [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+                ['link', 'clean']                                 // remove formatting button
+            ];
+
+            quillIT = new Quill('#editor-container-it', {
+                theme: 'snow',
+                placeholder: 'Internal notes for IT team...',
+                modules: { toolbar: toolbarOptions }
+            });
+
+            quillNotes = new Quill('#editor-container-notes', {
+                theme: 'snow',
+                placeholder: 'Add detailed notes...',
+                modules: { toolbar: toolbarOptions }
+            });
+        });
 
         // --- AUTH & SETUP ---
         auth.onAuthStateChanged(user => {
@@ -754,8 +797,16 @@
                 if(atts.length > 0) {
                     attStr = `<br>📎 ${atts.length} Attachment(s)`;
                 }
-
-                const itStr = item.itComments ? `<br><strong style="color:#c0392b;">🔒 Private Note:</strong> <span style="font-style:italic;">${item.itComments.substring(0, 30)}...</span>` : '';
+                
+                // Private note logic
+                // Strip HTML for the preview snippet
+                let cleanItComment = "";
+                if (item.itComments) {
+                    let tmp = document.createElement("DIV");
+                    tmp.innerHTML = item.itComments;
+                    cleanItComment = tmp.textContent || tmp.innerText || "";
+                }
+                const itStr = item.itComments ? `<br><strong style="color:#c0392b;">🔒 Private Note:</strong> <span style="font-style:italic;">${cleanItComment.substring(0, 30)}...</span>` : '';
 
                 // Check for public comments and display count
                 const commentCount = (item.publicComments || []).length;
@@ -772,7 +823,6 @@
                         </div>
                         <div style="font-size:0.85em; color:#555; margin-top:4px;">
                             ${item.milestone ? `<strong>Milestone:</strong> ${item.milestone}` : ''}
-                            ${item.notes ? `<br><strong>Note:</strong> ${item.notes}` : ''}
                             ${goalStr}
                             ${attStr}
                             ${itStr}
@@ -952,17 +1002,18 @@
             document.getElementById('m-status').value = item.status || 'On Track';
             document.getElementById('m-priority').value = item.priority || 'High';
             document.getElementById('m-milestone').value = item.milestone || '';
-            document.getElementById('m-notes').value = item.notes || '';
+            
+            // RICH TEXT POPULATION
+            // Handle possibility of existing plain text vs HTML
+            quillNotes.root.innerHTML = item.notes || '';
+            quillIT.root.innerHTML = item.itComments || '';
+
             document.getElementById('m-tester').value = item.tester || '';
             document.getElementById('m-collaborators').value = item.collaborators || '';
             document.getElementById('m-start-date').value = item.startDate || '';
             document.getElementById('m-last-updated').value = item.lastUpdated || new Date().toLocaleString();
             document.getElementById('m-end-date').value = item.endDate || '';
             document.getElementById('m-goal').value = item.goal || '';
-            
-            // We NO LONGER populate a single text field for attachments
-            
-            document.getElementById('m-it-comments').value = item.itComments || '';
             
             modal.style.display = 'flex';
 
@@ -987,7 +1038,11 @@
             const commonData = {
                 name: name,
                 milestone: document.getElementById('m-milestone').value,
-                notes: document.getElementById('m-notes').value,
+                
+                // GET HTML FROM QUILL
+                notes: quillNotes.root.innerHTML,
+                itComments: quillIT.root.innerHTML,
+
                 tester: document.getElementById('m-tester').value,
                 collaborators: document.getElementById('m-collaborators').value,
                 startDate: document.getElementById('m-start-date').value,
@@ -1000,7 +1055,6 @@
                 // Clear old single field to avoid confusion
                 attachment: "", 
 
-                itComments: document.getElementById('m-it-comments').value,
                 dailyChecks: tempDailyChecks
             };
 
