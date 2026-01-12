@@ -20,6 +20,9 @@ let currentShowPrivate = false;
 let currentReportData = null;
 let currentOutlookData = null;
 
+// STORE QUILL INSTANCES
+let commentEditors = {};
+
 // --- HELPER FUNCTIONS ---
 
 function linkify(htmlContent) {
@@ -46,11 +49,36 @@ function stripHtml(html) {
    return tmp.textContent || tmp.innerText || "";
 }
 
-// Toggle comment visibility
+// Toggle comment visibility and Init Quill
 window.toggleComments = function(id) {
     const el = document.getElementById(id);
     if (el) {
         el.classList.toggle('open');
+        
+        // --- QUILL INIT LOGIC ---
+        // ID format is: comments-daily-0
+        // We need unique key for editor storage
+        const uniqueId = id.replace('comments-', '');
+        const editorContainerId = 'editor-container-' + uniqueId;
+        
+        if (el.classList.contains('open') && !commentEditors[uniqueId]) {
+            // Only initialize if opened and not yet initialized
+            if (document.getElementById(editorContainerId)) {
+                const quill = new Quill('#' + editorContainerId, {
+                    theme: 'snow',
+                    placeholder: 'Type a question or comment...',
+                    modules: {
+                        toolbar: [
+                            ['bold', 'italic', 'underline'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['link', 'clean']
+                        ]
+                    }
+                });
+                commentEditors[uniqueId] = quill;
+            }
+        }
+
         // Save Name Preference
         const nameInput = el.querySelector('.comment-input-name');
         if(nameInput && !nameInput.value) {
@@ -63,7 +91,18 @@ window.toggleComments = function(id) {
 window.postComment = function(listType, itemIndex, uniqueId) {
     const container = document.getElementById('comments-' + uniqueId);
     const nameVal = container.querySelector('.comment-input-name').value.trim();
-    const textVal = container.querySelector('.comment-input-text').value.trim();
+    
+    // GET CONTENT FROM QUILL
+    let textVal = "";
+    if (commentEditors[uniqueId]) {
+        // Get HTML
+        const editorContent = commentEditors[uniqueId].root.innerHTML;
+        // Check if empty (Quill often leaves <p><br></p>)
+        const textOnly = commentEditors[uniqueId].getText().trim();
+        if(textOnly.length > 0) {
+            textVal = editorContent;
+        }
+    }
 
     if (!nameVal || !textVal) {
         alert("Please enter both your Name and a Comment.");
@@ -119,11 +158,19 @@ window.postComment = function(listType, itemIndex, uniqueId) {
             [listKey]: listData,
             lastUpdated: new Date().toISOString()
         }).then(() => {
+            // Clear editor instance reference since DOM will be wiped
+            delete commentEditors[uniqueId];
+            
             renderList(containerId, listData, currentShowPrivate);
+            
+            // Re-open the comment section for the item we just posted on
+            // This will re-trigger Quill init inside toggleComments
             const newContainer = document.getElementById('comments-' + uniqueId);
             if (newContainer) {
-                newContainer.classList.add('open');
-                newContainer.querySelector('.comment-input-text').value = '';
+                // Manually call toggle logic to reopen and init editor
+                window.toggleComments('comments-' + uniqueId);
+                
+                // Restore name
                 newContainer.querySelector('.comment-input-name').value = nameVal;
             }
         });
@@ -190,9 +237,7 @@ const renderList = (id, items, showPrivate = false) => {
 
         const safeName = linkify(name);
         
-        // RICH TEXT HANDLING
-        // Check if content looks like HTML (starts with <). If so, trust it (it's from Admin Rich Editor).
-        // Otherwise, run linkify() for backward compatibility with old plain-text reports.
+        // RICH TEXT HANDLING FOR NOTES
         let safeNotes = notes;
         if (!notes.trim().startsWith('<')) {
              safeNotes = linkify(notes);
@@ -292,7 +337,6 @@ const renderList = (id, items, showPrivate = false) => {
         // IT Comments HTML (Only if showPrivate is true)
         let itCommentsHtml = '';
         if (itComments && showPrivate) {
-            // RICH TEXT HANDLING FOR PRIVATE NOTES
             let safeIT = itComments;
             if (!itComments.trim().startsWith('<')) {
                 safeIT = linkify(itComments);
@@ -311,17 +355,25 @@ const renderList = (id, items, showPrivate = false) => {
                 const d = new Date(c.timestamp);
                 timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             }
+            
+            // RICH TEXT HANDLING FOR COMMENTS
+            let safeComment = c.text;
+            if (!safeComment.trim().startsWith('<')) {
+                safeComment = linkify(safeComment);
+            }
+
             commentsListHtml += `
                 <div class="comment-bubble">
                     <div class="comment-header">
                         <span class="comment-author">${linkify(c.author)}</span>
                         <span>${timeStr}</span>
                     </div>
-                    <div>${linkify(c.text)}</div>
+                    <div>${safeComment}</div>
                 </div>
             `;
         });
 
+        // MODIFIED: QUILL EDITOR CONTAINER
         const commentsSectionHtml = `
             <div class="comments-section">
                 <button class="comment-toggle" onclick="toggleComments('comments-${uniqueId}')">${commentLabel}</button>
@@ -329,7 +381,7 @@ const renderList = (id, items, showPrivate = false) => {
                     ${commentsListHtml}
                     <div class="comment-form">
                         <input type="text" class="comment-input-name" placeholder="Your Name" maxlength="20">
-                        <input type="text" class="comment-input-text" placeholder="Type a question or comment...">
+                        <div id="editor-container-${uniqueId}"></div>
                         <button class="btn-post" onclick="postComment('${listType}', ${index}, '${uniqueId}')">Post</button>
                     </div>
                 </div>
@@ -716,7 +768,7 @@ function exportReportToExcel() {
                         const d = new Date(c.timestamp);
                         timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     }
-                    // Strip HTML from comments just in case
+                    // Strip HTML from comments for Excel Export
                     return `[${timeStr}]: [${c.author}]: ${stripHtml(c.text)}`;
                 }).join("\r\n");
             }

@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
     <style>
         :root {
@@ -252,10 +255,11 @@
         }
         .comment-author { font-weight: bold; color: #333; }
 
+        /* MODIFIED FOR QUILL */
         .comment-form {
             display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+            flex-direction: column; /* Stack vertically for editor */
+            gap: 10px;
             background-color: #f0f4f8;
             padding: 10px;
             border-radius: 4px;
@@ -264,29 +268,34 @@
         }
         
         .comment-input-name {
-            flex: 1;
-            min-width: 100px;
-            padding: 6px;
+            width: 100%;
+            max-width: 300px;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 0.85em;
+            font-size: 0.9em;
         }
-        .comment-input-text {
-            flex: 3;
-            min-width: 200px;
-            padding: 6px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.85em;
+
+        /* Quill Container Overrides */
+        .ql-container {
+            background: white;
+            min-height: 80px;
         }
+        .ql-editor {
+            min-height: 80px;
+            font-size: 0.95em;
+        }
+        
         .btn-post {
+            align-self: flex-end; /* Align to right */
             background: var(--primary);
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.85em;
+            font-size: 0.9em;
+            width: auto;
         }
         .btn-post:hover { background: #005a9e; }
 
