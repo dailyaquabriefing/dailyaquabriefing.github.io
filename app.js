@@ -56,13 +56,10 @@ window.toggleComments = function(id) {
         el.classList.toggle('open');
         
         // --- QUILL INIT LOGIC ---
-        // ID format is: comments-daily-0
-        // We need unique key for editor storage
         const uniqueId = id.replace('comments-', '');
         const editorContainerId = 'editor-container-' + uniqueId;
         
         if (el.classList.contains('open') && !commentEditors[uniqueId]) {
-            // Only initialize if opened and not yet initialized
             if (document.getElementById(editorContainerId)) {
                 const quill = new Quill('#' + editorContainerId, {
                     theme: 'snow',
@@ -79,7 +76,6 @@ window.toggleComments = function(id) {
             }
         }
 
-        // Save Name Preference
         const nameInput = el.querySelector('.comment-input-name');
         if(nameInput && !nameInput.value) {
             nameInput.value = localStorage.getItem('commenterName') || '';
@@ -92,12 +88,9 @@ window.postComment = function(listType, itemIndex, uniqueId) {
     const container = document.getElementById('comments-' + uniqueId);
     const nameVal = container.querySelector('.comment-input-name').value.trim();
     
-    // GET CONTENT FROM QUILL
     let textVal = "";
     if (commentEditors[uniqueId]) {
-        // Get HTML
         const editorContent = commentEditors[uniqueId].root.innerHTML;
-        // Check if empty (Quill often leaves <p><br></p>)
         const textOnly = commentEditors[uniqueId].getText().trim();
         if(textOnly.length > 0) {
             textVal = editorContent;
@@ -109,10 +102,8 @@ window.postComment = function(listType, itemIndex, uniqueId) {
         return;
     }
 
-    // Save name for next time
     localStorage.setItem('commenterName', nameVal);
 
-    // Fetch current data
     const docRef = db.collection('briefings').doc(targetId);
 
     docRef.get().then(doc => {
@@ -151,26 +142,19 @@ window.postComment = function(listType, itemIndex, uniqueId) {
 
         listData[itemIndex].publicComments.push(newComment);
         
-        // Update specific item timestamp on new comment
         listData[itemIndex].lastUpdated = new Date().toLocaleString();
 
         docRef.update({
             [listKey]: listData,
             lastUpdated: new Date().toISOString()
         }).then(() => {
-            // Clear editor instance reference since DOM will be wiped
             delete commentEditors[uniqueId];
             
             renderList(containerId, listData, currentShowPrivate);
             
-            // Re-open the comment section for the item we just posted on
-            // This will re-trigger Quill init inside toggleComments
             const newContainer = document.getElementById('comments-' + uniqueId);
             if (newContainer) {
-                // Manually call toggle logic to reopen and init editor
                 window.toggleComments('comments-' + uniqueId);
-                
-                // Restore name
                 newContainer.querySelector('.comment-input-name').value = nameVal;
             }
         });
@@ -237,7 +221,6 @@ const renderList = (id, items, showPrivate = false) => {
 
         const safeName = linkify(name);
         
-        // RICH TEXT HANDLING FOR NOTES
         let safeNotes = notes;
         if (!notes.trim().startsWith('<')) {
              safeNotes = linkify(notes);
@@ -334,14 +317,14 @@ const renderList = (id, items, showPrivate = false) => {
             attachmentHtml += '</div>';
         }
 
-        // IT Comments HTML (Only if showPrivate is true)
+        // Private Comments HTML
         let itCommentsHtml = '';
         if (itComments && showPrivate) {
             let safeIT = itComments;
             if (!itComments.trim().startsWith('<')) {
                 safeIT = linkify(itComments);
             }
-            itCommentsHtml = `<div class="item-it-comment">🔒 <strong>IT Only:</strong> ${safeIT}</div>`;
+            itCommentsHtml = `<div class="item-it-comment">🔒 <strong>Private Note:</strong> ${safeIT}</div>`;
         }
 
         // Comments HTML
@@ -356,7 +339,6 @@ const renderList = (id, items, showPrivate = false) => {
                 timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             }
             
-            // RICH TEXT HANDLING FOR COMMENTS
             let safeComment = c.text;
             if (!safeComment.trim().startsWith('<')) {
                 safeComment = linkify(safeComment);
@@ -373,7 +355,6 @@ const renderList = (id, items, showPrivate = false) => {
             `;
         });
 
-        // MODIFIED: QUILL EDITOR CONTAINER REPLACES INPUT
         const commentsSectionHtml = `
             <div class="comments-section">
                 <button class="comment-toggle" onclick="toggleComments('comments-${uniqueId}')">${commentLabel}</button>
@@ -826,8 +807,8 @@ function exportReportToExcel() {
 
             // Add Private Comments next (if applicable)
             if (currentShowPrivate) {
-                // --- STRIP HTML FROM IT COMMENTS ---
-                row.IT_Private_Comments = stripHtml(item.itComments || "");
+                // --- STRIP HTML FROM PRIVATE COMMENTS ---
+                row.Private_Comments = stripHtml(item.itComments || "");
             }
 
             // Add Attachment LAST
@@ -877,7 +858,7 @@ function exportReportToExcel() {
             ws[address].s.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
 
             // --- HEIGHT LIMIT LOGIC ---
-            if (targetHeader === "Public_Comments" || targetHeader === "Daily_Check_History" || targetHeader === "Attachment" || targetHeader === "Notes" || targetHeader === "IT_Private_Comments") {
+            if (targetHeader === "Public_Comments" || targetHeader === "Daily_Check_History" || targetHeader === "Attachment" || targetHeader === "Notes" || targetHeader === "Private_Comments") {
                  const cellText = ws[address].v ? String(ws[address].v) : "";
                  const entries = cellText.split(/\r\n/);
 
@@ -970,7 +951,7 @@ function exportReportToExcel() {
             applyColumnStyles(ws, "Attachment");
             applyColumnStyles(ws, "Notes"); // Added Notes Style for height restriction
             
-            if(currentShowPrivate) applyColumnStyles(ws, "IT_Private_Comments");
+            if(currentShowPrivate) applyColumnStyles(ws, "Private_Comments");
 
             XLSX.utils.book_append_sheet(wb, ws, sheetObj.name);
         }

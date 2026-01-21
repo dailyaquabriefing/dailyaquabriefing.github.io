@@ -86,7 +86,7 @@
         <a href="index.html" class="back-link">&larr; Back to Report</a>
         
         <h1>How to Use Aqua Daily Briefing</h1>
-        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your <strong>Task Priorities</strong> with automated <strong>Outlook Data</strong> (emails/meetings) into one secure, shareable dashboard.</p>
+        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your <strong>Task Priorities</strong> with automated <strong>Outlook Data</strong> into one secure, shareable dashboard.</p>
 
         <h2>The Two-Part System</h2>
         <ol>
@@ -107,7 +107,7 @@
         </div>
 
         <h2>Step 2: Managing Your Content</h2>
-        <p>The Admin Dashboard is organized into four tabs:</p>
+        <p>The Admin Dashboard is organized into four tabs. Content supports <strong>Rich Text</strong> (Bold, Bullets, Headers) via the new editor.</p>
         
         <div class="step-box">
             <h3>1. Daily Tasks Tab</h3>
@@ -117,128 +117,113 @@
             </ul>
 
             <h3>2. Projects & Active Tasks Tabs</h3>
-            <p>These sections support <strong>Rich Data</strong>. When adding or editing an item, you can specify:</p>
+            <p>These sections support rich data. When adding or editing an item:</p>
             <ul>
-                <li><strong>Status:</strong> Color-coded badges (e.g., <span class="badge" style="background:#d4edda; color:#155724;">On Track</span>, <span class="badge" style="background:#f8d7da; color:#721c24;">Delayed</span>).</li>
-                <li><strong>Collaborators <span class="new-feature">NEW</span>:</strong> Tag specific teams or individuals (e.g., "Design Team") to display a yellow Team badge.</li>
-                <li><strong>Resources <span class="new-feature">NEW</span>:</strong> Upload files or paste links to Drive/SharePoint.</li>
+                <li><strong>Rich Text Notes <span class="new-feature">NEW</span>:</strong> Use the editor to format your notes with bullet points, bold text, and headers.</li>
+                <li><strong>Multiple Attachments <span class="new-feature">NEW</span>:</strong> You can now upload multiple files or add manual links (e.g., SharePoint URLs) to a single task.</li>
+                <li><strong>Collaborators:</strong> Tag teams (e.g., "Design Team") to display a yellow Team badge.</li>
                 <li><strong>Milestones:</strong> Track the next major goal (🏁).</li>
-                <li><strong>Dates:</strong> Set Start, End, and Last Updated dates.</li>
-                <li><strong>IT Comments <span class="new-feature">NEW</span>:</strong> Private notes for the IT team.</li>
-                <li><strong>Public Comments <span class="new-feature">NEW</span>:</strong> View and delete public comments directly from the edit window.</li>
+                <li><strong>Dates:</strong> Set Start and End dates. The <strong>Last Updated</strong> field updates automatically.</li>
+                <li><strong>Private Comments <span class="new-feature">NEW</span>:</strong> Private notes for internal use.</li>
             </ul>
 
             <h3>3. Settings Tab (Security)</h3>
             <ul>
                 <li><strong>Passcode Protection:</strong> Set a passcode here to lock your <strong>Daily Briefing</strong> view.</li>
-                <li><strong style="color:#d35400;">Important:</strong> You must set a passcode to enable the "IT Team Only Comments" field in the editor.</li>
+                <li><strong style="color:#d35400;">Important:</strong> You must set a passcode to enable the "Private Comments" field.</li>
             </ul>
         </div>
 
-        <h2>Step 3: Private IT Comments <span class="new-feature">NEW</span></h2>
-        <p>You can now add private notes that are <strong>hidden from the public</strong>.</p>
+        <h2>Step 3: Daily Operational Checks <span class="new-feature">NEW</span></h2>
+        <p>Track the health of your systems or routine tasks directly within any Project or Active Task.</p>
         <div class="step-box">
             <ul>
-                <li><strong>How to Enable:</strong> Go to <strong>Settings</strong> and save a Passcode.</li>
-                <li><strong>How to Add:</strong> In the Admin modal (Edit/Add Item), a new red field labeled <strong>"🔒 IT Team Only Comments"</strong> will appear.</li>
-                <li><strong>Visibility:</strong> These notes ONLY appear in the <strong>Daily Briefing</strong> view after you successfully enter the passcode. They are completely removed from the Weekly Report.</li>
-            </ul>
-        </div>
-
-        <h2>Step 4: Public Comments & Collaboration <span class="new-feature">NEW</span></h2>
-        <p>Stakeholders can now ask questions or leave feedback directly on your report.</p>
-        <div class="step-box">
-            <ul>
-                <li><strong>How to Comment:</strong> Viewers can click <strong>"💬 View/Add Comments"</strong> on any task, enter their Name, and click Post.</li>
-                <li><strong>Where it Appears:</strong> Comments are visible on both the Public Weekly Report and the Private Daily Briefing.</li>
-                <li><strong>Moderation:</strong> To delete an inappropriate comment:
-                    <ol>
-                        <li>Log in to the Admin Dashboard.</li>
-                        <li>Click <strong>Edit</strong> on the specific task.</li>
-                        <li>Scroll down to the <strong>"💬 Public Comments"</strong> section.</li>
-                        <li>Click the <strong>Delete</strong> button next to the comment you wish to remove.</li>
-                    </ol>
+                <li><strong>How to Log:</strong> Open any item in the Admin Dashboard. Look for the <strong>"📋 Daily Operational Check"</strong> box.</li>
+                <li><strong>Status Options:</strong>
+                    <ul>
+                        <li>✅ <strong>Verified:</strong> System is healthy.</li>
+                        <li>⚠️ <strong>Issues Found:</strong> Requires attention (Note required).</li>
+                        <li>⚪ <strong>Not Checked:</strong> Placeholder status.</li>
+                    </ul>
                 </li>
+                <li><strong>History:</strong> A log of previous checks is saved automatically, so you can track stability over time.</li>
             </ul>
         </div>
 
-        <h2>Step 5: File Uploads <span class="new-feature">NEW</span></h2>
-        <p>You can now host documents directly within your report (e.g., Specs, PDFs, Screenshots).</p>
+        <h2>Step 4: Smart Visual Indicators <span class="new-feature">NEW</span></h2>
+        <p>The dashboard now visually highlights fresh content so viewers know what's new.</p>
         <div class="step-box">
             <ul>
-                <li><strong>How to Upload:</strong> In the Admin "Edit Item" window, find the <strong>Resource</strong> section.</li>
-                <li><strong>Click "Upload":</strong> Select a file from your computer (PDF, Word, Excel, Text, or Image).</li>
-                <li><strong>Limits:</strong> The maximum file size is <strong>10MB</strong>.</li>
-                <li><strong>Automatic Linking:</strong> Once the upload finishes, the system automatically inserts the secure link for you.</li>
+                <li><span class="badge" style="background:#e8f5e9; color:#2e7d32;">✨ Updated Today</span>: Appears on items edited or commented on <strong>today</strong>.</li>
+                <li><span class="badge" style="background:#e3f2fd; color:#0277bd;">🔄 Updated Recently</span>: Appears on items active within the <strong>last 7 days</strong>.</li>
+                <li><strong>No Badge:</strong> Items older than 7 days appear standard.</li>
             </ul>
         </div>
 
-        <h2>Step 6: Export to Excel <span class="new-feature">NEW</span></h2>
-        <p>Need a hard copy or backup? You can now export your data to Excel.</p>
+        <h2>Step 5: Public & Private Comments</h2>
+        <p>Stakeholders can ask questions, and you can keep private notes secure.</p>
         <div class="step-box">
             <ul>
-                <li><strong>Where:</strong> Click the <strong style="color:#27ae60;">&#128229; Export to Excel</strong> link in the top navigation bar.</li>
-                <li><strong>What is Exported:</strong> All Tasks, Projects, and Active Tasks (including new fields like Collaborators).</li>
-                <li><strong>Analytics Included:</strong> The export now includes a summary <strong>Analytics Overview</strong> sheet as the first tab.</li>
+                <li><strong>Public Comments:</strong> Viewers can click <strong>"💬 View/Add Comments"</strong> to chat. The new editor supports <strong>Rich Text</strong> formatting.</li>
+                <li><strong>Private Comments:</strong> Available in the Admin Edit modal. These notes are <strong>hidden from the public</strong> and only visible when the Report Passcode is entered.</li>
+            </ul>
+        </div>
+
+        <h2>Step 6: Export to Excel <span class="new-feature">IMPROVED</span></h2>
+        <p>Need a hard copy? The export feature has been upgraded.</p>
+        <div class="step-box">
+            <ul>
+                <li><strong>Where:</strong> Click <strong style="color:#27ae60;">&#128229; Export to Excel</strong> in the top nav.</li>
+                <li><strong>What's New:</strong>
+                    <ul>
+                        <li>Includes the full <strong>Daily Check History</strong> log.</li>
+                        <li>Includes <strong>Analytics Overview</strong> as the first sheet.</li>
+                        <li>Automatically strips HTML for clean, readable text cells.</li>
+                        <li>Adjusts column widths automatically for readability.</li>
+                    </ul>
+                </li>
                 <li><strong>Smart Security:</strong>
                     <ul>
-                        <li>If exported from the <strong>Public View</strong>, it excludes IT Comments and Outlook Data.</li>
-                        <li>If exported from the <strong>Private (Unlocked) View</strong>, it <em>includes</em> IT Comments, Meetings, and Emails.</li>
+                        <li>If exported from the <strong>Public View</strong>, it excludes Private Comments and Outlook Data.</li>
+                        <li>If exported from the <strong>Private (Unlocked) View</strong>, it <em>includes</em> Private Comments, Meetings, and Emails.</li>
                     </ul>
                 </li>
             </ul>
         </div>
 
-        <h2>Step 7: Visual Analytics <span class="new-feature">NEW</span></h2>
+        <h2>Step 7: Visual Analytics</h2>
         <p>Switch instantly between list view and visual charts.</p>
         <div class="step-box">
             <ul>
-                <li><strong>How to Access:</strong> Click the <strong>"📊 Analytics"</strong> link in the top navigation bar of the report viewer.</li>
-                <li><strong>What You See:</strong> Real-time charts for Project Status, Priority Breakdown, and Workload Distribution.</li>
-                <li><strong>How to Exit:</strong> Click "Back to List View" at the bottom of the charts.</li>
+                <li><strong>How to Access:</strong> Click <strong>"📊 Analytics"</strong> in the top nav.</li>
+                <li><strong>Charts Included:</strong>
+                    <ol>
+                        <li><strong>Project Status:</strong> Doughnut chart of On Track vs Delayed.</li>
+                        <li><strong>Priority Breakdown:</strong> Bar chart of High/Med/Low tasks.</li>
+                        <li><strong>Workload Distribution:</strong> Pie chart of how work is split across Daily/Projects/Active Tasks.</li>
+                    </ol>
+                </li>
             </ul>
         </div>
 
-        <h2>Step 8: Sync Outlook (The Agent)</h2>
-        <p>To see your <strong>Meetings</strong> and <strong>Unread Emails</strong>, the desktop agent must run.</p>
-        <div class="step-box">
-            <ol>
-                <li>Open the <code>AquaDailyBriefing</code> shortcut on your desktop.</li>
-                <li>Wait for the <strong>confirmation popup</strong> confirming the sync.</li>
-                <li>Your web report will automatically update with the new data.</li>
-            </ol>
-        </div>
-
-        <h2>Step 9: Viewing Reports</h2>
+        <h2>Step 8: Viewing Reports</h2>
         <p>You have two views available based on your needs:</p>
         
         <div class="step-box">
             <h3>🔒 Daily Briefing (Private)</h3>
             <p><strong>URL:</strong> <code>/?daily=YOUR_ID</code></p>
             <ul>
-                <li><strong>Includes:</strong> Tasks, Projects, <strong>IT Comments</strong>, Meetings, Unread Emails, and Public Comments.</li>
-                <li><strong>Security:</strong> Protected by your Passcode. (Press Enter to submit).</li>
+                <li><strong>Includes:</strong> Tasks, Projects, <strong>Private Comments</strong>, Meetings, Unread Emails.</li>
+                <li><strong>Security:</strong> Protected by your Passcode.</li>
             </ul>
 
             <h3>📊 Weekly Report (Public)</h3>
             <p><strong>URL:</strong> <code>/?report=YOUR_ID</code></p>
             <ul>
                 <li><strong>Includes:</strong> Tasks, Projects, Resources, and Public Comments.</li>
-                <li><strong>No Sensitive Data:</strong> Hides emails, meetings, and <strong>IT Comments</strong>.</li>
-                <li><strong>Shareable:</strong> Perfect for sending to managers or stakeholders as a status update.</li>
+                <li><strong>No Sensitive Data:</strong> Hides emails, meetings, and <strong>Private Comments</strong>.</li>
             </ul>
         </div>
-
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-
-        <h2>Pro-Tip: Automate the Outlook Sync</h2>
-        <p>The <strong>Outlook Agent</strong> can be configured to run automatically at login.</p>
-        <ol>
-            <li>Navigate to the folder: <code>C:\Users\{username}\AquaBriefing</code>.</li>
-            <li>Open the configuration file (e.g. <code>dailybriefingconfig.txt</code>).</li>
-            <li>Set <code>RunAtLogin=Yes</code>.</li>
-            <li>(Optional) Set <code>Prompt=No</code> to make it run silently in the background without popping up a confirmation box.</li>
-        </ol>
 
         <br>
         <a href="index.html" class="back-link">&larr; Back to Report</a>
