@@ -374,6 +374,7 @@ const renderList = (id, items, showPrivate = false) => {
             let color;
             switch (status) {
                 case 'On Track': color = 'green'; break;
+                case 'Testing': color = '#ff9f43'; break;
                 case 'Delayed': color = 'red'; break;
                 case 'On-Hold': color = 'grey'; break;
                 case 'Completed': color = '#800080'; break;
@@ -574,7 +575,7 @@ function renderPublicAnalytics() {
     
     const allItems = [...projects, ...active];
 
-    const statusCounts = { 'On Track': 0, 'Delayed': 0, 'Completed': 0, 'On-Hold': 0, 'Other': 0 };
+    const statusCounts = { 'On Track': 0, 'Testing': 0, 'Delayed': 0, 'Completed': 0, 'On-Hold': 0, 'Other': 0 };
     allItems.forEach(item => {
         const s = item.status || 'Other';
         if (statusCounts.hasOwnProperty(s)) statusCounts[s]++;
