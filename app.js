@@ -731,17 +731,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- EXPORT FUNCTION (Requires xlsx-js-style library) ---
+// --- UPDATED EXPORT FUNCTION ---
 function exportReportToExcel() {
     if (!currentReportData) {
         alert("No data loaded to export.");
         return;
     }
 
-    // --- HELPER 1: FORMAT DATA & NEWLINES ---
+    // --- HELPER 1: FORMAT DATA ---
     const formatForExcel = (list) => {
         if (!Array.isArray(list)) return [];
         return list.map(item => {
-            // 1. Format Public Comments (Text Only)
             let commentsStr = "";
             if (item.publicComments && item.publicComments.length > 0) {
                 commentsStr = [...item.publicComments].reverse().map(c => {
@@ -750,22 +750,18 @@ function exportReportToExcel() {
                         const d = new Date(c.timestamp);
                         timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     }
-                    // Strip HTML from comments for Excel Export
                     return `[${timeStr}]: [${c.author}]: ${stripHtml(c.text)}`;
                 }).join("\r\n");
             }
 
-            // 2. Format Daily Checks
             let checkStatus = "";
             let checkNote = "";
             let checkHistoryStr = "";
-
             if (item.dailyChecks && item.dailyChecks.length > 0) {
                 const sortedChecks = [...item.dailyChecks].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 const latest = sortedChecks[0];
                 checkStatus = latest.status;
                 checkNote = latest.note || "";
-
                 checkHistoryStr = sortedChecks.map(c => {
                      let d = "N/A";
                      if (c.timestamp) {
@@ -777,14 +773,12 @@ function exportReportToExcel() {
                 }).join("\r\n");
             }
             
-            // 3. Format Attachments
             let attachmentStr = "";
             const atts = item.attachments || (item.attachment ? [{name:'Attachment', url:item.attachment}] : []);
             if (atts.length > 0) {
                 attachmentStr = atts.map(a => `[${a.name}] ${a.url}`).join("\r\n");
             }
 
-            // 4. Build Row Object
             let row = {
                 Name: item.name,
                 Status: item.status || "",
@@ -798,84 +792,51 @@ function exportReportToExcel() {
                 Updated: item.lastUpdated || "",
                 Tester: item.tester || "",
                 Collaborators: item.collaborators || "",
-                
-                // --- STRIP HTML FROM NOTES ---
                 Notes: stripHtml(item.notes || ""),
-                
                 Public_Comments: commentsStr,
                 Daily_Check_History: checkHistoryStr
             };
 
-            // Add Private Comments next (if applicable)
             if (currentShowPrivate) {
-                // --- STRIP HTML FROM PRIVATE COMMENTS ---
                 row.Private_Comments = stripHtml(item.itComments || "");
             }
-
-            // Add Attachment LAST
             row.Attachment = attachmentStr;
-
             return row;
         });
     };
 
-    // --- HELPER 2: APPLY STYLES (WRAP TEXT & ROW HEIGHT) ---
-    const applyColumnStyles = (ws, targetHeader) => {
+    // --- HELPER 2: GLOBAL STYLING (TOP ALIGNMENT) ---
+    const applyGlobalStyles = (ws) => {
         if (!ws['!ref']) return;
         const range = XLSX.utils.decode_range(ws['!ref']);
-        
-        // 1. Find the Column Index for the Header
-        let colIndex = -1;
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-            const address = XLSX.utils.encode_cell({ r: range.s.r, c: C });
-            if (ws[address] && ws[address].v === targetHeader) {
-                colIndex = C;
-                break;
-            }
-        }
-        if (colIndex === -1) return; // Header not found
+        const COLUMN_WIDTH_CHARS = 45;
 
-        // 2. Set Column Width
+        // Ensure !cols array exists
         if (!ws['!cols']) ws['!cols'] = [];
-        for (let i = 0; i <= range.e.c; i++) { if (!ws['!cols'][i]) ws['!cols'][i] = { wch: 15 }; } 
-        
-        const COLUMN_WIDTH_CHARS = 60;
-        
-        if (targetHeader === "Updated") {
-             ws['!cols'][colIndex] = { wch: 25 }; 
-        } else {
-             ws['!cols'][colIndex] = { wch: COLUMN_WIDTH_CHARS }; 
-        }
 
-        // 3. Iterate Rows: Apply Wrap and Restrict Height
-        if (!ws['!rows']) ws['!rows'] = []; 
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            // Set a default width for all columns
+            if (!ws['!cols'][C]) ws['!cols'][C] = { wch: 20 };
 
-        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
-            const address = XLSX.utils.encode_cell({ r: R, c: colIndex });
-            
-            if (!ws[address]) ws[address] = { t: 's', v: '' };
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                const address = XLSX.utils.encode_cell({ r: R, c: C });
+                if (!ws[address]) continue;
 
-            if (!ws[address].s) ws[address].s = {};
-            ws[address].s.alignment = { wrapText: true, vertical: 'top', horizontal: 'left' };
+                // Initialize style object if not present
+                if (!ws[address].s) ws[address].s = {};
+                
+                // MANDATORY: Vertical Top Alignment for all cells
+                ws[address].s.alignment = { 
+                    vertical: 'top', 
+                    horizontal: 'left', 
+                    wrapText: true 
+                };
 
-            // --- HEIGHT LIMIT LOGIC ---
-            if (targetHeader === "Public_Comments" || targetHeader === "Daily_Check_History" || targetHeader === "Attachment" || targetHeader === "Notes" || targetHeader === "Private_Comments") {
-                 const cellText = ws[address].v ? String(ws[address].v) : "";
-                 const entries = cellText.split(/\r\n/);
-
-                 if (entries.length > 5) {
-                     const topFive = entries.slice(0, 4);
-                     let estimatedVisualLines = 0;
-                     topFive.forEach(entry => {
-                         const lines = Math.ceil(entry.length / COLUMN_WIDTH_CHARS) || 1;
-                         estimatedVisualLines += lines;
-                     });
-                     const PX_PER_LINE = 16;
-                     const requiredHeight = (estimatedVisualLines * PX_PER_LINE) + 10;
-                     if (!ws['!rows'][R]) ws['!rows'][R] = {};
-                     const currentH = ws['!rows'][R].hpx || 0;
-                     ws['!rows'][R].hpx = Math.max(currentH, requiredHeight);
-                 }
+                // Apply header-specific width and row height logic
+                const headerCell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
+                if (headerCell && ["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments", "Content"].includes(headerCell.v)) {
+                    ws['!cols'][C] = { wch: COLUMN_WIDTH_CHARS };
+                }
             }
         }
     };
@@ -883,57 +844,28 @@ function exportReportToExcel() {
     // --- MAIN EXPORT LOGIC ---
     const wb = XLSX.utils.book_new();
 
-    // 1. Generate Analytics
-    const generateAnalyticsSheet = () => {
+    // 1. Analytics
+    const analyticsData = (function() {
         const projects = currentReportData.structuredProjects || currentReportData.projects || [];
         const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
         const daily = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
         const allItems = [...projects, ...active];
-
-        const statusCounts = {};
-        const prioCounts = {};
-        
-        allItems.forEach(i => {
-            const s = i.status || 'No Status';
-            statusCounts[s] = (statusCounts[s] || 0) + 1;
-            const p = i.priority || 'No Priority';
-            prioCounts[p] = (prioCounts[p] || 0) + 1;
-        });
-
-        const totalWorkload = daily.length + projects.length + active.length;
-        const totalStatus = allItems.length;
-        const totalPriority = allItems.length;
-
-        const rows = [];
-        rows.push({ Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length });
-        rows.push({ Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length });
-        rows.push({ Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length });
-        rows.push({ Category: "WORKLOAD", Metric: "Total", Count: totalWorkload });
-        rows.push({ Category: "", Metric: "", Count: "" });
-
-        Object.keys(statusCounts).forEach(k => {
-            rows.push({ Category: "STATUS BREAKDOWN", Metric: k, Count: statusCounts[k] });
-        });
-        rows.push({ Category: "STATUS BREAKDOWN", Metric: "Total", Count: totalStatus });
-        rows.push({ Category: "", Metric: "", Count: "" });
-
-        Object.keys(prioCounts).forEach(k => {
-            rows.push({ Category: "PRIORITY BREAKDOWN", Metric: k, Count: prioCounts[k] });
-        });
-        rows.push({ Category: "PRIORITY BREAKDOWN", Metric: "Total", Count: totalPriority });
-        
-        rows.push({ Category: "", Metric: "", Count: "" });
-        rows.push({ Category: "", Metric: "", Count: "" });
-        rows.push({ Category: "Report for:", Metric: targetId || "Unknown", Count: "" });
-        rows.push({ Category: "Date Created:", Metric: new Date().toLocaleString(), Count: "" });
-
+        const rows = [
+            { Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length },
+            { Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length },
+            { Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length },
+            { Category: "", Metric: "", Count: "" },
+            { Category: "REPORT INFO", Metric: "User", Count: targetId },
+            { Category: "REPORT INFO", Metric: "Exported", Count: new Date().toLocaleString() }
+        ];
         return rows;
-    };
+    })();
+    
+    const wsAnalytics = XLSX.utils.json_to_sheet(analyticsData);
+    applyGlobalStyles(wsAnalytics);
+    XLSX.utils.book_append_sheet(wb, wsAnalytics, "Analytics Overview");
 
-    const analyticsData = generateAnalyticsSheet();
-    if(analyticsData.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analyticsData), "Analytics Overview");
-
-    // 2. Generate Data Sheets
+    // 2. Data Sheets
     const sheetsToProcess = [
         { name: "Daily Tasks", data: currentReportData.structuredDailyTasks || currentReportData.dailyTasks },
         { name: "Projects", data: currentReportData.structuredProjects || currentReportData.projects },
@@ -944,39 +876,24 @@ function exportReportToExcel() {
         const formattedData = formatForExcel(sheetObj.data);
         if (formattedData.length > 0) {
             const ws = XLSX.utils.json_to_sheet(formattedData);
-            
-            // Apply Styling
-            applyColumnStyles(ws, "Public_Comments");
-            applyColumnStyles(ws, "Daily_Check_History");
-            applyColumnStyles(ws, "Updated"); 
-            applyColumnStyles(ws, "Attachment");
-            applyColumnStyles(ws, "Notes"); // Added Notes Style for height restriction
-            
-            if(currentShowPrivate) applyColumnStyles(ws, "Private_Comments");
-
+            applyGlobalStyles(ws);
             XLSX.utils.book_append_sheet(wb, ws, sheetObj.name);
         }
     });
 
-    // 3. Outlook Data
+    // 3. Outlook
     if (currentShowPrivate && currentOutlookData) {
         const outlookRows = [];
-        if(currentOutlookData.meetings) {
-             const cleanMeetings = stripHtml(currentOutlookData.meetings);
-             outlookRows.push({ Type: "MEETINGS", Content: cleanMeetings });
-        }
-        if(currentOutlookData.emails) {
-             const cleanEmails = stripHtml(currentOutlookData.emails);
-             outlookRows.push({ Type: "EMAILS", Content: cleanEmails });
-        }
+        if(currentOutlookData.meetings) outlookRows.push({ Type: "MEETINGS", Content: stripHtml(currentOutlookData.meetings) });
+        if(currentOutlookData.emails) outlookRows.push({ Type: "EMAILS", Content: stripHtml(currentOutlookData.emails) });
+        
         if (outlookRows.length > 0) {
             const wsOutlook = XLSX.utils.json_to_sheet(outlookRows);
-            applyColumnStyles(wsOutlook, "Content"); 
+            applyGlobalStyles(wsOutlook);
             XLSX.utils.book_append_sheet(wb, wsOutlook, "Outlook Data");
         }
     }
 
     const dateStr = new Date().toISOString().split('T')[0];
-    const mode = currentShowPrivate ? "Private_Briefing" : "Public_Report";
-    XLSX.writeFile(wb, `${mode}_${targetId}_${dateStr}.xlsx`);
+    XLSX.writeFile(wb, `Briefing_${targetId}_${dateStr}.xlsx`);
 }
