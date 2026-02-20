@@ -817,6 +817,7 @@ const applyGlobalStyles = (ws) => {
     if (!ws['!rows']) ws['!rows'] = [];
 
     for (let C = range.s.c; C <= range.e.c; ++C) {
+        // Set a default width for all columns
         if (!ws['!cols'][C]) ws['!cols'][C] = { wch: 20 };
 
         for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -824,33 +825,45 @@ const applyGlobalStyles = (ws) => {
             const cell = ws[address];
             if (!cell) continue;
 
-            // Initialize style
+            // Initialize style object if not present
             if (!cell.s) cell.s = {};
+            
+            // Apply mandatory alignment
             cell.s.alignment = { 
                 vertical: 'top', 
                 horizontal: 'left', 
                 wrapText: true 
             };
 
-            // Set Column Widths for text-heavy columns
+            // Set specific column widths for text-heavy fields
             const headerCell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
             if (headerCell && ["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments", "Content"].includes(headerCell.v)) {
                 ws['!cols'][C] = { wch: COLUMN_WIDTH_CHARS };
             }
 
-            // --- NEW: Row Height Calculation ---
-            // Only calculate for data rows (R > 0)
-            if (R > 0) {
+            // --- COLOR HIGHLIGHTING ---
+            // Highlight "Issues Found" in the Daily_Check_Status column
+            if (headerCell && headerCell.v === "Daily_Check_Status" && cell.v === "Issues Found") {
+                cell.s.fill = {
+                    fgColor: { rgb: "FFC7CE" } // Light red background
+                };
+                cell.s.font = {
+                    color: { rgb: "9C0006" }, // Dark red text
+                    bold: true
+                };
+            }
+
+            // --- ROW HEIGHT CALCULATION ---
+            if (R > 0) { // Skip header row
                 const cellValue = cell.v ? String(cell.v) : "";
-                // Count line breaks to determine how many lines exist
+                // Count line breaks (\r\n) created in the formatForExcel helper
                 const lineCount = (cellValue.match(/\r\n/g) || []).length + 1;
                 
-                // We want to show at least 5 lines if content is long
-                // but not shrink the row if other columns have content.
+                // Show at least 5 lines of content if it exists
                 const targetLines = Math.min(lineCount, 5); 
                 const calculatedHeight = Math.max(DEFAULT_ROW_HEIGHT, targetLines * LINE_HEIGHT_PTS);
 
-                // Apply height if it's larger than what's already set for this row
+                // Set row height if current calculation is the tallest for this row
                 if (!ws['!rows'][R]) ws['!rows'][R] = { hpt: DEFAULT_ROW_HEIGHT };
                 if (calculatedHeight > ws['!rows'][R].hpt) {
                     ws['!rows'][R].hpt = calculatedHeight;
