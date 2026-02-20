@@ -806,40 +806,59 @@ function exportReportToExcel() {
     };
 
     // --- HELPER 2: GLOBAL STYLING (TOP ALIGNMENT) ---
-    const applyGlobalStyles = (ws) => {
-        if (!ws['!ref']) return;
-        const range = XLSX.utils.decode_range(ws['!ref']);
-        const COLUMN_WIDTH_CHARS = 45;
+const applyGlobalStyles = (ws) => {
+    if (!ws['!ref']) return;
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const COLUMN_WIDTH_CHARS = 45;
+    const DEFAULT_ROW_HEIGHT = 20; // Default height in points
+    const LINE_HEIGHT_PTS = 15;    // Points per line of text
 
-        // Ensure !cols array exists
-        if (!ws['!cols']) ws['!cols'] = [];
+    if (!ws['!cols']) ws['!cols'] = [];
+    if (!ws['!rows']) ws['!rows'] = [];
 
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-            // Set a default width for all columns
-            if (!ws['!cols'][C]) ws['!cols'][C] = { wch: 20 };
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+        if (!ws['!cols'][C]) ws['!cols'][C] = { wch: 20 };
 
-            for (let R = range.s.r; R <= range.e.r; ++R) {
-                const address = XLSX.utils.encode_cell({ r: R, c: C });
-                if (!ws[address]) continue;
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            const address = XLSX.utils.encode_cell({ r: R, c: C });
+            const cell = ws[address];
+            if (!cell) continue;
 
-                // Initialize style object if not present
-                if (!ws[address].s) ws[address].s = {};
+            // Initialize style
+            if (!cell.s) cell.s = {};
+            cell.s.alignment = { 
+                vertical: 'top', 
+                horizontal: 'left', 
+                wrapText: true 
+            };
+
+            // Set Column Widths for text-heavy columns
+            const headerCell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
+            if (headerCell && ["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments", "Content"].includes(headerCell.v)) {
+                ws['!cols'][C] = { wch: COLUMN_WIDTH_CHARS };
+            }
+
+            // --- NEW: Row Height Calculation ---
+            // Only calculate for data rows (R > 0)
+            if (R > 0) {
+                const cellValue = cell.v ? String(cell.v) : "";
+                // Count line breaks to determine how many lines exist
+                const lineCount = (cellValue.match(/\r\n/g) || []).length + 1;
                 
-                // MANDATORY: Vertical Top Alignment for all cells
-                ws[address].s.alignment = { 
-                    vertical: 'top', 
-                    horizontal: 'left', 
-                    wrapText: true 
-                };
+                // We want to show at least 5 lines if content is long
+                // but not shrink the row if other columns have content.
+                const targetLines = Math.min(lineCount, 5); 
+                const calculatedHeight = Math.max(DEFAULT_ROW_HEIGHT, targetLines * LINE_HEIGHT_PTS);
 
-                // Apply header-specific width and row height logic
-                const headerCell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-                if (headerCell && ["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments", "Content"].includes(headerCell.v)) {
-                    ws['!cols'][C] = { wch: COLUMN_WIDTH_CHARS };
+                // Apply height if it's larger than what's already set for this row
+                if (!ws['!rows'][R]) ws['!rows'][R] = { hpt: DEFAULT_ROW_HEIGHT };
+                if (calculatedHeight > ws['!rows'][R].hpt) {
+                    ws['!rows'][R].hpt = calculatedHeight;
                 }
             }
         }
-    };
+    }
+};
 
     // --- MAIN EXPORT LOGIC ---
     const wb = XLSX.utils.book_new();
