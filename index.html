@@ -506,24 +506,43 @@
             <div id="content-emails" class="section-content collapsed"></div>
         </div>
         
-        <div id="container-analytics" class="hidden" style="margin-top:20px;">
-            <h2 style="border-bottom:none; margin-bottom:10px;">Dashboard Analytics</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h3 id="chart-header-status" style="margin-top:0; text-align:center; color:#555;">Project Status</h3>
-                    <canvas id="chartStatus"></canvas>
-                </div>
-                <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h3 id="chart-header-priority" style="margin-top:0; text-align:center; color:#555;">Priority Breakdown</h3>
-                    <canvas id="chartPriority"></canvas>
-                </div>
-                <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                    <h3 id="chart-header-workload" style="margin-top:0; text-align:center; color:#555;">Workload Distribution</h3>
-                    <canvas id="chartWorkload"></canvas>
-                </div>
-            </div>
-            <button onclick="closeAnalytics()" class="btn-secondary" style="margin-top:20px; padding:10px 20px; width:100%;">Back to List View</button>
+<div id="container-analytics" class="hidden" style="margin-top:20px;">
+    <h2 style="border-bottom:none; margin-bottom:10px;">Dashboard Analytics</h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h3 id="chart-header-status" style="margin-top:0; text-align:center; color:#555;">Project Status</h3>
+            <canvas id="chartStatus"></canvas>
         </div>
+
+        <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <h3 id="chart-header-health" style="margin-top:0; text-align:center; color:#555;">Health Index</h3>
+            <div style="height: 150px; display: flex; align-items: center; justify-content: center;">
+                <h1 id="health-score-display" style="font-size: 4.5rem; margin: 0; font-weight: 800;">0%</h1>
+            </div>
+            <p style="font-size: 0.85em; color: #888; margin-top: 10px;">Overall Project Vitality</p>
+        </div>
+
+        <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h3 id="chart-header-priority" style="margin-top:0; text-align:center; color:#555;">Priority Breakdown</h3>
+            <canvas id="chartPriority"></canvas>
+        </div>
+
+        <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h3 id="chart-header-team" style="margin-top:0; text-align:center; color:#555;">Team Assignments</h3>
+            <canvas id="chartTeam"></canvas>
+        </div>
+
+        <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            <h3 id="chart-header-workload" style="margin-top:0; text-align:center; color:#555;">Workload Balance</h3>
+            <canvas id="chartWorkload"></canvas>
+        </div>
+    </div>
+
+    <button onclick="closeAnalytics()" class="btn-secondary" style="margin-top:20px; padding:12px 20px; width:100%; font-weight: bold; cursor: pointer;">
+        Back to List View
+    </button>
+</div>
 
     </div>
 

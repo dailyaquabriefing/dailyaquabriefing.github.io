@@ -562,111 +562,116 @@ function closeAnalytics() {
     }
 }
 
+let teamChart = null; // New global instance
+
 function renderPublicAnalytics() {
     if (!currentReportData) return;
 
+    // Register Plugin for Percentages on Charts
     if (typeof ChartDataLabels !== 'undefined') {
         Chart.register(ChartDataLabels);
     }
 
-    const projects = currentReportData.structuredProjects || currentReportData.projects || [];
-    const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
-    const daily = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
-    
+    const projects = currentReportData.structuredProjects || [];
+    const active = currentReportData.structuredActiveTasks || [];
+    const daily = currentReportData.structuredDailyTasks || [];
     const allItems = [...projects, ...active];
 
-    const statusCounts = { 'On Track': 0, 'Testing': 0, 'Delayed': 0, 'Completed': 0, 'On-Hold': 0, 'Other': 0 };
+    // --- 1. STATUS COUNTS ---
+    const statusCounts = { 'On Track': 0, 'Testing': 0, 'Delayed': 0, 'Completed': 0, 'Requirement Gathering': 0, 'Other': 0 };
     allItems.forEach(item => {
         const s = item.status || 'Other';
         if (statusCounts.hasOwnProperty(s)) statusCounts[s]++;
         else statusCounts['Other']++;
     });
 
-    const prioCounts = { 'High': 0, 'Medium': 0, 'Low': 0 };
+    // --- 2. TEAM DISTRIBUTION (Dynamic Category) ---
+    const teamCounts = {};
     allItems.forEach(item => {
-        const p = item.priority || 'Low';
-        if (prioCounts.hasOwnProperty(p)) prioCounts[p]++;
+        const team = item.collaborators || "Unassigned";
+        // Split by comma if multiple teams listed
+        team.split(',').forEach(member => {
+            const name = member.trim();
+            teamCounts[name] = (teamCounts[name] || 0) + 1;
+        });
     });
-    
-    const totalStatus = Object.values(statusCounts).reduce((a, b) => a + b, 0);
-    const statusHeader = document.getElementById('chart-header-status');
-    if(statusHeader) statusHeader.textContent = `Project Status (Total: ${totalStatus})`;
 
-    const totalWorkload = daily.length + projects.length + active.length;
-    const workloadHeader = document.getElementById('chart-header-workload');
-    if(workloadHeader) workloadHeader.textContent = `Workload Distribution (Total: ${totalWorkload})`;
+    // --- 3. CALCULATE HEALTH SCORE ---
+    // Formula: (On Track + Completed + Stable) / Total Items
+    const healthyCount = (statusCounts['On Track'] || 0) + (statusCounts['Completed'] || 0) + (statusCounts['Stable'] || 0);
+    const healthScore = allItems.length > 0 ? Math.round((healthyCount / allItems.length) * 100) : 0;
+    const healthEl = document.getElementById('health-score-display');
+    if (healthEl) {
+        healthEl.textContent = `${healthScore}%`;
+        healthEl.style.color = healthScore > 70 ? '#28a745' : (healthScore > 40 ? '#ff9f43' : '#dc3545');
+    }
 
-    const totalPriority = Object.values(prioCounts).reduce((a, b) => a + b, 0);
-    const priorityHeader = document.getElementById('chart-header-priority');
-    if(priorityHeader) priorityHeader.textContent = `Priority Breakdown (Total: ${totalPriority})`;
-
+    // --- 4. RENDER DYNAMIC CHARTS ---
     if (statusChart) statusChart.destroy();
-    if (priorityChart) priorityChart.destroy();
+    if (teamChart) teamChart.destroy();
     if (workloadChart) workloadChart.destroy();
 
+    // Status Vitality (Doughnut)
     statusChart = new Chart(document.getElementById('chartStatus'), {
         type: 'doughnut',
         data: {
             labels: Object.keys(statusCounts),
             datasets: [{
                 data: Object.values(statusCounts),
-                backgroundColor: ['#28a745', '#dc3545', '#17a2b8', '#6c757d', '#e2e6ea']
+                backgroundColor: ['#28a745', '#ff9f43', '#dc3545', '#800080', '#17a2b8', '#6c757d']
             }]
         },
         options: {
             plugins: {
                 datalabels: {
-                    color: '#ffffff',
-                    font: { weight: 'bold' }
+                    formatter: (value, ctx) => {
+                        let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        return sum > 0 ? Math.round((value / sum) * 100) + "%" : "";
+                    },
+                    color: '#fff', font: { weight: 'bold' }
                 }
             }
         }
     });
 
-    const pKeys = Object.keys(prioCounts);
-    const pValues = Object.values(prioCounts);
-    const pLabels = pKeys.map((key, i) => `${key} (${pValues[i]})`);
-
-    priorityChart = new Chart(document.getElementById('chartPriority'), {
+    // Team Workload (Horizontal Bar)
+    teamChart = new Chart(document.getElementById('chartTeam'), {
         type: 'bar',
         data: {
-            labels: pLabels,
+            labels: Object.keys(teamCounts),
             datasets: [{
-                label: 'Count',
-                data: pValues,
-                backgroundColor: ['#dc3545', '#ffc107', '#28a745']
+                label: 'Tasks Assigned',
+                data: Object.values(teamCounts),
+                backgroundColor: '#0078D4'
             }]
         },
-        options: { 
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-            plugins: {
-                legend: { display: false }, 
-                datalabels: {
-                    display: false
-                }
-            }
+        options: {
+            indexAxis: 'y', // Horizontal
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
 
+    // Workload Balance (Radar Chart for "Cool" Factor)
     workloadChart = new Chart(document.getElementById('chartWorkload'), {
-        type: 'pie',
+        type: 'radar',
         data: {
             labels: ['Daily Priorities', 'Projects', 'Active Tasks'],
             datasets: [{
+                label: 'Current Volume',
                 data: [daily.length, projects.length, active.length],
-                backgroundColor: ['#007bff', '#6610f2', '#fd7e14']
+                fill: true,
+                backgroundColor: 'rgba(0, 120, 212, 0.2)',
+                borderColor: '#0078D4',
+                pointBackgroundColor: '#0078D4'
             }]
         },
         options: {
-            plugins: {
-                datalabels: {
-                    color: '#ffffff',
-                    font: { weight: 'bold' }
-                }
-            }
+            scales: { r: { beginAtZero: true, ticks: { display: false } } }
         }
     });
 }
+
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('userid-input').addEventListener("keypress", function(event) {
@@ -733,105 +738,120 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- EXPORT FUNCTION (Requires xlsx-js-style library) ---
 // --- UPDATED EXPORT FUNCTION ---
 function exportReportToExcel() {
-    if (!currentReportData) {
-        alert("No data loaded to export.");
-        return;
+    // 1. Validation check
+    if (!currentReportData) { 
+        alert("No data loaded."); 
+        return; 
     }
 
-    // --- HELPER 1: FORMAT DATA ---
-    const formatForExcel = (list) => {
-        if (!Array.isArray(list)) return [];
-        return list.map(item => {
-            let commentsStr = "";
-            if (item.publicComments && item.publicComments.length > 0) {
-                commentsStr = [...item.publicComments].reverse().map(c => {
-                    let timeStr = "N/A";
-                    if (c.timestamp) {
-                        const d = new Date(c.timestamp);
-                        timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    }
-                    return `[${timeStr}]: [${c.author}]: ${stripHtml(c.text)}`;
-                }).join("\r\n");
-            }
+    const wb = XLSX.utils.book_new();
 
-            let checkStatus = "";
-            let checkNote = "";
-            let checkHistoryStr = "";
-            if (item.dailyChecks && item.dailyChecks.length > 0) {
-                const sortedChecks = [...item.dailyChecks].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                const latest = sortedChecks[0];
-                checkStatus = latest.status;
-                checkNote = latest.note || "";
-                checkHistoryStr = sortedChecks.map(c => {
-                     let d = "N/A";
-                     if (c.timestamp) {
-                         const dateObj = new Date(c.timestamp);
-                         d = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                     }
-                     const n = c.note ? ` - ${stripHtml(c.note)}` : "";
-                     return `[${d}] [${c.status}]${n}`;
-                }).join("\r\n");
-            }
-            
-            let attachmentStr = "";
-            const atts = item.attachments || (item.attachment ? [{name:'Attachment', url:item.attachment}] : []);
-            if (atts.length > 0) {
-                attachmentStr = atts.map(a => `[${a.name}] ${a.url}`).join("\r\n");
-            }
+    // --- 1. DYNAMIC ANALYTICS GENERATION ---
+    const getAnalyticsData = () => {
+        const daily = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
+        const projects = currentReportData.structuredProjects || currentReportData.projects || [];
+        const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
+        const allItems = [...projects, ...active];
 
-            let row = {
-                Name: item.name,
-                Status: item.status || "",
-                Daily_Check_Status: checkStatus,
-                Daily_Check_Note: stripHtml(checkNote),
-                Priority: item.priority || "",
-                Goal: item.goal || "",
-                Milestone: item.milestone || "",
-                Start: item.startDate || "",
-                End: item.endDate || "",
-                Updated: item.lastUpdated || "",
-                Tester: item.tester || "",
-                Collaborators: item.collaborators || "",
-                Notes: stripHtml(item.notes || ""),
-                Public_Comments: commentsStr,
-                Daily_Check_History: checkHistoryStr
-            };
+        // Calculate Project Health (Vitality)
+        const healthyStatuses = ['On Track', 'Completed', 'Stable'];
+        const healthyCount = allItems.filter(i => healthyStatuses.includes(i.status)).length;
+        const healthScore = allItems.length > 0 ? Math.round((healthyCount / allItems.length) * 100) : 0;
 
-            if (currentShowPrivate) {
-                row.Private_Comments = stripHtml(item.itComments || "");
-            }
-            row.Attachment = attachmentStr;
-            return row;
-        });
+        return [
+            { Category: "KPI", Metric: "Project Health Index", Value: healthScore + "%" },
+            { Category: "WORKLOAD", Metric: "Daily Tasks", Value: daily.length },
+            { Category: "WORKLOAD", Metric: "Active Projects", Value: projects.length },
+            { Category: "WORKLOAD", Metric: "Active Tasks", Value: active.length },
+            { Category: "STATUS", Metric: "Items Delayed", Value: allItems.filter(i => i.status === 'Delayed').length },
+            { Category: "STATUS", Metric: "Items Completed", Value: allItems.filter(i => i.status === 'Completed').length },
+            { Category: "SYSTEM", Metric: "User ID", Value: targetId },
+            { Category: "SYSTEM", Metric: "Last Export", Value: new Date().toLocaleString() }
+        ];
     };
+    
+    // Create and style Analytics sheet
+    const wsAnalytics = XLSX.utils.json_to_sheet(getAnalyticsData());
+    applyGlobalStyles(wsAnalytics);
+    XLSX.utils.book_append_sheet(wb, wsAnalytics, "Analytics");
+
+    // --- 2. DATA SHEETS (Tasks & Projects) ---
+    const sheetsToProcess = [
+        { name: "Daily Tasks", data: currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [] },
+        { name: "Projects", data: currentReportData.structuredProjects || currentReportData.projects || [] },
+        { name: "Active Tasks", data: currentReportData.structuredActiveTasks || currentReportData.activeTasks || [] }
+    ];
+
+    sheetsToProcess.forEach(sheetObj => {
+        if (sheetObj.data.length > 0) {
+            // formatForExcel handles stripHtml and "5 latest" comment/history logic
+            const formatted = formatForExcel(sheetObj.data);
+            const ws = XLSX.utils.json_to_sheet(formatted);
+            applyGlobalStyles(ws);
+            XLSX.utils.book_append_sheet(wb, ws, sheetObj.name);
+        }
+    });
+
+    // --- 3. OPTIONAL OUTLOOK DATA ---
+    if (currentShowPrivate && currentOutlookData) {
+        const outlookRows = [];
+        if (currentOutlookData.meetings) {
+            outlookRows.push({ Type: "MEETINGS", Content: stripHtml(currentOutlookData.meetings) });
+        }
+        if (currentOutlookData.emails) {
+            outlookRows.push({ Type: "EMAILS", Content: stripHtml(currentOutlookData.emails) });
+        }
+        
+        if (outlookRows.length > 0) {
+            const wsOutlook = XLSX.utils.json_to_sheet(outlookRows);
+            applyGlobalStyles(wsOutlook);
+            XLSX.utils.book_append_sheet(wb, wsOutlook, "Outlook Sync");
+        }
+    }
+
+    // Finalize file
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Aqua_Briefing_${targetId}_${dateStr}.xlsx`);
+}
+
 
     // --- HELPER 2: GLOBAL STYLING (TOP ALIGNMENT) ---
-const applyGlobalStyles = (ws) => {
+const applyGlobalStyles = (ws, isDataSheet = false) => {
     if (!ws['!ref']) return;
     const range = XLSX.utils.decode_range(ws['!ref']);
     const COLUMN_WIDTH_CHARS = 45;
     const DEFAULT_ROW_HEIGHT = 20; 
     const LINE_HEIGHT_PTS = 15;
 
-    // Status Color Map (RGB Hex for Excel)
     const statusColors = {
-        'On Track': 'C6EFCE',              // Light Green
-        'Requirement Gathering': 'DBEAFE', // Light Blue
-        'Development': 'E0E7FF',           // Indigo
-        'Testing': 'FFEB9C',               // Amber
-        'Delayed': 'FFC7CE',               // Light Red
-        'Future': 'F3F4F6',                // Grey
-        'On-Hold': 'E5E7EB',               // Med Grey
-        'Completed': 'E9D5FF',             // Purple
-        'Follow-Up': 'FFEDD5',             // Orange
-        'Maintenance': 'F5F3FF',           // Soft Violet
-        'Stable': 'DBEAFE'                 // Blue
+        'On Track': 'C6EFCE', 'Requirement Gathering': 'DBEAFE', 'Development': 'E0E7FF',
+        'Testing': 'FFEB9C', 'Delayed': 'FFC7CE', 'Future': 'F3F4F6',
+        'On-Hold': 'E5E7EB', 'Completed': 'E9D5FF', 'Follow-Up': 'FFEDD5',
+        'Maintenance': 'F5F3FF', 'Stable': 'DBEAFE'
     };
 
     if (!ws['!cols']) ws['!cols'] = [];
     if (!ws['!rows']) ws['!rows'] = [];
 
-    // Locate the 'Status' column to determine row colors
+    // --- GRID LINES & ALIGNMENT ---
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws[addr]) continue;
+            if (!ws[addr].s) ws[addr].s = {};
+            
+            // Add Grid Lines (Borders)
+            ws[addr].s.border = {
+                top: { style: "thin", color: { rgb: "D1D5DB" } },
+                bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+                left: { style: "thin", color: { rgb: "D1D5DB" } },
+                right: { style: "thin", color: { rgb: "D1D5DB" } }
+            };
+            ws[addr].s.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+        }
+    }
+
+    // --- COLOR CODING LOGIC ---
     let statusColIdx = -1;
     for (let C = range.s.c; C <= range.e.c; ++C) {
         const header = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
@@ -839,58 +859,39 @@ const applyGlobalStyles = (ws) => {
     }
 
     for (let R = range.s.r; R <= range.e.r; ++R) {
-        // Determine background color based on the row's status
         let rowColor = 'FFFFFF'; 
         if (R > 0 && statusColIdx !== -1) {
             const statusCell = ws[XLSX.utils.encode_cell({ r: R, c: statusColIdx })];
-            if (statusCell && statusColors[statusCell.v]) {
-                rowColor = statusColors[statusCell.v];
-            }
+            if (statusCell && statusColors[statusCell.v]) rowColor = statusColors[statusCell.v];
         }
 
         for (let C = range.s.c; C <= range.e.c; ++C) {
-            const address = XLSX.utils.encode_cell({ r: R, c: C });
-            const cell = ws[address];
-            if (!cell) continue;
-            if (!cell.s) cell.s = {};
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            if (!ws[addr]) continue;
+            
+            if (R > 0) ws[addr].s.fill = { patternType: "solid", fgColor: { rgb: rowColor } };
 
-            // Basic Alignment
-            cell.s.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
-
-            // Apply Status Fill to the entire row
-            cell.s.fill = { patternType: "solid", fgColor: { rgb: rowColor } };
-
-            // Header Row Formatting
             if (R === 0) {
-                cell.s.font = { bold: true };
-                cell.s.fill = { patternType: "solid", fgColor: { rgb: "F2F2F2" } };
+                ws[addr].s.font = { bold: true };
+                ws[addr].s.fill = { patternType: "solid", fgColor: { rgb: "F2F2F2" } };
             }
 
-            // High Priority Override: Issues Found
-            const headerCell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-            const headerVal = headerCell ? headerCell.v : "";
-            if (headerVal === "Daily_Check_Status" && cell.v === "Issues Found") {
-                cell.s.font = { color: { rgb: "9C0006" }, bold: true };
-                cell.s.fill = { patternType: "solid", fgColor: { rgb: "FFC7CE" } };
+            const headerVal = ws[XLSX.utils.encode_cell({ r: 0, c: C })]?.v || "";
+            if (headerVal === "Daily_Check_Status" && ws[addr].v === "Issues Found") {
+                ws[addr].s.font = { color: { rgb: "9C0006" }, bold: true };
+                ws[addr].s.fill = { patternType: "solid", fgColor: { rgb: "FFC7CE" } };
             }
 
-            // Column Widths
-            if (["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments"].includes(headerVal)) {
+            if (["Notes", "Public_Comments", "Daily_Check_History", "Attachment"].includes(headerVal)) {
                 ws['!cols'][C] = { wch: COLUMN_WIDTH_CHARS };
             }
 
-            // --- Row Height: Show Five Latest ---
+            // Row Height: Show Five Latest
             if (R > 0) {
-                const cellValue = cell.v ? String(cell.v) : "";
-                const lineCount = (cellValue.match(/\r\n/g) || []).length + 1;
-                // Cap height at 5 lines to keep the report compact but readable
+                const lineCount = (String(ws[addr].v).match(/\r\n/g) || []).length + 1;
                 const targetLines = Math.min(lineCount, 5); 
-                const calculatedHeight = Math.max(DEFAULT_ROW_HEIGHT, targetLines * LINE_HEIGHT_PTS);
-
-                if (!ws['!rows'][R]) ws['!rows'][R] = { hpt: DEFAULT_ROW_HEIGHT };
-                if (calculatedHeight > ws['!rows'][R].hpt) {
-                    ws['!rows'][R].hpt = calculatedHeight;
-                }
+                const h = Math.max(DEFAULT_ROW_HEIGHT, targetLines * LINE_HEIGHT_PTS);
+                if (!ws['!rows'][R] || h > ws['!rows'][R].hpt) ws['!rows'][R] = { hpt: h };
             }
         }
     }
