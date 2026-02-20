@@ -315,6 +315,10 @@
         .ql-toolbar {
             background: #f8f9fa;
         }
+.st-requirement-gathering { background-color: #17a2b8; }
+.st-development { background-color: #6610f2; }
+.st-future { background-color: #adb5bd; }
+.st-completed { background-color: #800080; }
     </style>
 </head>
 <body>
@@ -432,15 +436,19 @@
             <div class="complex-field complex-only">
                 <div class="form-group">
                     <label>Status</label>
-                    <select id="m-status" class="w-full">
- <option value="On Track">On Track</option>
-        <option value="Testing">Testing</option> <option value="Delayed">Delayed</option>
-        <option value="On-Hold">On-Hold</option>
-        <option value="Completed">Completed</option>
-        <option value="Follow-Up">Follow-Up</option>
-        <option value="Maintenance">Maintenance</option>
-        <option value="Stable">Stable</option>
-                    </select>
+<select id="m-status" class="w-full">
+    <option value="On Track">On Track</option>
+    <option value="Requirement Gathering">Requirement Gathering</option>
+    <option value="Development">Development</option>
+    <option value="Testing">Testing</option>
+    <option value="Delayed">Delayed</option>
+    <option value="Future">Future</option>
+    <option value="On-Hold">On-Hold</option>
+    <option value="Completed">Completed</option>
+    <option value="Follow-Up">Follow-Up</option>
+    <option value="Maintenance">Maintenance</option>
+    <option value="Stable">Stable</option>
+</select>
                 </div>
                 <div class="form-group">
                     <label>Priority</label>

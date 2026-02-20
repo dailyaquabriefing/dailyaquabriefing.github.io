@@ -810,60 +810,83 @@ const applyGlobalStyles = (ws) => {
     if (!ws['!ref']) return;
     const range = XLSX.utils.decode_range(ws['!ref']);
     const COLUMN_WIDTH_CHARS = 45;
-    const DEFAULT_ROW_HEIGHT = 20; // Default height in points
-    const LINE_HEIGHT_PTS = 15;    // Points per line of text
+    const DEFAULT_ROW_HEIGHT = 20; 
+    const LINE_HEIGHT_PTS = 15;
+
+    // Status Color Map (RGB Hex for Excel)
+    const statusColors = {
+        'On Track': 'C6EFCE',              // Light Green
+        'Requirement Gathering': 'DBEAFE', // Light Blue
+        'Development': 'E0E7FF',           // Indigo
+        'Testing': 'FFEB9C',               // Amber
+        'Delayed': 'FFC7CE',               // Light Red
+        'Future': 'F3F4F6',                // Grey
+        'On-Hold': 'E5E7EB',               // Med Grey
+        'Completed': 'E9D5FF',             // Purple
+        'Follow-Up': 'FFEDD5',             // Orange
+        'Maintenance': 'F5F3FF',           // Soft Violet
+        'Stable': 'DBEAFE'                 // Blue
+    };
 
     if (!ws['!cols']) ws['!cols'] = [];
     if (!ws['!rows']) ws['!rows'] = [];
 
+    // Locate the 'Status' column to determine row colors
+    let statusColIdx = -1;
     for (let C = range.s.c; C <= range.e.c; ++C) {
-        // Set a default width for all columns
-        if (!ws['!cols'][C]) ws['!cols'][C] = { wch: 20 };
+        const header = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
+        if (header && header.v === "Status") { statusColIdx = C; break; }
+    }
 
-        for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        // Determine background color based on the row's status
+        let rowColor = 'FFFFFF'; 
+        if (R > 0 && statusColIdx !== -1) {
+            const statusCell = ws[XLSX.utils.encode_cell({ r: R, c: statusColIdx })];
+            if (statusCell && statusColors[statusCell.v]) {
+                rowColor = statusColors[statusCell.v];
+            }
+        }
+
+        for (let C = range.s.c; C <= range.e.c; ++C) {
             const address = XLSX.utils.encode_cell({ r: R, c: C });
             const cell = ws[address];
             if (!cell) continue;
-
-            // Initialize style object if not present
             if (!cell.s) cell.s = {};
-            
-            // Apply mandatory alignment
-            cell.s.alignment = { 
-                vertical: 'top', 
-                horizontal: 'left', 
-                wrapText: true 
-            };
 
-            // Set specific column widths for text-heavy fields
+            // Basic Alignment
+            cell.s.alignment = { vertical: 'top', horizontal: 'left', wrapText: true };
+
+            // Apply Status Fill to the entire row
+            cell.s.fill = { patternType: "solid", fgColor: { rgb: rowColor } };
+
+            // Header Row Formatting
+            if (R === 0) {
+                cell.s.font = { bold: true };
+                cell.s.fill = { patternType: "solid", fgColor: { rgb: "F2F2F2" } };
+            }
+
+            // High Priority Override: Issues Found
             const headerCell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-            if (headerCell && ["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments", "Content"].includes(headerCell.v)) {
+            const headerVal = headerCell ? headerCell.v : "";
+            if (headerVal === "Daily_Check_Status" && cell.v === "Issues Found") {
+                cell.s.font = { color: { rgb: "9C0006" }, bold: true };
+                cell.s.fill = { patternType: "solid", fgColor: { rgb: "FFC7CE" } };
+            }
+
+            // Column Widths
+            if (["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments"].includes(headerVal)) {
                 ws['!cols'][C] = { wch: COLUMN_WIDTH_CHARS };
             }
 
-            // --- COLOR HIGHLIGHTING ---
-            // Highlight "Issues Found" in the Daily_Check_Status column
-            if (headerCell && headerCell.v === "Daily_Check_Status" && cell.v === "Issues Found") {
-                cell.s.fill = {
-                    fgColor: { rgb: "FFC7CE" } // Light red background
-                };
-                cell.s.font = {
-                    color: { rgb: "9C0006" }, // Dark red text
-                    bold: true
-                };
-            }
-
-            // --- ROW HEIGHT CALCULATION ---
-            if (R > 0) { // Skip header row
+            // --- Row Height: Show Five Latest ---
+            if (R > 0) {
                 const cellValue = cell.v ? String(cell.v) : "";
-                // Count line breaks (\r\n) created in the formatForExcel helper
                 const lineCount = (cellValue.match(/\r\n/g) || []).length + 1;
-                
-                // Show at least 5 lines of content if it exists
+                // Cap height at 5 lines to keep the report compact but readable
                 const targetLines = Math.min(lineCount, 5); 
                 const calculatedHeight = Math.max(DEFAULT_ROW_HEIGHT, targetLines * LINE_HEIGHT_PTS);
 
-                // Set row height if current calculation is the tallest for this row
                 if (!ws['!rows'][R]) ws['!rows'][R] = { hpt: DEFAULT_ROW_HEIGHT };
                 if (calculatedHeight > ws['!rows'][R].hpt) {
                     ws['!rows'][R].hpt = calculatedHeight;
