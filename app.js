@@ -4,7 +4,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
     authDomain: "dailybriefing-fe7df.firebaseapp.com",
     projectId: "dailybriefing-fe7df",
-    storageBucket: "dailybriefing031026.appspot.com",
+    storageBucket: "dailybriefing-fe7df.firebasestorage.app", // Ensure this matches console!
     messagingSenderId: "",
     appId: ""
 };
@@ -986,5 +986,6 @@ const applyGlobalStyles = (ws) => {
     const dateStr = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `Briefing_${targetId}_${dateStr}.xlsx`);
 }
+
 
 
