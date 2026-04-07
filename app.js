@@ -193,8 +193,9 @@ const renderList = (id, items, showPrivate = false) => {
     let html = '<ol style="padding-left:20px;">';
     
     items.forEach((item, index) => {
-    let name, notes = '', status, priority = '', milestone = '', tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
-    let dailyChecks = item.dailyChecks || [];    
+        let name, notes = '', status, priority = '', milestone = '', tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
+        let dailyChecks = item.dailyChecks || [];    
+        
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
             notes = item.notes || '';
@@ -224,25 +225,17 @@ const renderList = (id, items, showPrivate = false) => {
         }
 
         const safeName = linkify(name);
-        
-        let safeNotes = notes;
-        if (!notes.trim().startsWith('<')) {
-             safeNotes = linkify(notes);
-        }
-
+        let safeNotes = notes.trim().startsWith('<') ? notes : linkify(notes);
         const uniqueId = `${listType}-${index}`;
 
-        // --- UPDATED BADGES ---
+        // --- BADGES ---
         let updatedBadge = '';
         if (lastUpdated) {
             const upDate = new Date(lastUpdated);
             const today = new Date();
-            const upDateString = upDate.toDateString();
-            const todayString = today.toDateString();
-            const diffTime = Math.abs(today - upDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            const diffDays = Math.ceil(Math.abs(today - upDate) / (1000 * 60 * 60 * 24)); 
 
-            if (upDateString === todayString) {
+            if (upDate.toDateString() === today.toDateString()) {
                 updatedBadge = '<span class="badge-updated">✨ Updated Today</span>';
             } else if (diffDays <= 7) {
                 updatedBadge = '<span class="badge-recent">🔄 Updated Recently</span>';
@@ -252,114 +245,49 @@ const renderList = (id, items, showPrivate = false) => {
         // --- DAILY CHECK LOGIC ---
         let checkHtml = '';
         if (dailyChecks.length > 0) {
-            dailyChecks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            const latest = dailyChecks;
-            const checkDate = new Date(latest.timestamp).toDateString();
-            const todayDate = new Date().toDateString();
-            const isToday = checkDate === todayDate;
-
-            let badgeColor = '#6c757d'; 
-            let icon = '⚪';
-            
-            if (latest.status === 'Verified') {
-                badgeColor = '#28a745'; 
-                icon = '✅';
-            } else if (latest.status === 'Issues Found') {
-                badgeColor = '#dc3545'; 
-                icon = '⚠️';
-            }
-
+            const sorted = [...dailyChecks].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const latest = sorted;
+            let badgeColor = latest.status === 'Verified' ? '#28a745' : (latest.status === 'Issues Found' ? '#dc3545' : '#6c757d');
+            let icon = latest.status === 'Verified' ? '✅' : (latest.status === 'Issues Found' ? '⚠️' : '⚪');
             const timeStr = new Date(latest.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const dateDisplay = isToday ? `Today at ${timeStr}` : new Date(latest.timestamp).toLocaleDateString();
-
+            
             checkHtml = `
                 <div style="margin-top:6px; background:#fff; border:1px solid ${badgeColor}; border-left: 5px solid ${badgeColor}; padding:6px 10px; border-radius:4px; display:flex; align-items:center; gap:8px;">
                     <span style="font-size:1.2em;">${icon}</span>
                     <div style="line-height:1.2;">
                         <div style="font-weight:bold; color:${badgeColor}; font-size:0.9em; text-transform:uppercase;">${latest.status}</div>
                         <div style="font-size:0.85em; color:#555;">${latest.note ? linkify(latest.note) : 'System Operational'}</div>
-                        <div style="font-size:0.75em; color:#999;">Checked: ${dateDisplay}</div>
                     </div>
-                </div>
-            `;
+                </div>`;
         }
 
-        // Meta Data HTML
+        // Meta Data
         let metaHtml = '';
         let dateParts = [];
-        const fmtDate = (d) => d;
+        if (startDate) dateParts.push(`Start: ${startDate}`);
+        if (lastUpdated) dateParts.push(`Updated: ${lastUpdated}`);
+        if (endDate) dateParts.push(`End: ${endDate}`);
+        if (dateParts.length > 0) metaHtml += `<div style="font-size:0.8em; color:#777; margin-top:2px;">📅 ${dateParts.join(' | ')}</div>`;
+        if (tester) metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#eef; color:#336; padding:1px 6px; border-radius:4px; border:1px solid #dde;">👤 Tester: ${tester}</span></div>`;
 
-        if (startDate) dateParts.push(`Start: ${fmtDate(startDate)}`);
-        if (lastUpdated) dateParts.push(`Updated: ${fmtDate(lastUpdated)}`);
-        if (endDate) dateParts.push(`End: ${fmtDate(endDate)}`);
-        
-        if (dateParts.length > 0) {
-            metaHtml += `<div style="font-size:0.8em; color:#777; margin-top:2px;">📅 ${dateParts.join(' <span style="color:#ccc;">|</span> ')}</div>`;
-        }
-
-        if (tester) {
-          metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#eef; color:#336; padding:1px 6px; border-radius:4px; border:1px solid #dde;">👤 Tester: ${tester}</span></div>`;
-        }
-
-        if (collaborators) {
-            metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#fff3cd; color:#856404; padding:1px 6px; border-radius:4px; border:1px solid #ffeeba;">👥 Team: ${collaborators}</span></div>`;
-        }
-        
-        // Goal
-        let goalHtml = '';
-        if (goal) {
-            goalHtml = `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>`;
-        }
-        
         // Attachments
         let attachmentHtml = '';
         if (attachments.length > 0) {
-            attachmentHtml = '<div style="margin-top:4px;">';
-            attachments.forEach(att => {
-                attachmentHtml += `<div class="item-attachment">🔗 <a href="${att.url}" target="_blank">${att.name}</a></div> `;
-            });
-            attachmentHtml += '</div>';
+            attachmentHtml = '<div style="margin-top:4px;">' + attachments.map(att => `<div class="item-attachment">🔗 <a href="${att.url}" target="_blank">${att.name}</a></div>`).join(' ') + '</div>';
         }
 
-        // Private Comments HTML
-        let itCommentsHtml = '';
-        if (itComments && showPrivate) {
-            let safeIT = itComments;
-            if (!itComments.trim().startsWith('<')) {
-                safeIT = linkify(itComments);
-            }
-            itCommentsHtml = `<div class="item-it-comment">🔒 <strong>Private Note:</strong> ${safeIT}</div>`;
-        }
-
-        // Comments HTML - Reordered to put the form at the bottom
+        // Comments logic - Form at bottom
         const commentCount = publicComments.length;
         const commentLabel = commentCount > 0 ? `💬 View/Add Comments (${commentCount})` : `💬 Add Question/Comment`;
-        
-        let commentsListHtml = '';
-        publicComments.forEach(c => {
-            let timeStr = '';
-            if(c.timestamp) {
-                const d = new Date(c.timestamp);
-                timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            }
-            
-            let safeComment = c.text;
-            if (!safeComment.trim().startsWith('<')) {
-                safeComment = linkify(safeComment);
-            }
+        let commentsListHtml = publicComments.map(c => {
+            const d = c.timestamp ? new Date(c.timestamp) : null;
+            const timeStr = d ? d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+            return `<div class="comment-bubble">
+                        <div class="comment-header"><span class="comment-author">${linkify(c.author)}</span><span>${timeStr}</span></div>
+                        <div>${c.text.trim().startsWith('<') ? c.text : linkify(c.text)}</div>
+                    </div>`;
+        }).join('');
 
-            commentsListHtml += `
-                <div class="comment-bubble">
-                    <div class="comment-header">
-                        <span class="comment-author">${linkify(c.author)}</span>
-                        <span>${timeStr}</span>
-                    </div>
-                    <div>${safeComment}</div>
-                </div>
-            `;
-        });
-
-        // The form is placed after ${commentsListHtml} so it appears at the bottom
         const commentsSectionHtml = `
             <div class="comments-section">
                 <button class="comment-toggle" onclick="toggleComments('comments-${uniqueId}')">${commentLabel}</button>
@@ -371,45 +299,32 @@ const renderList = (id, items, showPrivate = false) => {
                         <button class="btn-post" onclick="postComment('${listType}', ${index}, '${uniqueId}')">Post</button>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
 
         // Render Item
         if (typeof item === 'object') {
-            let color;
-            switch (status) {
-                case 'On Track': color = 'green'; break;
-                case 'Testing': color = '#ff9f43'; break;
-                case 'Delayed': color = 'red'; break;
-                case 'On-Hold': color = 'grey'; break;
-                case 'Completed': color = '#800080'; break;
-                case 'Follow-Up': color = '#fd7e14'; break;
-                case 'Maintenance': color = '#6610f2'; break;
-                case 'Stable': color = '#007bff'; break;
-                default: color = 'grey';
-            }
-
-            let pColor = '#777';
-            if (priority === 'High') pColor = '#d9534f'; 
-            if (priority === 'Medium') pColor = '#f0ad4e'; 
-            if (priority === 'Low') pColor = '#5cb85c'; 
+            let color = { 'On Track': 'green', 'Testing': '#ff9f43', 'Delayed': 'red', 'Completed': '#800080' }[status] || 'grey';
+            let pColor = priority === 'High' ? '#d9534f' : (priority === 'Medium' ? '#f0ad4e' : '#5cb85c');
 
             const priorityBadge = priority ? `<span style="font-size:0.8em; color:${pColor}; border:1px solid ${pColor}; padding:0 4px; border-radius:4px; margin-left:5px;">${priority}</span>` : '';
-
             const statusBadge = status ? `<span style="font-size:0.8em; color:${color}; border:1px solid ${color}; padding:0 4px; border-radius:4px; margin-left:5px;">${status}</span>` : '';
-            const milestoneHtml = milestone ? `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next Milestone: ${linkify(milestone)}</small>` : '';
 
-            html += `<li style="margin-bottom:15px;">
+            // This "li" now contains a hidden content section for notes and attachments
+            html += `
+            <li style="margin-bottom:15px;">
                 <div style="margin-bottom:2px;">
                     <strong>${safeName}</strong>${statusBadge}${priorityBadge}${updatedBadge}
                 </div>
                 ${checkHtml}
-                <div style="color:#666; margin-bottom:2px;">${safeNotes}</div>
-                ${goalHtml}
-                ${attachmentHtml}
-                ${itCommentsHtml}
-                ${milestoneHtml}
-                ${metaHtml}
+                
+                <div class="item-details" style="margin-top: 5px;">
+                    <div style="color:#666; margin-bottom:2px;">${safeNotes}</div>
+                    ${goal ? `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>` : ''}
+                    ${attachmentHtml}
+                    ${showPrivate && itComments ? `<div class="item-it-comment">🔒 <strong>Private:</strong> ${linkify(itComments)}</div>` : ''}
+                    ${milestone ? `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next: ${linkify(milestone)}</small>` : ''}
+                    ${metaHtml}
+                </div>
                 ${commentsSectionHtml}
             </li>`;
         } else {

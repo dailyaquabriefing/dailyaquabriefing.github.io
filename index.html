@@ -241,8 +241,13 @@
         }
         
         .comments-container.open { 
-           display: block; /* Changed from flex / column-reverse */
-        }
+    display: block; 
+}
+
+/* Ensure item details hide when the parent content-tasks/projects is collapsed */
+.section-content.collapsed .item-details {
+    display: none;
+}
 
         .comment-bubble {
             background: white;
@@ -262,17 +267,16 @@
         .comment-author { font-weight: bold; color: #333; }
 
         /* MODIFIED FOR QUILL */
-        .comment-form {
+.comment-form {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    background-color: #f8f9fa; /* Slightly lighter */
+    background-color: #f8f9fa;
     padding: 15px;
     border-radius: 4px;
     border: 1px solid #e0e0e0;
-    margin-top: 15px; /* Space from last comment */
-}
-        
+    margin-top: 15px; 
+} 
         .comment-input-name {
             width: 100%;
             max-width: 300px;
