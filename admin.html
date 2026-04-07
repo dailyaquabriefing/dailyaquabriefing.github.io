@@ -375,15 +375,21 @@
             <ul id="daily-task-list" class="item-list"></ul>
         </div>
 
-        <div id="tab-projects" class="tab-content">
-            <button class="btn btn-primary" style="margin-bottom: 15px;" onclick="openModal('project')">+ Add New Project</button>
-            <div id="project-list"></div>
-        </div>
+        <<div id="tab-projects" class="tab-content">
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button class="btn btn-primary" onclick="openModal('project')">+ Add New Project</button>
+        <button class="btn btn-secondary" onclick="autoSortList('project')">↕ Sort by Status</button>
+    </div>
+    <div id="project-list"></div>
+</div>
 
-        <div id="tab-active" class="tab-content">
-            <button class="btn btn-primary" style="margin-bottom: 15px;" onclick="openModal('active')">+ Add New Active Task</button>
-            <div id="active-task-list"></div>
-        </div>
+<div id="tab-active" class="tab-content">
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button class="btn btn-primary" onclick="openModal('active')">+ Add New Active Task</button>
+        <button class="btn btn-secondary" onclick="autoSortList('active')">↕ Sort by Status</button>
+    </div>
+    <div id="active-task-list"></div>
+</div>
         
         <div id="tab-settings" class="tab-content">
             <div style="max-width: 450px; padding-top: 10px;">
@@ -1238,6 +1244,32 @@
                 container.appendChild(div);
             });
         }
+
+const STATUS_ORDER = {
+    "Future": 1,
+    "Requirement Gathering": 2,
+    "Development": 3,
+    "Testing": 4,
+    "Delayed": 5,
+    "On-Hold": 5, // Same rank as Delayed
+    "Completed": 6,
+    "Follow-Up": 7,
+    "Stable": 8,
+    "Maintenance": 9
+};
+
+function autoSortList(type) {
+    let list = (type === 'project') ? localData.projects : localData.activeTasks;
+    
+    list.sort((a, b) => {
+        const orderA = STATUS_ORDER[a.status] || 99;
+        const orderB = STATUS_ORDER[b.status] || 99;
+        return orderA - orderB;
+    });
+
+    pushData(); // Save the new order to Firebase
+    renderAll();
+}
 
         function addDailyCheck() {
             const status = document.getElementById('dc-status').value;
