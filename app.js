@@ -225,7 +225,30 @@ const renderList = (id, items, showPrivate = false) => {
         }
 
         const safeName = linkify(name);
-        let safeNotes = notes.trim().startsWith('<') ? notes : linkify(notes);
+
+let safeNotes = notes.trim().startsWith('<') ? notes : linkify(notes);
+
+// Remove ALL empty Quill-style paragraph blocks
+if (safeNotes) {
+
+    // Remove repeated empty paragraphs
+    safeNotes = safeNotes.replace(/(<p><br><\/p>\s*)+/gi, '');
+
+    // Remove empty paragraph wrappers
+    safeNotes = safeNotes.replace(/(<p>\s*<\/p>\s*)+/gi, '');
+
+    // Remove standalone <br>
+    safeNotes = safeNotes.replace(/(<br\s*\/?>\s*)+/gi, '');
+
+    // Remove &nbsp;
+    safeNotes = safeNotes.replace(/(&nbsp;\s*)+/gi, '');
+
+    // Final safety check: strip tags and confirm real content exists
+    if (safeNotes.replace(/<[^>]*>/g, '').trim() === '') {
+        safeNotes = '';
+    }
+}       
+
         const uniqueId = `${listType}-${index}`;
 
         // --- BADGES ---
@@ -246,7 +269,7 @@ const renderList = (id, items, showPrivate = false) => {
         let checkHtml = '';
         if (dailyChecks.length > 0) {
             const sorted = [...dailyChecks].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            const latest = sorted;
+            const latest = sorted[0];
             let badgeColor = latest.status === 'Verified' ? '#28a745' : (latest.status === 'Issues Found' ? '#dc3545' : '#6c757d');
             let icon = latest.status === 'Verified' ? '✅' : (latest.status === 'Issues Found' ? '⚠️' : '⚪');
             const timeStr = new Date(latest.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -311,22 +334,22 @@ const renderList = (id, items, showPrivate = false) => {
 
             // This "li" now contains a hidden content section for notes and attachments
             html += `
-            <li style="margin-bottom:15px;">
-                <div style="margin-bottom:2px;">
-                    <strong>${safeName}</strong>${statusBadge}${priorityBadge}${updatedBadge}
-                </div>
-                ${checkHtml}
-                
-                <div class="item-details" style="margin-top: 5px;">
-                    <div style="color:#666; margin-bottom:2px;">${safeNotes}</div>
-                    ${goal ? `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>` : ''}
-                    ${attachmentHtml}
-                    ${showPrivate && itComments ? `<div class="item-it-comment">🔒 <strong>Private:</strong> ${linkify(itComments)}</div>` : ''}
-                    ${milestone ? `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next: ${linkify(milestone)}</small>` : ''}
-                    ${metaHtml}
-                </div>
-                ${commentsSectionHtml}
-            </li>`;
+<li style="margin-bottom:15px;">
+    <div style="margin-bottom:2px; cursor:pointer;"
+     onclick="this.parentElement.querySelector('.item-details').classList.toggle('collapsed')">
+        <strong>${safeName}</strong>${statusBadge}${priorityBadge}${updatedBadge}
+    </div>
+    ${checkHtml}
+    <div class="item-details collapsed" style="margin-top: 5px;">
+        ${safeNotes ? `<div style="color:#666; margin-bottom:2px;">${safeNotes}</div>` : ''}
+        ${goal ? `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>` : ''}
+        ${attachmentHtml}
+        ${showPrivate && itComments ? `<div class="item-it-comment">🔒 <strong>Private:</strong> ${linkify(itComments)}</div>` : ''}
+        ${milestone ? `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next: ${linkify(milestone)}</small>` : ''}
+        ${metaHtml}
+    </div>
+    ${commentsSectionHtml}
+</li>`;
         } else {
              html += `<li style="margin-bottom:5px;"><strong>${safeName}</strong></li>`;
         }

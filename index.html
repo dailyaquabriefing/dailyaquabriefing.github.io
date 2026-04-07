@@ -244,11 +244,6 @@
     display: block; 
 }
 
-/* Ensure item details hide when the parent content-tasks/projects is collapsed */
-.section-content.collapsed .item-details {
-    display: none;
-}
-
         .comment-bubble {
             background: white;
             border: 1px solid #e0e0e0;
@@ -419,6 +414,17 @@
             .action-btn { width: 100%; margin: 5px 0; display: block; }
             .message-box { padding: 20px; }
         }
+
+/* Default collapsed item view */
+.item-details {
+    display: none;
+}
+
+/* Expanded item view */
+.item-details:not(.collapsed) {
+    display: block;
+}
+
     </style>
 </head>
 <body>
