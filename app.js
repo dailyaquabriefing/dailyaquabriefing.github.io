@@ -177,8 +177,12 @@ const renderList = (id, items, showPrivate = false) => {
             'header-projects': 'Active Projects',
             'header-active': 'Active Tasks'
         };
-        const baseTitle = titleMap[headerEl.id] || headerEl.textContent.split('(')[0].trim();
+        const baseTitle = titleMap[headerEl.id] || headerEl.textContent.split('(').trim();
         headerEl.textContent = baseTitle + ` (${totalCount})`;
+
+        // Ensure headers and content containers are collapsed by default
+        headerEl.classList.add('collapsed');
+        el.classList.add('collapsed');
     }
 
     if (!Array.isArray(items) || !items.length) {
@@ -249,7 +253,7 @@ const renderList = (id, items, showPrivate = false) => {
         let checkHtml = '';
         if (dailyChecks.length > 0) {
             dailyChecks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            const latest = dailyChecks[0];
+            const latest = dailyChecks;
             const checkDate = new Date(latest.timestamp).toDateString();
             const todayDate = new Date().toDateString();
             const isToday = checkDate === todayDate;
@@ -327,7 +331,7 @@ const renderList = (id, items, showPrivate = false) => {
             itCommentsHtml = `<div class="item-it-comment">🔒 <strong>Private Note:</strong> ${safeIT}</div>`;
         }
 
-        // Comments HTML
+        // Comments HTML - Reordered to put the form at the bottom
         const commentCount = publicComments.length;
         const commentLabel = commentCount > 0 ? `💬 View/Add Comments (${commentCount})` : `💬 Add Question/Comment`;
         
@@ -355,12 +359,13 @@ const renderList = (id, items, showPrivate = false) => {
             `;
         });
 
+        // The form is placed after ${commentsListHtml} so it appears at the bottom
         const commentsSectionHtml = `
             <div class="comments-section">
                 <button class="comment-toggle" onclick="toggleComments('comments-${uniqueId}')">${commentLabel}</button>
                 <div id="comments-${uniqueId}" class="comments-container">
                     ${commentsListHtml}
-                    <div class="comment-form">
+                    <div class="comment-form" style="margin-top: 10px;">
                         <input type="text" class="comment-input-name" placeholder="Your Name" maxlength="20">
                         <div id="editor-container-${uniqueId}"></div>
                         <button class="btn-post" onclick="postComment('${listType}', ${index}, '${uniqueId}')">Post</button>
