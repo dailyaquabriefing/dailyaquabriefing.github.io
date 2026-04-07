@@ -424,7 +424,40 @@
 .item-details:not(.collapsed) {
     display: block;
 }
+.collapsed-status-filters {
+    margin: 8px 0 14px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
 
+.collapsed-status-filters.selected-only {
+    margin-top: 6px;
+    margin-bottom: 10px;
+}
+
+.status-filter-btn {
+    background: #fff;
+    color: var(--primary);
+    border: 1px solid #cfd8e3;
+    border-radius: 16px;
+    padding: 5px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.status-filter-btn:hover {
+    background: #eef7ff;
+    border-color: var(--primary);
+}
+
+.status-filter-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
     </style>
 </head>
 <body>
@@ -551,15 +584,23 @@
 
     <script>
         function toggleSection(headerElement) {
-            // Toggle the arrow rotation on the header
-            headerElement.classList.toggle('collapsed');
-            
-            // Toggle the visibility of the content (next sibling)
-            const content = headerElement.nextElementSibling;
-            if (content && content.classList.contains('section-content')) {
-                content.classList.toggle('collapsed');
+        headerElement.classList.toggle('collapsed');
+
+        const content = headerElement.nextElementSibling;
+        if (content && content.classList.contains('section-content')) {
+            content.classList.toggle('collapsed');
+
+            if (typeof currentReportData !== 'undefined' && currentReportData) {
+                if (content.id === 'content-projects') {
+                    const projectsData = currentReportData.structuredProjects || currentReportData.projects || [];
+                    renderList('content-projects', projectsData, currentShowPrivate);
+                } else if (content.id === 'content-active') {
+                    const activeData = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
+                    renderList('content-active', activeData, currentShowPrivate);
+                }
             }
         }
+    }
 
         // --- ADDED: Observer to hide empty note fields dynamically ---
         // This watches the report body for changes (data loading) and hides note divs that are whitespace-only.

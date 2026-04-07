@@ -23,6 +23,11 @@ let currentOutlookData = null;
 // STORE QUILL INSTANCES
 let commentEditors = {};
 
+let collapsedStatusFilters = {
+    project: 'ALL',
+    active: 'ALL'
+};
+
 // --- HELPER FUNCTIONS ---
 
 function linkify(htmlContent) {
@@ -161,6 +166,82 @@ window.postComment = function(listType, itemIndex, uniqueId) {
     });
 };
 
+function getUniqueStatuses(items) {
+    if (!Array.isArray(items)) return [];
+
+    return [...new Set(
+        items
+            .filter(item => typeof item === 'object' && item !== null && item.status)
+            .map(item => item.status)
+    )].sort();
+}
+
+function getListTypeFromContentId(id) {
+    if (id === 'content-projects') return 'project';
+    if (id === 'content-active') return 'active';
+    return 'daily';
+}
+
+window.setCollapsedStatusFilter = function(listType, status) {
+    collapsedStatusFilters[listType] = status;
+
+    if (!currentReportData) return;
+
+    if (listType === 'project') {
+        const projectsData = currentReportData.structuredProjects || currentReportData.projects || [];
+        renderList('content-projects', projectsData, currentShowPrivate);
+    } else if (listType === 'active') {
+        const activeData = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
+        renderList('content-active', activeData, currentShowPrivate);
+    }
+};
+
+function getStatusCount(items, status) {
+    if (!Array.isArray(items)) return 0;
+    if (status === 'ALL') return items.length;
+
+    return items.filter(item =>
+        typeof item === 'object' &&
+        item !== null &&
+        (item.status || '') === status
+    ).length;
+}
+
+function buildStatusFilterButtons(listType, items, showOnlySelected = false) {
+    if (listType !== 'project' && listType !== 'active') return '';
+
+    const statuses = getUniqueStatuses(items);
+    if (!statuses.length) return '';
+
+    const currentFilter = collapsedStatusFilters[listType] || 'ALL';
+    const buttonStatuses = ['ALL', ...statuses];
+
+    const visibleStatuses = showOnlySelected
+        ? (currentFilter === 'ALL'
+            ? buttonStatuses
+            : ['ALL', currentFilter])
+        : buttonStatuses;
+
+    return `
+        <div class="collapsed-status-filters ${showOnlySelected && currentFilter !== 'ALL' ? 'selected-only' : ''}">
+            ${visibleStatuses.map(status => {
+                const count = getStatusCount(items, status);
+                const label = `${status} (${count})`;
+
+                return `
+                    <button
+                        type="button"
+                        class="status-filter-btn ${currentFilter === status ? 'active' : ''}"
+                        onclick="event.stopPropagation(); setCollapsedStatusFilter('${listType}', '${status}')"
+                    >${label}</button>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
+
+
 const renderList = (id, items, showPrivate = false) => {
     const el = document.getElementById(id);
     const headerEl = document.getElementById('header-' + id.replace('content-', ''));
@@ -170,29 +251,58 @@ const renderList = (id, items, showPrivate = false) => {
     if (id === 'content-active') listType = 'active';
 
     const totalCount = Array.isArray(items) ? items.length : 0;
-    
-    if (headerEl) {
-        const titleMap = {
-            'header-tasks': 'Daily Tasks',
-            'header-projects': 'Active Projects',
-            'header-active': 'Active Tasks'
-        };
-        const baseTitle = titleMap[headerEl.id] || headerEl.textContent.split('(').trim();
-        headerEl.textContent = baseTitle + ` (${totalCount})`;
 
-        // Ensure headers and content containers are collapsed by default
-        headerEl.classList.add('collapsed');
-        el.classList.add('collapsed');
-    }
+const originalItems = Array.isArray(items) ? items : [];
+const isCollapsedSection = el.classList.contains('collapsed');
+const selectedStatus = collapsedStatusFilters[listType] || 'ALL';
 
-    if (!Array.isArray(items) || !items.length) {
-        el.innerHTML = "<em>No items.</em>";
-        return;
-    }
+let filteredItems = originalItems;
+if ((listType === 'project' || listType === 'active') && selectedStatus !== 'ALL') {
+    filteredItems = originalItems.filter(item =>
+        typeof item === 'object' &&
+        item !== null &&
+        (item.status || '') === selectedStatus
+    );
+}
     
-    let html = '<ol style="padding-left:20px;">';
-    
-    items.forEach((item, index) => {
+if (headerEl) {
+    const titleMap = {
+        'header-tasks': 'Daily Tasks',
+        'header-projects': 'Active Projects',
+        'header-active': 'Active Tasks'
+    };
+
+    const baseTitle = titleMap[headerEl.id] || headerEl.textContent.split('(')[0].trim();
+
+    const displayCount =
+        (listType === 'project' || listType === 'active')
+            ? filteredItems.length
+            : totalCount;
+
+    headerEl.textContent = baseTitle + ` (${displayCount})`;
+}
+
+
+if (!originalItems.length) {
+    el.innerHTML = "<em>No items.</em>";
+    return;
+}
+
+let html = '';
+
+if (listType === 'project' || listType === 'active') {
+    html += buildStatusFilterButtons(listType, originalItems, !isCollapsedSection);
+}
+
+if (!filteredItems.length) {
+    el.innerHTML = html + "<em>No items for this status.</em>";
+    return;
+}
+
+html += '<ol style="padding-left:20px;">';
+
+filteredItems.forEach((item) => {
+    const index = originalItems.indexOf(item);
         let name, notes = '', status, priority = '', milestone = '', tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
         let dailyChecks = item.dailyChecks || [];    
         
