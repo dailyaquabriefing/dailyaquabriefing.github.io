@@ -756,6 +756,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const dailyId = urlParams.get('daily');
     const reportId = urlParams.get('report');
+    const isJsonView = urlParams.get('json') === 'true';
+
     let potentialTargetId = dailyId || reportId;
     targetId = potentialTargetId ? potentialTargetId.toLowerCase() : null;
     const isDailyMode = !!dailyId;
@@ -767,6 +769,11 @@ document.addEventListener('DOMContentLoaded', () => {
         db.collection('briefings').doc(targetId).get().then(doc => {
             if (doc.exists) {
                 const data = doc.data();
+                if (isJsonView) {
+                    document.body.innerHTML = `<pre style="background:#1e1e1e; color:#d4d4d4; padding:20px; font-family:monospace; line-height:1.5; overflow:auto;">${JSON.stringify(data, null, 2)}</pre>`;
+                    document.title = `JSON Report - ${targetId}`;
+                    return; // Stop further rendering
+                }
                 if (isDailyMode) {
                     document.getElementById('report-title').textContent = "Daily Briefing";
                     if (data.passcode && data.passcode.trim() !== "") {
