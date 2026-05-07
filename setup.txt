@@ -6,4 +6,7 @@ The steps to update install.js
 4) cd.. [Enter]
 5) firebase deploy --only functions
 
-Update
+Update git
+
+
+git checkout main && git add . && git commit -m "Minor tweaks" && git push origin main
