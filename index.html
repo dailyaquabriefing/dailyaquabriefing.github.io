@@ -547,12 +547,12 @@
             <div id="content-emails" class="section-content collapsed"></div>
         </div>
         
-<div id="container-analytics" class="hidden" style="margin-top:20px;">
+      <div id="container-analytics" class="hidden" style="margin-top:20px;">
     <h2 style="border-bottom:none; margin-bottom:10px;">Dashboard Analytics</h2>
-    
+
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
         <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-            <h3 id="chart-header-status" style="margin-top:0; text-align:center; color:#555;">Project Status</h3>
+            <h3 id="chart-header-status" style="margin-top:0; text-align:center; color:#555;">Project &amp; Task Status</h3>
             <canvas id="chartStatus"></canvas>
         </div>
 
@@ -562,17 +562,23 @@
         </div>
 
         <div style="background: white; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-            <h3 id="chart-header-workload" style="margin-top:0; text-align:center; color:#555;">Workload Balance</h3>
+            <h3 id="chart-header-workload" style="margin-top:0; text-align:center; color:#555;">Workload Distribution</h3>
             <canvas id="chartWorkload"></canvas>
         </div>
     </div>
 
-    <button onclick="closeAnalytics()" class="btn-secondary" style="margin-top:20px; padding:12px 20px; width:100%; font-weight: bold; cursor: pointer;">
-        Back to List View
-    </button>
-</div>
+    <!-- Status summary table, populated by renderPublicAnalytics() -->
+    <div id="analytics-status-table" style="margin-top:24px; background:white; border:1px solid #e0e0e0; border-radius:8px; overflow:hidden;"></div>
 
+    <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap;">
+        <button onclick="exportReportToExcel()" id="btn-export-analytics" style="flex:1; min-width:180px; padding:12px 20px; background:#27ae60; color:white; border:none; border-radius:4px; font-weight:bold; font-size:1em; cursor:pointer;">
+            &#128229; Export to Excel
+        </button>
+        <button onclick="closeAnalytics()" class="btn-secondary" style="flex:1; min-width:180px; padding:12px 20px; font-weight:bold; cursor:pointer; border-radius:4px; border:2px solid #0078D4; background:white; color:#0078D4;">
+            &#8592; Back to List View
+        </button>
     </div>
+</div>
 
     <div id="last-updated"></div>
 

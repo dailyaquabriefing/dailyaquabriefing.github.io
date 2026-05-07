@@ -5,3 +5,5 @@ The steps to update install.js
 3) npm run lint -- --fix
 4) cd.. [Enter]
 5) firebase deploy --only functions
+
+Update

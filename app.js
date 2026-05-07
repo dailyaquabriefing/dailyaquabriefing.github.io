@@ -628,20 +628,29 @@ function renderPublicAnalytics() {
     
     const allItems = [...projects, ...active];
 
-    const statusCounts = { 
-        'On Track': 0, 
-        'Requirement Gathering': 0,
-        'Development': 0,
-        'Testing': 0, 
-        'Delayed': 0, 
-        'Future': 0,
-        'On-Hold': 0, 
-        'Completed': 0, 
-        'Follow-Up': 0, 
-        'Maintenance': 0, 
-        'Stable': 0,
-        'Other': 0 
-    };
+    // Status order matches admin.html STATUS_ORDER
+    const STATUS_ORDER_KEYS = [
+        'Future', 'Requirement Gathering', 'On Track', 'Development',
+        'Testing', 'Training', 'Completed', 'Follow-Up',
+        'Maintenance', 'Delayed', 'On-Hold', 'Other'
+    ];
+    const STATUS_COLORS = [
+        '#adb5bd', // Future
+        '#17a2b8', // Requirement Gathering
+        '#28a745', // On Track
+        '#6610f2', // Development
+        '#ff9f43', // Testing
+        '#20c997', // Training
+        '#800080', // Completed
+        '#fd7e14', // Follow-Up
+        '#9b59b6', // Maintenance
+        '#dc3545', // Delayed
+        '#6c757d', // On-Hold
+        '#e2e6ea'  // Other
+    ];
+
+    const statusCounts = {};
+    STATUS_ORDER_KEYS.forEach(k => statusCounts[k] = 0);
     allItems.forEach(item => {
         const s = item.status || 'Other';
         if (statusCounts.hasOwnProperty(s)) statusCounts[s]++;
@@ -653,48 +662,41 @@ function renderPublicAnalytics() {
         const p = item.priority || 'Low';
         if (prioCounts.hasOwnProperty(p)) prioCounts[p]++;
     });
-    
-    const totalStatus = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+
+    // Filter to only statuses that have items (keep chart clean)
+    const activeStatusKeys   = STATUS_ORDER_KEYS.filter(k => statusCounts[k] > 0);
+    const activeStatusValues = activeStatusKeys.map(k => statusCounts[k]);
+    const activeStatusColors = activeStatusKeys.map(k => STATUS_COLORS[STATUS_ORDER_KEYS.indexOf(k)]);
+
+    const totalStatus = allItems.length;
     const statusHeader = document.getElementById('chart-header-status');
-    if(statusHeader) statusHeader.textContent = `Project Status (Total: ${totalStatus})`;
+    if (statusHeader) statusHeader.textContent = `Project & Task Status (Total: ${totalStatus})`;
 
     const totalWorkload = daily.length + projects.length + active.length;
     const workloadHeader = document.getElementById('chart-header-workload');
-    if(workloadHeader) workloadHeader.textContent = `Workload Distribution (Total: ${totalWorkload})`;
+    if (workloadHeader) workloadHeader.textContent = `Workload Distribution (Total: ${totalWorkload})`;
 
-    if (statusChart) statusChart.destroy();
+    if (statusChart)   statusChart.destroy();
     if (priorityChart) priorityChart.destroy();
     if (workloadChart) workloadChart.destroy();
 
-   statusChart = new Chart(document.getElementById('chartStatus'), {
+    statusChart = new Chart(document.getElementById('chartStatus'), {
         type: 'doughnut',
         data: {
-            labels: Object.keys(statusCounts),
+            labels: activeStatusKeys,
             datasets: [{
-                data: Object.values(statusCounts),
-                // UPDATED: Colors mapped to your CSS classes in admin.html
-                backgroundColor: [
-                    '#28a745', // On Track (Green)
-                    '#17a2b8', // Requirement Gathering (Teal)
-                    '#6610f2', // Development (Indigo)
-                    '#ff9f43', // Testing (Orange)
-                    '#dc3545', // Delayed (Red)
-                    '#adb5bd', // Future (Grey-Blue)
-                    '#6c757d', // On-Hold (Grey)
-                    '#800080', // Completed (Purple)
-                    '#fd7e14', // Follow-Up (Orange)
-                    '#6610f2', // Maintenance (Violet)
-                    '#007bff', // Stable (Blue)
-                    '#e2e6ea'  // Other
-                ]
+                data: activeStatusValues,
+                backgroundColor: activeStatusColors
             }]
         },
         options: {
             plugins: {
                 datalabels: {
                     color: '#ffffff',
-                    font: { weight: 'bold' }
-                }
+                    font: { weight: 'bold' },
+                    formatter: (value, ctx) => value > 0 ? value : ''
+                },
+                legend: { position: 'right' }
             }
         }
     });
@@ -730,18 +732,73 @@ function renderPublicAnalytics() {
             labels: ['Daily Priorities', 'Projects', 'Active Tasks'],
             datasets: [{
                 data: [daily.length, projects.length, active.length],
-                backgroundColor: ['#007bff', '#6610f2', '#fd7e14']
+                backgroundColor: ['#007bff', '#9b59b6', '#fd7e14']
             }]
         },
         options: {
             plugins: {
                 datalabels: {
                     color: '#ffffff',
-                    font: { weight: 'bold' }
+                    font: { weight: 'bold' },
+                    formatter: (value) => value > 0 ? value : ''
                 }
             }
         }
     });
+
+    // --- STATUS SUMMARY TABLE ---
+    const tableEl = document.getElementById('analytics-status-table');
+    if (tableEl) {
+        const rowsWithData = STATUS_ORDER_KEYS.filter(k => k !== 'Other' && statusCounts[k] > 0);
+        if (rowsWithData.length === 0) {
+            tableEl.innerHTML = '';
+        } else {
+            const headerBg = '#f8f9fa';
+            let tHtml = `
+                <table style="width:100%; border-collapse:collapse; font-size:0.92em;">
+                    <thead>
+                        <tr style="background:${headerBg}; border-bottom:2px solid #dee2e6;">
+                            <th style="padding:10px 14px; text-align:left; color:#555; font-weight:700;">Status</th>
+                            <th style="padding:10px 14px; text-align:center; color:#555; font-weight:700;">Projects</th>
+                            <th style="padding:10px 14px; text-align:center; color:#555; font-weight:700;">Active Tasks</th>
+                            <th style="padding:10px 14px; text-align:center; color:#555; font-weight:700;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            rowsWithData.forEach((status, i) => {
+                const pCount = projects.filter(item => (item.status || '') === status).length;
+                const aCount = active.filter(item   => (item.status || '') === status).length;
+                const total  = pCount + aCount;
+                const color  = STATUS_COLORS[STATUS_ORDER_KEYS.indexOf(status)];
+                const rowBg  = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+                tHtml += `
+                        <tr style="background:${rowBg}; border-bottom:1px solid #e9ecef;">
+                            <td style="padding:9px 14px;">
+                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${color}; margin-right:7px; vertical-align:middle;"></span>
+                                <strong>${status}</strong>
+                            </td>
+                            <td style="padding:9px 14px; text-align:center;">${pCount > 0 ? pCount : '<span style="color:#ccc;">—</span>'}</td>
+                            <td style="padding:9px 14px; text-align:center;">${aCount > 0 ? aCount : '<span style="color:#ccc;">—</span>'}</td>
+                            <td style="padding:9px 14px; text-align:center; font-weight:bold;">${total}</td>
+                        </tr>`;
+            });
+
+            // Totals row
+            const totalProjects = projects.length;
+            const totalActive   = active.length;
+            tHtml += `
+                        <tr style="background:#f0f4f8; border-top:2px solid #dee2e6; font-weight:700;">
+                            <td style="padding:10px 14px;">Total</td>
+                            <td style="padding:10px 14px; text-align:center;">${totalProjects}</td>
+                            <td style="padding:10px 14px; text-align:center;">${totalActive}</td>
+                            <td style="padding:10px 14px; text-align:center;">${totalProjects + totalActive}</td>
+                        </tr>
+                    </tbody>
+                </table>`;
+            tableEl.innerHTML = tHtml;
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -897,19 +954,19 @@ const applyGlobalStyles = (ws) => {
     const DEFAULT_ROW_HEIGHT = 20; 
     const LINE_HEIGHT_PTS = 15;
 
-    // Status Color Map (RGB Hex for Excel)
+    // Status Color Map (RGB Hex for Excel) — matches admin.html STATUS_ORDER
     const statusColors = {
-        'On Track': 'C6EFCE',
+        'Future':                'F3F4F6',
         'Requirement Gathering': 'DBEAFE',
-        'Development': 'E0E7FF',
-        'Testing': 'FFEB9C',
-        'Delayed': 'FFC7CE',
-        'Future': 'F3F4F6',
-        'On-Hold': 'E5E7EB',
-        'Completed': 'E9D5FF',
-        'Follow-Up': 'FFEDD5',
-        'Maintenance': 'F5F3FF',
-        'Stable': 'DBEAFE'
+        'On Track':              'C6EFCE',
+        'Development':           'E0E7FF',
+        'Testing':               'FFEB9C',
+        'Training':              'D1FAE5',
+        'Completed':             'E9D5FF',
+        'Follow-Up':             'FFEDD5',
+        'Maintenance':           'F5F3FF',
+        'Delayed':               'FFC7CE',
+        'On-Hold':               'E5E7EB'
     };
 
     if (!ws['!cols']) ws['!cols'] = [];
@@ -993,26 +1050,54 @@ const applyGlobalStyles = (ws) => {
     // --- MAIN EXPORT LOGIC ---
     const wb = XLSX.utils.book_new();
 
-    // 1. Analytics
+    // 1. Analytics Overview (with full status breakdown)
     const analyticsData = (function() {
         const projects = currentReportData.structuredProjects || currentReportData.projects || [];
-        const active = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
-        const daily = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
-        const allItems = [...projects, ...active];
-        const rows = [
-            { Category: "WORKLOAD", Metric: "Daily Tasks", Count: daily.length },
-            { Category: "WORKLOAD", Metric: "Active Projects", Count: projects.length },
-            { Category: "WORKLOAD", Metric: "Active Tasks", Count: active.length },
-            { Category: "", Metric: "", Count: "" },
-            { Category: "REPORT INFO", Metric: "User", Count: targetId },
-            { Category: "REPORT INFO", Metric: "Exported", Count: new Date().toLocaleString() }
+        const active   = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
+        const daily    = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
+
+        const statusOrder = [
+            'Future', 'Requirement Gathering', 'On Track', 'Development',
+            'Testing', 'Training', 'Completed', 'Follow-Up',
+            'Maintenance', 'Delayed', 'On-Hold'
         ];
+
+        const rows = [
+            // Workload summary
+            { Category: 'WORKLOAD SUMMARY', Metric: 'Daily Tasks',    Count: daily.length,    Projects: '',    Active_Tasks: '' },
+            { Category: 'WORKLOAD SUMMARY', Metric: 'Active Projects', Count: projects.length, Projects: '',    Active_Tasks: '' },
+            { Category: 'WORKLOAD SUMMARY', Metric: 'Active Tasks',   Count: active.length,   Projects: '',    Active_Tasks: '' },
+            { Category: '',                 Metric: '',               Count: '',              Projects: '',    Active_Tasks: '' },
+            // Status breakdown header
+            { Category: 'STATUS BREAKDOWN', Metric: 'Status',         Count: 'Combined Total', Projects: 'Projects', Active_Tasks: 'Active Tasks' }
+        ];
+
+        statusOrder.forEach(status => {
+            const pCount = projects.filter(i => (i.status || '') === status).length;
+            const aCount = active.filter(i   => (i.status || '') === status).length;
+            if (pCount + aCount > 0) {
+                rows.push({ Category: '', Metric: status, Count: pCount + aCount, Projects: pCount, Active_Tasks: aCount });
+            }
+        });
+
+        rows.push({ Category: '', Metric: '', Count: '', Projects: '', Active_Tasks: '' });
+        rows.push({ Category: 'REPORT INFO', Metric: 'User',     Count: targetId,                    Projects: '', Active_Tasks: '' });
+        rows.push({ Category: 'REPORT INFO', Metric: 'Exported', Count: new Date().toLocaleString(), Projects: '', Active_Tasks: '' });
+
         return rows;
     })();
-    
+
     const wsAnalytics = XLSX.utils.json_to_sheet(analyticsData);
     applyGlobalStyles(wsAnalytics);
-    XLSX.utils.book_append_sheet(wb, wsAnalytics, "Analytics Overview");
+    // Widen key columns for readability
+    wsAnalytics['!cols'] = [
+        { wch: 20 }, // Category
+        { wch: 28 }, // Metric
+        { wch: 16 }, // Count
+        { wch: 14 }, // Projects
+        { wch: 14 }  // Active_Tasks
+    ];
+    XLSX.utils.book_append_sheet(wb, wsAnalytics, 'Analytics Overview');
 
     // 2. Data Sheets
     const sheetsToProcess = [

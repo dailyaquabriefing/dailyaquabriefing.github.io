@@ -210,14 +210,17 @@
 
         /* Status Badges */
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white; display: inline-block;}
-        .st-on-track { background-color: #28a745; }
-        .st-delayed { background-color: #dc3545; }
-         .st-testing { background-color: #ff9f43; } /* Example: Orange/Amber color */
-        .st-on-hold { background-color: #6c757d; }
-        .st-completed { background-color: #17a2b8; }
-        .st-follow-up { background-color: #fd7e14; }
-        .st-maintenance { background-color: #6610f2; }
-        .st-stable { background-color: #007bff; }
+        .st-requirement-gathering { background-color: #17a2b8; }
+        .st-training            { background-color: #20c997; }
+        .st-development         { background-color: #6610f2; }
+        .st-testing             { background-color: #ff9f43; }
+        .st-delayed             { background-color: #dc3545; }
+        .st-future              { background-color: #adb5bd; }
+        .st-on-hold             { background-color: #6c757d; }
+        .st-completed           { background-color: #800080; }
+        .st-follow-up           { background-color: #fd7e14; }
+        .st-maintenance         { background-color: #6610f2; }
+        .st-on-track            { background-color: #28a745; }
         
         .login-instructions {
             background: #eef7ff;
@@ -315,10 +318,7 @@
         .ql-toolbar {
             background: #f8f9fa;
         }
-.st-requirement-gathering { background-color: #17a2b8; }
-.st-development { background-color: #6610f2; }
-.st-future { background-color: #adb5bd; }
-.st-completed { background-color: #800080; }
+/* duplicate overrides removed — consolidated above */
     </style>
 </head>
 <body>
@@ -443,8 +443,8 @@
                 <div class="form-group">
                     <label>Status</label>
 <select id="m-status" class="w-full">
-    <option value="On Track">On Track</option>
     <option value="Requirement Gathering">Requirement Gathering</option>
+    <option value="Training">Training</option>
     <option value="Development">Development</option>
     <option value="Testing">Testing</option>
     <option value="Delayed">Delayed</option>
@@ -453,7 +453,7 @@
     <option value="Completed">Completed</option>
     <option value="Follow-Up">Follow-Up</option>
     <option value="Maintenance">Maintenance</option>
-    <option value="Stable">Stable</option>
+    <option value="On Track">On Track</option>
 </select>
                 </div>
                 <div class="form-group">
@@ -1094,6 +1094,11 @@
                 list[editIndex] = existingItem;
             }
 
+            // Auto-sort by status for projects and active tasks after every save
+            if (type === 'project' || type === 'active') {
+                list.sort((a, b) => (STATUS_ORDER[a.status] || 99) - (STATUS_ORDER[b.status] || 99));
+            }
+
             closeModal();
             pushData();
         }
@@ -1246,16 +1251,17 @@
         }
 
 const STATUS_ORDER = {
-    "Future": 1,
+    "Future":                1,
     "Requirement Gathering": 2,
-    "Development": 3,
-    "Testing": 4,
-    "Delayed": 5,
-    "On-Hold": 5, // Same rank as Delayed
-    "Completed": 6,
-    "Follow-Up": 7,
-    "Stable": 8,
-    "Maintenance": 9
+    "On Track":              3,
+    "Development":           4,
+    "Testing":               5,
+    "Training":              6,
+    "Completed":             7,
+    "Follow-Up":             8,
+    "Maintenance":           9,
+    "Delayed":              10,
+    "On-Hold":              11
 };
 
 function autoSortList(type) {
