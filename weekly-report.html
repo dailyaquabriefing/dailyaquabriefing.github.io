@@ -230,8 +230,8 @@ function buildReport(){
 
   const active = projects.filter(p=>["Development","Testing","Requirement Gathering"].includes(p.Status));
   active.sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3) || (toDate(b.Updated)||0)-(toDate(a.Updated)||0));
-  const top = active.slice(0,5);
-  const rest = active.slice(5);
+  const top = active.slice(0,10);
+  const rest = active.slice(10);
   const onHold = projects.filter(p=>p.Status==="On-Hold")
     .sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
   const maint = projects.filter(p=>p.Status==="Maintenance");
