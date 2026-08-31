@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Weekly Status Report — ckonkol — week of 2026-08-31</title><style>
+  :root{
+    --blue:#004C97;
+    --blue-dark:#003a73;
+    --ink:#1e2833;
+    --muted:#5a6a7a;
+    --paper:#ffffff;
+    --wash:#eef3f8;
+    --line:#c9d6e2;
+    --hold:#a4540f;
+    --hold-bg:#fdf3e7;
+    --ok:#1f6b43;
+    --ok-bg:#e9f4ee;
+    --test:#7a5ea8;
+    --test-bg:#f1ecf8;
+    --dev:#004C97;
+    --dev-bg:#e7eef7;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial, Helvetica, sans-serif;color:var(--ink);background:var(--wash);font-size:15px;line-height:1.45}
+
+  /* ---- App chrome (hidden on print) ---- */
+  .toolbar{background:var(--blue);color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .toolbar h1{font-size:17px;font-weight:bold;flex:1;min-width:220px}
+  .toolbar h1 small{display:block;font-size:11px;font-weight:normal;opacity:.85;margin-top:2px}
+  .toolbar button, .toolbar label.btn{background:#fff;color:var(--blue);border:none;border-radius:4px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit}
+  .toolbar button:disabled{opacity:.45;cursor:default}
+  .toolbar button:focus-visible, .toolbar label.btn:focus-within{outline:3px solid #ffd268;outline-offset:2px}
+  .toolbar input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+  .weekpick{display:flex;align-items:center;gap:6px;font-size:13px}
+  .weekpick select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none}
+
+  /* ---- Drop zone ---- */
+  #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--line);border-radius:8px;padding:56px 32px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s}
+  #dropzone.drag{border-color:var(--blue);background:#f4f8fc}
+  #dropzone .big{font-size:19px;font-weight:bold;color:var(--blue);margin-bottom:10px}
+  #dropzone p{color:var(--muted);max-width:520px;margin:0 auto 6px}
+  #dropzone .steps{margin-top:18px;text-align:left;display:inline-block;color:var(--ink)}
+  #dropzone .steps li{margin:4px 0 4px 20px}
+  #err{max-width:860px;margin:14px auto;background:#fbe9e9;border:1px solid #d99;border-radius:6px;padding:12px 16px;color:#7a1f1f;display:none}
+
+  /* ---- Report document ---- */
+  #report{max-width:860px;margin:26px auto 60px;background:var(--paper);box-shadow:0 1px 8px rgba(30,50,70,.12);display:none}
+  .doc{border-left:6px solid var(--blue);padding:34px 42px 42px}
+  .doc-head{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid var(--blue);padding-bottom:14px;margin-bottom:8px;flex-wrap:wrap}
+  .doc-head h2{color:var(--blue);font-size:22px}
+  .doc-head .who{font-size:13px;color:var(--muted);text-align:right}
+  .doc-head .who b{color:var(--ink)}
+  .tagline{font-size:11px;color:var(--muted);font-style:italic;margin-bottom:22px}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:18px 0 6px}
+  .card{background:var(--wash);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+  .card .n{font-size:24px;font-weight:bold;color:var(--blue);line-height:1.1}
+  .card .l{font-size:12px;color:var(--muted);margin-top:2px}
+
+  h3.sec{color:var(--blue);font-size:15px;margin:30px 0 4px;padding-top:14px;border-top:1px solid var(--line)}
+  p.secnote{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+
+  .proj{padding:13px 0;border-bottom:1px solid var(--line)}
+  .proj:last-child{border-bottom:none}
+  .proj .top{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+  .proj .name{font-weight:bold;font-size:15px;flex:1;min-width:200px}
+  .chip{font-size:11px;font-weight:bold;border-radius:10px;padding:2px 9px;white-space:nowrap}
+  .chip.dev{color:var(--dev);background:var(--dev-bg)}
+  .chip.test{color:var(--test);background:var(--test-bg)}
+  .chip.req{color:#5a6a7a;background:#eceff2}
+  .chip.hold{color:var(--hold);background:var(--hold-bg)}
+  .chip.done{color:var(--ok);background:var(--ok-bg)}
+  .proj .meta{font-size:13px;color:var(--muted);margin-top:4px}
+  .proj .meta b{color:var(--ink);font-weight:bold}
+  .proj .block{margin-top:5px;font-size:13px;color:var(--hold)}
+  .proj .block::before{content:"Roadblock: ";font-weight:bold}
+  .proj .latest{margin-top:5px;font-size:13px;color:var(--ink)}
+  .proj .latest::before{content:"Latest: ";font-weight:bold;color:var(--muted)}
+
+  ul.plain{list-style:none}
+  ul.plain li{padding:6px 0;border-bottom:1px dotted var(--line);font-size:13.5px;display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
+  ul.plain li:last-child{border-bottom:none}
+  ul.plain .why{color:var(--muted);font-size:12.5px}
+
+  .twocol{columns:2;column-gap:34px}
+  @media (max-width:640px){.twocol{columns:1}.doc{padding:24px 20px 30px}}
+  .twocol li{break-inside:avoid;font-size:13.5px;padding:3px 0}
+
+  .foot{margin-top:30px;padding-top:12px;border-top:2px solid var(--blue);font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
+  .toast.show{opacity:1}
+
+  @media print{
+    body{background:#fff;font-size:12px}
+    .toolbar,#dropzone,#err,.toast{display:none !important}
+    #report{box-shadow:none;margin:0;max-width:none}
+    .doc{padding:0 0 0 14px;border-left-width:4px}
+    h3.sec{break-after:avoid}
+    .proj{break-inside:avoid}
+  }
+  @media (prefers-reduced-motion: reduce){*{transition:none !important}}
+
+#report{display:block !important;margin-top:26px}</style></head><body><div id="report"><div class="doc"><div class="doc-head">
+          <h2>Weekly Status Report</h2>
+          <div class="who"><b>ckonkol</b> · Information Technology<br>
+          Week of Aug 31 – Sep 6, 2026<br>
+          Data exported Aug 31, 2026</div>
+        </div>
+        <div class="tagline">Aqua-Aerobic Systems, Inc. · Protecting the World's Water</div><div class="cards">
+          <div class="card"><div class="n">10</div><div class="l">Active projects</div></div>
+          <div class="card"><div class="n">8</div><div class="l">On hold</div></div>
+          <div class="card"><div class="n">13</div><div class="l">Systems in maintenance</div></div>
+          <div class="card"><div class="n">10</div><div class="l">Daily checks &amp; reports</div></div>
+          <div class="card"><div class="n">2</div><div class="l">Completed this week</div></div>
+        </div><h3 class="sec">Top projects</h3>
+        <p class="secnote">Active projects ordered by priority. Estimated dates come from the tracker and shift with the recurring workload below.</p><div class="proj">
+            <div class="top"><span class="name">Supervisor Training</span>
+              <span class="chip dev">Development</span>
+              <span class="chip hold">High priority</span>
+            </div>
+            <div class="meta">
+              Estimated completion: <b>Sep 14, 2026</b>
+               · Create procedures and processes to help present and rollout AI training to supervisors
+              
+            </div>
+            <div class="meta">Milestone: Completed Message for users rights not able to connect to MCP Connector</div>
+            <div class="latest">Completed #1</div>
+          </div><div class="proj">
+            <div class="top"><span class="name">Convert CSDashboard to NODE JS APP</span>
+              <span class="chip test">Testing</span>
+              <span class="chip hold">High priority</span>
+            </div>
+            <div class="meta">
+              Estimated completion: <b>Sep 6, 2026</b>
+               · Replace windows app
+               · With: Sharri Greenlee,Kelsey Beaird
+            </div>
+            <div class="meta">Milestone: Testing to find issues</div>
+            <div class="latest">Users are testing</div>
+          </div><div class="proj">
+            <div class="top"><span class="name">Claude CoWork &amp; Gitea Server </span>
+              <span class="chip dev">Development</span>
+              <span class="chip hold">High priority</span>
+            </div>
+            <div class="meta">
+              Estimated completion: <b>Sep 14, 2026</b>
+              
+               · With: Chuck Konkol, Mike Hevey, James Horton
+            </div>
+            <div class="meta">Milestone: updating help file for users</div>
+            <div class="latest">Added new Field Service Techs</div>
+          </div><div class="proj">
+            <div class="top"><span class="name">New Intranet Site</span>
+              <span class="chip test">Testing</span>
+              <span class="chip hold">High priority</span>
+            </div>
+            <div class="meta">
+              Estimated completion: <b>date pending</b>
+              
+               · With: Mark Hughes,Carmen Shields,Robert Wiegand,Dave Smith,Tamera Knapp,Chuck Konkol,Blake Hoffmann
+            </div>
+            <div class="block">Pending Mark Hughes comments. Testing done.</div>
+            <div class="latest">Pending Mark;s Comments</div>
+          </div><div class="proj">
+            <div class="top"><span class="name">E-Number-Request-Form-App</span>
+              <span class="chip dev">Development</span>
+              <span class="chip hold">High priority</span>
+            </div>
+            <div class="meta">
+              Estimated completion: <b>date pending</b>
+              
+               · With: Terri Reid
+            </div>
+            <div class="block">Terry Reid Mentioned on hold until after budgets created</div>
+            <div class="latest">Testing</div>
+          </div><p class="secnote" style="margin-top:10px">Also active: CRM Project; Convert Ontime shipment report to web app; Convert Shipments Report to web app; Shop Procedures Web App; Customer Training Initiative – Aqua Storm &amp; Aqua Prime.</p><h3 class="sec">On hold</h3><ul class="plain"><li><span>RP Programming Request. </span><span class="why">On hold until for AI initiative</span></li><li><span>AcctSys Data SQL Migration</span><span class="why"></span></li><li><span>HR Chatbot</span><span class="why">Tested successfully. TBD</span></li><li><span>Rewrite Eng Etime</span><span class="why">Developing Node.js database &amp; app</span></li><li><span>Adding New Trip Types to CSDashboard / Warranty</span><span class="why">Scott updating AcctSys Tables after close</span></li><li><span>CSDashboard &amp; SSRS Ghant Reports</span><span class="why">Stephanie will meet with team and get back on what they decided on.</span></li><li><span>E-Number Request Form App</span><span class="why"></span></li><li><span>Mobile Web App for Field Services </span><span class="why">Pending on creating a YouTube channel (Marketing) and moving data (pending a new hire)</span></li></ul><h3 class="sec">Recurring daily workload</h3>
+        <p class="secnote">Standing checks and reports completed before or during each workday, plus systems kept in production. This time comes off the top of every day and is the main variable behind the project dates above.</p>
+        <ul class="twocol"><li>Morning Check List</li><li>Check VMS Schedule</li><li>Check PM2 Monitor</li><li>Check AquaCompany Search</li><li>Check PackingList Dashboard</li><li>Check 1-Minute Guide App</li><li>Check VMS System Today &amp; Active</li><li>Check Aqualocator</li><li>Monday by 7am: VMS Report</li><li>Monday by 10am: Weekly Report to Steve</li></ul><p class="secnote" style="margin-top:12px">Systems in active maintenance (13):</p><ul class="twocol"><li>New Aqua-Aerobic Systems Field Service Guide</li><li>Master Packing List</li><li>New Morning Checks Website</li><li>AquaLocator Updates</li><li>Helping Accounting Daily - AcctSys</li><li>Packing List Dashboard</li><li>Mobile App (AquaGuide)</li><li>Aqua Company Search Project</li><li>Aqua Visitor Management System (VMS)</li><li>SQL Maintenance</li><li>User Requests &lt; 15 Minutes</li><li>Citrix Resets</li><li>Project &amp; Tasks Briefing Report</li></ul><h3 class="sec">Completed this week</h3><ul class="plain"><li><span><b>Exec Dashboard - James Horton</b> (project)</span><span class="why">Aug 31, 2026</span></li><li><span>Update Cubicles Map on Second floor for Customer Service</span><span class="why">Aug 31, 2026</span></li></ul><p class="secnote" style="margin-top:10px">Open tasks carried forward: New AquaPRS Case Studies (7) for One-Minute App; Met With HR over HR Chat Bot Admin Tool ; Eng Report Request Change: Epicore Sales Order and Aqua Field Questions.</p><div class="foot">
+          <span>Generated from the Daily Aqua Briefing export · 8/31/2026</span>
+          <span>Aqua-Aerobic Systems, Inc. IT</span>
+        </div></div></div></body></html>
