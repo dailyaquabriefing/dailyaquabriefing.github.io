@@ -621,7 +621,17 @@ document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTr
   }
 }
 
-$("printBtn").addEventListener("click", ()=>window.print());
+$("printBtn").addEventListener("click", ()=>{
+  /* Browsers use the page title as the suggested "Save as PDF" filename */
+  const user = (DATA && DATA.info.user) || "report";
+  const wk = WEEK ? WEEK.start.toISOString().slice(0,10) : new Date().toISOString().slice(0,10);
+  const prevTitle = document.title;
+  document.title = "Weekly Report — " + user + " - " + wk;
+  const restore = ()=>{ document.title = prevTitle; window.removeEventListener("afterprint", restore); };
+  window.addEventListener("afterprint", restore);
+  window.print();
+  setTimeout(restore, 2000); /* fallback if afterprint never fires */
+});
 $("webBtn").addEventListener("click", ()=>{
   const css = document.querySelector("style").textContent;
   const user = (DATA && DATA.info.user) || "report";
