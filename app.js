@@ -303,7 +303,7 @@ html += '<ol style="padding-left:20px;">';
 
 filteredItems.forEach((item) => {
     const index = originalItems.indexOf(item);
-        let name, notes = '', status, priority = '', milestone = '', tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
+        let name, notes = '', status, priority = '', milestone = '', milestones = [], tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
         let dailyChecks = item.dailyChecks || [];    
         
         if (typeof item === 'object' && item !== null && item.name) {
@@ -312,6 +312,7 @@ filteredItems.forEach((item) => {
             status = item.status;
             priority = item.priority; 
             milestone = item.milestone;
+            milestones = Array.isArray(item.milestones) ? item.milestones : [];
             tester = item.tester;
             collaborators = item.collaborators;
             startDate = item.startDate;
@@ -409,6 +410,41 @@ if (safeNotes) {
             attachmentHtml = '<div style="margin-top:4px;">' + attachments.map(att => `<div class="item-attachment">🔗 <a href="${att.url}" target="_blank">${att.name}</a></div>`).join(' ') + '</div>';
         }
 
+        // Milestones (multi-milestone table, falls back to legacy single field)
+        let milestoneHtml = '';
+        if (milestones.length > 0) {
+            const doneCount = milestones.filter(m => m.done).length;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const rowsHtml = milestones.map(m => {
+                const isOverdue = !m.done && m.estActDate && new Date(m.estActDate + 'T00:00:00') < today;
+                const icon = m.done ? '✅' : (isOverdue ? '⚠️' : '⏳');
+                const nameStyle = m.done ? 'color:#888; text-decoration:line-through;' : '';
+                const estStyle = isOverdue ? 'color:#dc3545; font-weight:bold;' : 'color:#555;';
+                return `<tr>
+                    <td style="padding:3px 8px; border:1px solid #eee; ${nameStyle}">${icon} ${linkify(m.name || '')}</td>
+                    <td style="padding:3px 8px; border:1px solid #eee; text-align:center; color:#555;">${m.baseDate || '—'}</td>
+                    <td style="padding:3px 8px; border:1px solid #eee; text-align:center; ${estStyle}">${m.estActDate || '—'}</td>
+                </tr>`;
+            }).join('');
+            milestoneHtml = `
+                <div style="margin-top:6px;">
+                    <div style="font-size:0.8em; color:#666; font-weight:bold;">🏁 Milestones (${doneCount}/${milestones.length} complete)</div>
+                    <table style="border-collapse:collapse; font-size:0.8em; margin-top:2px;">
+                        <thead>
+                            <tr style="background:#f8f9fa; color:#666;">
+                                <th style="padding:3px 8px; border:1px solid #eee; text-align:left;">Milestone</th>
+                                <th style="padding:3px 8px; border:1px solid #eee;">Base Complete</th>
+                                <th style="padding:3px 8px; border:1px solid #eee;">Est/Act Complete</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
+                    </table>
+                </div>`;
+        } else if (milestone) {
+            milestoneHtml = `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next: ${linkify(milestone)}</small>`;
+        }
+
         // Comments logic - Form at bottom
         const commentCount = publicComments.length;
         const commentLabel = commentCount > 0 ? `💬 View/Add Comments (${commentCount})` : `💬 Add Question/Comment`;
@@ -455,7 +491,7 @@ if (safeNotes) {
         ${goal ? `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>` : ''}
         ${attachmentHtml}
         ${showPrivate && itComments ? `<div class="item-it-comment">🔒 <strong>Private:</strong> ${linkify(itComments)}</div>` : ''}
-        ${milestone ? `<small style="color:#999; font-size:0.8em; display:block;">🏁 Next: ${linkify(milestone)}</small>` : ''}
+        ${milestoneHtml}
         ${metaHtml}
     </div>
     ${commentsSectionHtml}
@@ -919,6 +955,16 @@ function exportReportToExcel() {
                 attachmentStr = atts.map(a => `[${a.name}] ${a.url}`).join("\r\n");
             }
 
+            let milestonesStr = "";
+            if (item.milestones && item.milestones.length > 0) {
+                milestonesStr = item.milestones.map(m => {
+                    let dates = [];
+                    if (m.baseDate) dates.push(`Base: ${m.baseDate}`);
+                    if (m.estActDate) dates.push(`Est/Act: ${m.estActDate}`);
+                    return `[${m.done ? 'Done' : 'Open'}] ${m.name}${dates.length ? ' — ' + dates.join(' | ') : ''}`;
+                }).join("\r\n");
+            }
+
             let row = {
                 Name: item.name,
                 Status: item.status || "",
@@ -927,6 +973,7 @@ function exportReportToExcel() {
                 Priority: item.priority || "",
                 Goal: item.goal || "",
                 Milestone: item.milestone || "",
+                Milestones: milestonesStr,
                 Start: item.startDate || "",
                 End: item.endDate || "",
                 Updated: item.lastUpdated || "",
@@ -1027,7 +1074,7 @@ const applyGlobalStyles = (ws) => {
             }
 
             // Column Widths
-            if (["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments"].includes(headerVal)) {
+            if (["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments", "Milestones"].includes(headerVal)) {
                 ws['!cols'][C] = { wch: COLUMN_WIDTH_CHARS };
             }
 
