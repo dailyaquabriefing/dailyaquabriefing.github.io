@@ -858,6 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (targetId) {
         document.getElementById('link-weekly').href = "?report=" + encodeURIComponent(targetId);
         document.getElementById('link-daily').href = "?daily=" + encodeURIComponent(targetId);
+        document.getElementById('link-status-report').href = "weekly-report.html?report=" + encodeURIComponent(targetId);
 
         db.collection('briefings').doc(targetId).get().then(doc => {
             if (doc.exists) {
