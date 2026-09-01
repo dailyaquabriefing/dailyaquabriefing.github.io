@@ -5,6 +5,14 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-09-01
+
+### Changed
+- Weekly report milestone codes: **C** now also applies when Base and Est/Act dates are both entered (not just the done checkbox); **N/S** shows when a milestone has no activity (no dates, not done).
+- The ✔ marker and the "Act" date label follow the same complete rule, so a milestone with both dates reads as finished throughout the row.
+- The **Y** (late) check now falls back to the Base date when no Est/Act date is entered, and the red highlight lands on whichever date is overdue.
+- Milestone legend updated to spell out all four codes (C / G / Y / N/S).
+
 ## [1.5.1] - 2026-09-01
 
 ### Changed

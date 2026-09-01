@@ -428,13 +428,18 @@ function buildReport(){
     if(block) h += `<tr class="note"><td colspan="4">${esc(block)}</td></tr>`;
     for(const ms of (p.MilestoneList||[])){
       const b = toDate(ms.baseDate), e = toDate(ms.estActDate);
-      const late = !ms.done && e && e < new Date();
-      const [mcls,mcode] = ms.done ? ["st-c","C"] : (late ? ["st-y","Y"] : ["st-g","G"]);
+      /* Complete when marked done, or when both Base and Est/Act dates are entered.
+         N/S when there is no activity on the milestone (no dates, not done). */
+      const complete = ms.done || (b && e);
+      const noActivity = !complete && !b && !e;
+      const due = e || b;
+      const late = !complete && due && due < new Date();
+      const [mcls,mcode] = complete ? ["st-c","C"] : (noActivity ? ["st-ns","N/S"] : (late ? ["st-y","Y"] : ["st-g","G"]));
       h += `<tr class="msrow">
-              <td>${ms.done ? "✔" : "◦"} ${esc(ms.name)}</td>
+              <td>${complete ? "✔" : "◦"} ${esc(ms.name)}</td>
               <td class="st ${mcls}"><span>${mcode}</span></td>
-              <td class="datecol">${b ? "Base " + esc(fmtShort(b)) : ""}</td>
-              <td class="datecol${late ? " late" : ""}">${e ? (ms.done ? "Act " : "Est ") + esc(fmtShort(e)) : ""}</td>
+              <td class="datecol${late && !e ? " late" : ""}">${b ? "Base " + esc(fmtShort(b)) : ""}</td>
+              <td class="datecol${late && e ? " late" : ""}">${e ? (complete ? "Act " : "Est ") + esc(fmtShort(e)) : ""}</td>
             </tr>`;
     }
   }
@@ -447,7 +452,7 @@ function buildReport(){
   }
   h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing.</p>`;
   if(top.some(p=>(p.MilestoneList||[]).length)){
-    h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete &middot; G = on track &middot; Y = past estimated date &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
+    h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or Base and Est/Act dates both entered) &middot; G = in progress &middot; Y = past its date without completion &middot; N/S = no activity yet &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
   }
 
   if(onHold.length){
