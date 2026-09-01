@@ -5,6 +5,13 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-09-01
+
+### Changed
+- Weekly report: Key Projects now use an attention-first sort — Delayed or roadblocked projects float to the top, then priority (High → Low), then nearest Est/Act complete date, with most-recently-updated as the tiebreaker. This also changes which projects make the top-10 cut.
+- Admin dashboard: new status ranking for auto-sort and "Sort by Status" — Delayed first (was second-to-last), in-flight work next (Requirement Gathering → On Track → Development → Testing → Training → Follow-Up), then Future and On-Hold, with Completed and Maintenance at the bottom. The public viewer follows the saved order automatically.
+- Analytics charts/status table and the Excel export's status breakdown use the same new order (colors unchanged), as does the weekly report's "Status of Projects" chip band.
+
 ## [1.5.2] - 2026-09-01
 
 ### Changed

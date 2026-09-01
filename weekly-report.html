@@ -317,7 +317,7 @@ function parseWorkbook(wb){
 }
 
 /* ---------- status display (uses the briefing's real project statuses) ---------- */
-const STATUS_ORDER = ["Future","Requirement Gathering","On Track","Development","Testing","Training","Completed","Follow-Up","Maintenance","Delayed","On-Hold"];
+const STATUS_ORDER = ["Delayed","Requirement Gathering","On Track","Development","Testing","Training","Follow-Up","Future","On-Hold","Completed","Maintenance"];
 const STATUS_COLORS = {
   "Future":                "#adb5bd",
   "Requirement Gathering": "#17a2b8",
@@ -371,7 +371,19 @@ function buildReport(){
   const wkStart = WEEK.start, wkEnd = new Date(WEEK.end.getTime()+86399000);
 
   const active = projects.filter(p=>ACTIVE_STATUSES.includes(p.Status));
-  active.sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3) || (toDate(b.Updated)||0)-(toDate(a.Updated)||0));
+  /* Attention-first sort: Delayed/roadblocked projects first, then priority,
+     then nearest Est/Act complete date, then most recently updated. */
+  active.sort((a,b)=>{
+    const attnA = (a.Status==="Delayed" || looksBlocked(a)) ? 0 : 1;
+    const attnB = (b.Status==="Delayed" || looksBlocked(b)) ? 0 : 1;
+    if(attnA!==attnB) return attnA-attnB;
+    const pri = (PRI[a.Priority]??3)-(PRI[b.Priority]??3);
+    if(pri) return pri;
+    const endA = toDate(a.End), endB = toDate(b.End);
+    const eA = endA ? endA.getTime() : Infinity, eB = endB ? endB.getTime() : Infinity;
+    if(eA!==eB) return eA-eB;
+    return (toDate(b.Updated)||0)-(toDate(a.Updated)||0);
+  });
   const top = active.slice(0,10);
   const rest = active.slice(10);
   const onHold = projects.filter(p=>p.Status==="On-Hold").sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));

@@ -666,22 +666,22 @@ function renderPublicAnalytics() {
 
     // Status order matches admin.html STATUS_ORDER
     const STATUS_ORDER_KEYS = [
-        'Future', 'Requirement Gathering', 'On Track', 'Development',
-        'Testing', 'Training', 'Completed', 'Follow-Up',
-        'Maintenance', 'Delayed', 'On-Hold', 'Other'
+        'Delayed', 'Requirement Gathering', 'On Track', 'Development',
+        'Testing', 'Training', 'Follow-Up', 'Future',
+        'On-Hold', 'Completed', 'Maintenance', 'Other'
     ];
     const STATUS_COLORS = [
-        '#adb5bd', // Future
+        '#dc3545', // Delayed
         '#17a2b8', // Requirement Gathering
         '#28a745', // On Track
         '#6610f2', // Development
         '#ff9f43', // Testing
         '#20c997', // Training
-        '#800080', // Completed
         '#fd7e14', // Follow-Up
-        '#9b59b6', // Maintenance
-        '#dc3545', // Delayed
+        '#adb5bd', // Future
         '#6c757d', // On-Hold
+        '#800080', // Completed
+        '#9b59b6', // Maintenance
         '#e2e6ea'  // Other
     ];
 
@@ -1105,9 +1105,9 @@ const applyGlobalStyles = (ws) => {
         const daily    = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
 
         const statusOrder = [
-            'Future', 'Requirement Gathering', 'On Track', 'Development',
-            'Testing', 'Training', 'Completed', 'Follow-Up',
-            'Maintenance', 'Delayed', 'On-Hold'
+            'Delayed', 'Requirement Gathering', 'On Track', 'Development',
+            'Testing', 'Training', 'Follow-Up', 'Future',
+            'On-Hold', 'Completed', 'Maintenance'
         ];
 
         const rows = [

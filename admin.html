@@ -1381,18 +1381,20 @@
             });
         }
 
+/* Daily-worklist order: what needs unsticking first, in-flight work next,
+   pipeline and paused after, finished/ongoing at the bottom. */
 const STATUS_ORDER = {
-    "Future":                1,
+    "Delayed":               1,
     "Requirement Gathering": 2,
     "On Track":              3,
     "Development":           4,
     "Testing":               5,
     "Training":              6,
-    "Completed":             7,
-    "Follow-Up":             8,
-    "Maintenance":           9,
-    "Delayed":              10,
-    "On-Hold":              11
+    "Follow-Up":             7,
+    "Future":                8,
+    "On-Hold":               9,
+    "Completed":            10,
+    "Maintenance":          11
 };
 
 function autoSortList(type) {
