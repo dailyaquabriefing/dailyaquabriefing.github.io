@@ -79,6 +79,11 @@
   tr.note td{font-size:12.5px;color:#7a4a08;padding-top:0}
   tr.note td::before{content:"Roadblock: ";font-weight:bold}
   tr.subnote td{font-size:12.5px;color:var(--muted);padding-top:0}
+  table.tpl tbody tr.msrow{background:#f7fafc}
+  tr.msrow td{font-size:12.5px;color:var(--muted);padding-top:3px;padding-bottom:3px;border-top:1px dotted #cfdce8}
+  tr.msrow td:first-child{padding-left:30px}
+  tr.msrow .st span{min-width:34px;padding:1px 6px;font-size:11px}
+  tr.msrow td.late{color:#b02a2a;font-weight:bold}
 
   .legend{font-size:12px;color:var(--muted);margin-top:8px}
   .legend b{font-weight:bold;color:var(--ink)}
@@ -208,7 +213,7 @@ function milestoneSummary(item){
 /* Map a Firestore item to the same row shape the Excel sheets produce */
 function itemToRow(item){
   if(typeof item === "string"){
-    return {Name:item, Status:"", Priority:"", Goal:"", Milestone:"", Notes:"", Start:"", End:"", Updated:""};
+    return {Name:item, Status:"", Priority:"", Goal:"", Milestone:"", Notes:"", Start:"", End:"", Updated:"", MilestoneList:[]};
   }
   return {
     Name: item.name || "",
@@ -219,8 +224,31 @@ function itemToRow(item){
     Notes: stripHtml(item.notes || ""),
     Start: item.startDate || "",
     End: item.endDate || "",
-    Updated: item.lastUpdated || ""
+    Updated: item.lastUpdated || "",
+    MilestoneList: Array.isArray(item.milestones) ? item.milestones : []
   };
+}
+
+/* Parse the Excel export's Milestones cell ("[Done|Open] Name — Base: d | Est/Act: d" per line) */
+function parseMilestonesCell(v){
+  if(!v) return [];
+  const lines = String(v).replace(/_x000d_/gi,"\n").replace(/\r/g,"\n").split("\n").map(t=>t.trim()).filter(Boolean);
+  const out = [];
+  for(const line of lines){
+    const m = line.match(/^\[(Done|Open)\]\s*(.*)$/i);
+    if(!m) continue;
+    let name = m[2], baseDate = "", estActDate = "";
+    const parts = name.split(/\s+—\s+(?=Base:|Est\/Act:)/);
+    if(parts.length > 1){
+      name = parts[0];
+      for(const seg of parts[1].split("|").map(s=>s.trim())){
+        if(seg.startsWith("Base:")) baseDate = seg.slice(5).trim();
+        else if(seg.startsWith("Est/Act:")) estActDate = seg.slice(8).trim();
+      }
+    }
+    out.push({name: name, baseDate: baseDate, estActDate: estActDate, done: /^done$/i.test(m[1])});
+  }
+  return out;
 }
 
 function loadLive(reportId){
@@ -276,11 +304,12 @@ function parseWorkbook(wb){
       if(r.Metric==="Exported") info.exported = toDate(r.Count);
     }
   }
+  const withMilestones = r => { r.MilestoneList = parseMilestonesCell(r.Milestones); return r; };
   return {
     info,
     daily: sheetToObjects(wb.Sheets["Daily Tasks"]),
-    projects: sheetToObjects(wb.Sheets["Projects"]),
-    tasks: sheetToObjects(wb.Sheets["Active Tasks"])
+    projects: sheetToObjects(wb.Sheets["Projects"]).map(withMilestones),
+    tasks: sheetToObjects(wb.Sheets["Active Tasks"]).map(withMilestones)
   };
 }
 
@@ -357,12 +386,25 @@ function buildReport(){
             <td class="datecol">${est ? esc(fmtShort(est)) : "TBD"}</td>
           </tr>`;
     if(block) h += `<tr class="note"><td colspan="4">${esc(block)}</td></tr>`;
+    for(const ms of (p.MilestoneList||[])){
+      const b = toDate(ms.baseDate), e = toDate(ms.estActDate);
+      const late = !ms.done && e && e < new Date();
+      h += `<tr class="msrow">
+              <td>${ms.done ? "✔" : "◦"} ${esc(ms.name)}</td>
+              <td class="st ${ms.done ? "st-c" : ""}">${ms.done ? "<span>C</span>" : ""}</td>
+              <td class="datecol">${b ? "Base " + esc(fmtShort(b)) : ""}</td>
+              <td class="datecol${late ? " late" : ""}">${e ? (ms.done ? "Act " : "Est ") + esc(fmtShort(e)) : ""}</td>
+            </tr>`;
+    }
   }
   h += `</tbody></table>`;
   if(rest.length){
     h += `<p class="legend">Also active: ${rest.map(p=>esc(p.Name)).join("; ")}.</p>`;
   }
   h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / blocked &middot; N/S = Not started</p>`;
+  if(top.some(p=>(p.MilestoneList||[]).length)){
+    h += `<p class="legend"><b>Milestones</b> (indented rows): ✔ = complete &middot; ◦ = open &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date &middot; red = past estimated date</p>`;
+  }
 
   if(onHold.length){
     h += `<div class="bar">On Hold</div>

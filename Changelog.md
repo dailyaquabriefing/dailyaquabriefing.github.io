@@ -5,6 +5,14 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-01
+
+### Added
+- Weekly report: project milestones now appear as indented sub-rows under each project in the Key Projects table — ✔/◦ marker, `C` badge when complete, Base date, and Est (open) or Act (done) date. Overdue estimates show in red.
+- Milestones render in both data modes: live Firestore data passes the `milestones` array through; the `.xlsx` fallback parses the export's `Milestones` column back into the same list.
+- A milestone legend line appears under the status legend, only when a listed project has milestones.
+- Milestone rows carry through to print/PDF, the downloadable web report, and "Copy as email text".
+
 ## [1.2.0] - 2026-09-01
 
 ### Added
