@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Briefing User Management</title>
+    <link rel="icon" href="favicon.ico">
+    <style>
+        :root {
+            --primary: #0078D4;
+            --bg: #f4f7fa;
+            --white: #ffffff;
+            --text: #333;
+            --border: #e0e0e0;
+            --danger: #dc3545;
+            --success: #28a745;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        /* Login Screen */
+        #login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+        }
+        .login-box {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 450px;
+        }
+        .login-box h2 { margin-top: 0; }
+
+        /* Main App */
+        #app-container {
+            display: none;
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        header h1 { margin: 0; font-size: 1.2rem; }
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .content { padding: 20px; }
+
+        /* Forms & buttons */
+        input[type=email], input[type=text], input[type=password] {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+        }
+        .w-full { width: 100%; margin-bottom: 12px; }
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: #f9f9f9;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 2px;
+        }
+        .btn-small:hover { background: #eef4fb; }
+        .btn-danger-outline { color: var(--danger); border-color: var(--danger); }
+
+        /* Add-user panel */
+        .add-panel {
+            background: #f9fbfd;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .add-panel h2 { margin: 0 0 10px 0; font-size: 1rem; }
+        .add-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .add-row input { flex: 1; min-width: 200px; margin-bottom: 0; }
+
+        /* Users table */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+        th { background: #f9f9f9; font-size: 0.8rem; text-transform: uppercase; color: #666; }
+        tr.disabled-row td { color: #999; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-active { background: #e6f4ea; color: var(--success); }
+        .badge-disabled { background: #fdecea; color: var(--danger); }
+
+        /* Status message */
+        #status-msg {
+            display: none;
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+        .msg-ok { display: block !important; background: #e6f4ea; color: #1e7e34; }
+        .msg-err { display: block !important; background: #fdecea; color: var(--danger); }
+
+        /* Welcome snippet after creating a user */
+        #welcome-box {
+            display: none;
+            background: #fffbe8;
+            border: 1px solid #f0e0a0;
+            border-radius: 6px;
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+        #welcome-box pre {
+            background: white;
+            border: 1px solid var(--border);
+            padding: 10px;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+        }
+        .muted { color: #777; font-size: 0.85rem; }
+        @media (max-width: 700px) {
+            .hide-mobile { display: none; }
+            .login-box { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login -->
+    <div id="login-container">
+        <div class="login-box">
+            <h2>User Management</h2>
+            <p class="muted">Sign in with your admin account (IT only).</p>
+            <input type="email" id="login-email" class="w-full" placeholder="name@aqua-aerobic.com">
+            <input type="password" id="login-password" class="w-full" placeholder="Password">
+            <p id="login-error" style="color: var(--danger); font-size: 0.9rem; display: none;"></p>
+            <button class="btn btn-primary w-full" onclick="loginWithEmail()">Sign In</button>
+        </div>
+    </div>
+
+    <!-- App -->
+    <div id="app-container">
+        <header>
+            <h1>Daily Briefing — User Management</h1>
+            <div>
+                <span id="admin-email" style="margin-right:10px; font-size:0.85rem;"></span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </header>
+        <div class="content">
+            <div id="status-msg"></div>
+
+            <!-- Add user -->
+            <div class="add-panel">
+                <h2>Add New User</h2>
+                <div class="add-row">
+                    <input type="email" id="new-email" placeholder="jdoe@aqua-aerobic.com">
+                    <input type="text" id="new-password" placeholder="Default password (min 6 chars)">
+                    <button class="btn-small" onclick="generatePassword()">Generate</button>
+                    <button class="btn btn-primary" onclick="createUser()">Create User</button>
+                </div>
+                <p class="muted" style="margin-bottom:0;">
+                    The new user signs in at <a href="admin.html">admin.html</a> with this email and password,
+                    links their Aqua Network ID, then installs the desktop agent (see <a href="setup.html">setup</a>).
+                </p>
+            </div>
+
+            <!-- Welcome snippet -->
+            <div id="welcome-box">
+                <b>User created.</b> Send them this:
+                <pre id="welcome-text"></pre>
+                <button class="btn-small" onclick="copyWelcome()">Copy to clipboard</button>
+            </div>
+
+            <!-- Users -->
+            <h2 style="font-size:1rem;">Existing Users <button class="btn-small" onclick="loadUsers()">Refresh</button></h2>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Network ID</th>
+                            <th class="hide-mobile">Created</th>
+                            <th class="hide-mobile">Last Sign-In</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-body">
+                        <tr><td colspan="6" class="muted">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="muted">"Network ID" is filled in after the user's first login to the dashboard, when they link their Aqua Network ID.</p>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+            authDomain: "dailybriefing-fe7df.firebaseapp.com",
+            projectId: "dailybriefing-fe7df"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        const FUNCTION_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/manageUsers";
+        let currentUser = null;
+        let usersByUid = {};
+
+        // --- Auth ---
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                document.getElementById('admin-email').textContent = user.email;
+                loadUsers();
+            } else {
+                document.getElementById('login-container').style.display = 'flex';
+                document.getElementById('app-container').style.display = 'none';
+            }
+        });
+
+        function loginWithEmail() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const errEl = document.getElementById('login-error');
+            errEl.style.display = 'none';
+            if (!email || !pass) {
+                errEl.textContent = "Please enter email and password";
+                errEl.style.display = 'block';
+                return;
+            }
+            auth.signInWithEmailAndPassword(email, pass).catch(error => {
+                errEl.textContent = error.message;
+                errEl.style.display = 'block';
+            });
+        }
+        document.getElementById('login-password').addEventListener('keydown', e => {
+            if (e.key === 'Enter') loginWithEmail();
+        });
+
+        function logout() { auth.signOut(); }
+
+        // --- API helper ---
+        async function api(payload) {
+            const token = await currentUser.getIdToken();
+            const res = await fetch(FUNCTION_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
+            return data;
+        }
+
+        function showMsg(text, isError) {
+            const el = document.getElementById('status-msg');
+            el.textContent = text;
+            el.className = isError ? 'msg-err' : 'msg-ok';
+            if (!isError) setTimeout(() => { el.className = ''; }, 5000);
+        }
+
+        // --- Users list ---
+        async function loadUsers() {
+            const body = document.getElementById('users-body');
+            body.innerHTML = '<tr><td colspan="6" class="muted">Loading…</td></tr>';
+            try {
+                const data = await api({ action: 'list' });
+                renderUsers(data.users || []);
+            } catch (e) {
+                body.innerHTML = '<tr><td colspan="6" style="color:var(--danger);">' + esc(e.message) + '</td></tr>';
+            }
+        }
+
+        function renderUsers(users) {
+            users.sort((a, b) => (a.email || '').localeCompare(b.email || ''));
+            usersByUid = {};
+            users.forEach(u => { usersByUid[u.uid] = u; });
+            const body = document.getElementById('users-body');
+            if (!users.length) {
+                body.innerHTML = '<tr><td colspan="6" class="muted">No users found.</td></tr>';
+                return;
+            }
+            body.innerHTML = users.map(u => {
+                const isSelf = currentUser && u.uid === currentUser.uid;
+                const status = u.disabled
+                    ? '<span class="badge badge-disabled">Disabled</span>'
+                    : '<span class="badge badge-active">Active</span>';
+                let actions = '<button class="btn-small" onclick="resetPassword(\'' + u.uid + '\')">Reset&nbsp;Password</button>';
+                if (!isSelf) {
+                    actions += '<button class="btn-small" onclick="toggleDisabled(\'' + u.uid + '\')">' + (u.disabled ? 'Enable' : 'Disable') + '</button>';
+                    actions += '<button class="btn-small btn-danger-outline" onclick="deleteUser(\'' + u.uid + '\')">Delete</button>';
+                } else {
+                    actions += ' <span class="muted">(you)</span>';
+                }
+                return '<tr class="' + (u.disabled ? 'disabled-row' : '') + '">' +
+                    '<td>' + esc(u.email) + '</td>' +
+                    '<td>' + (u.reportId ? esc(u.reportId) : '<span class="muted">not linked</span>') + '</td>' +
+                    '<td class="hide-mobile">' + fmtDate(u.created) + '</td>' +
+                    '<td class="hide-mobile">' + (u.lastSignIn ? fmtDate(u.lastSignIn) : '<span class="muted">never</span>') + '</td>' +
+                    '<td>' + status + '</td>' +
+                    '<td>' + actions + '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        // --- Actions ---
+        async function createUser() {
+            const email = document.getElementById('new-email').value.trim();
+            const password = document.getElementById('new-password').value;
+            if (!email || !password) { showMsg('Enter an email and a default password.', true); return; }
+            if (password.length < 6) { showMsg('Password must be at least 6 characters.', true); return; }
+            try {
+                await api({ action: 'create', email: email, password: password });
+                document.getElementById('welcome-text').textContent =
+                    'Welcome to Daily Aqua Briefing!\n\n' +
+                    '1. Go to: https://dailyaquabriefing.github.io/admin.html\n' +
+                    '2. Sign in with:\n' +
+                    '   Email: ' + email + '\n' +
+                    '   Password: ' + password + '\n' +
+                    '3. Link your Aqua Network ID when prompted (e.g. jdoe).\n' +
+                    '4. Install the desktop agent: https://dailyaquabriefing.github.io/setup.html';
+                document.getElementById('welcome-box').style.display = 'block';
+                document.getElementById('new-email').value = '';
+                document.getElementById('new-password').value = '';
+                showMsg('Created ' + email, false);
+                loadUsers();
+            } catch (e) {
+                showMsg('Create failed: ' + e.message, true);
+            }
+        }
+
+        async function resetPassword(uid) {
+            const email = (usersByUid[uid] || {}).email || uid;
+            const pw = prompt('New default password for ' + email + ' (min 6 chars):');
+            if (pw === null) return;
+            if (pw.length < 6) { showMsg('Password must be at least 6 characters.', true); return; }
+            try {
+                await api({ action: 'setPassword', uid: uid, password: pw });
+                showMsg('Password updated for ' + email + '. Give them the new password.', false);
+            } catch (e) {
+                showMsg('Reset failed: ' + e.message, true);
+            }
+        }
+
+        async function toggleDisabled(uid) {
+            const u = usersByUid[uid] || {};
+            const email = u.email || uid;
+            const disable = !u.disabled;
+            if (disable && !confirm('Disable ' + email + '? They will not be able to sign in.')) return;
+            try {
+                await api({ action: 'setDisabled', uid: uid, disabled: disable });
+                showMsg(email + (disable ? ' disabled.' : ' enabled.'), false);
+                loadUsers();
+            } catch (e) {
+                showMsg('Update failed: ' + e.message, true);
+            }
+        }
+
+        async function deleteUser(uid) {
+            const email = (usersByUid[uid] || {}).email || uid;
+            if (!confirm('Delete ' + email + '?\n\nThis removes their login and dashboard link. Their briefing data stays in the database.')) return;
+            try {
+                await api({ action: 'delete', uid: uid });
+                showMsg(email + ' deleted.', false);
+                loadUsers();
+            } catch (e) {
+                showMsg('Delete failed: ' + e.message, true);
+            }
+        }
+
+        // --- Helpers ---
+        function generatePassword() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+            let pw = 'Aqua-';
+            const rand = new Uint32Array(8);
+            crypto.getRandomValues(rand);
+            for (let i = 0; i < 8; i++) pw += chars[rand[i] % chars.length];
+            document.getElementById('new-password').value = pw;
+        }
+
+        function copyWelcome() {
+            navigator.clipboard.writeText(document.getElementById('welcome-text').textContent)
+                .then(() => showMsg('Copied to clipboard.', false));
+        }
+
+        function esc(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function fmtDate(s) {
+            if (!s) return '';
+            const d = new Date(s);
+            if (isNaN(d)) return esc(s);
+            return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+    </script>
+</body>
+</html>
