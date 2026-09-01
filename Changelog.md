@@ -5,6 +5,14 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-09-01
+
+### Changed
+- Weekly report: restored the steering committee's C/G/T/Y/N-S letter-code badges in the Key Projects, On Hold, and Completed This Week tables; the project's actual briefing status now appears as a small label under each code.
+- Every milestone row now carries its own code badge: C = complete, G = open and on track, Y = open and past its estimated date.
+- Status code mapping extended to all briefing statuses: On Track / Development / Training / Follow-Up → G (Y if a roadblock is detected), Testing → T, Delayed and On-Hold → Y, Future and Requirement Gathering → N/S, Completed → C.
+- Legends restored/updated to explain the letter codes for both projects and milestones. The "Status of Projects" chip summary band is unchanged.
+
 ## [1.5.0] - 2026-09-01
 
 ### Added
