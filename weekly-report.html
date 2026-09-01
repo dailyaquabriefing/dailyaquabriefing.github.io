@@ -7,30 +7,27 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
-    --blue:#004C97;
-    --blue-dark:#003a73;
-    --ink:#1e2833;
+    --bar:#2E75B6;          /* section bar blue, matches template */
+    --bar-dark:#215a8f;
+    --ink:#1a1a1a;
     --muted:#5a6a7a;
     --paper:#ffffff;
     --wash:#eef3f8;
-    --line:#c9d6e2;
-    --hold:#a4540f;
-    --hold-bg:#fdf3e7;
-    --ok:#1f6b43;
-    --ok-bg:#e9f4ee;
-    --test:#7a5ea8;
-    --test-bg:#f1ecf8;
-    --dev:#004C97;
-    --dev-bg:#e7eef7;
+    --row-blue:#dbe7f2;     /* alternating row blue */
+    --row-grey:#efefef;     /* alternating row grey */
+    --border:#9db8d2;
+    --st-c:#41a0d6;         /* Complete */
+    --st-g:#57b45c;         /* Green / on track */
+    --st-y:#e0a02f;         /* Yellow / on hold, at risk */
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:Arial, Helvetica, sans-serif;color:var(--ink);background:var(--wash);font-size:15px;line-height:1.45}
+  body{font-family:Arial, Helvetica, sans-serif;color:var(--ink);background:var(--wash);font-size:15px;line-height:1.4}
 
   /* ---- App chrome (hidden on print) ---- */
-  .toolbar{background:var(--blue);color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .toolbar{background:var(--bar-dark);color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
   .toolbar h1{font-size:17px;font-weight:bold;flex:1;min-width:220px}
   .toolbar h1 small{display:block;font-size:11px;font-weight:normal;opacity:.85;margin-top:2px}
-  .toolbar button, .toolbar label.btn{background:#fff;color:var(--blue);border:none;border-radius:4px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit}
+  .toolbar button, .toolbar label.btn{background:#fff;color:var(--bar-dark);border:none;border-radius:4px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit}
   .toolbar button:disabled{opacity:.45;cursor:default}
   .toolbar button:focus-visible, .toolbar label.btn:focus-within{outline:3px solid #ffd268;outline-offset:2px}
   .toolbar input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
@@ -38,69 +35,65 @@
   .weekpick select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none}
 
   /* ---- Drop zone ---- */
-  #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--line);border-radius:8px;padding:56px 32px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s}
-  #dropzone.drag{border-color:var(--blue);background:#f4f8fc}
-  #dropzone .big{font-size:19px;font-weight:bold;color:var(--blue);margin-bottom:10px}
+  #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--border);border-radius:8px;padding:56px 32px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s}
+  #dropzone.drag{border-color:var(--bar);background:#f4f8fc}
+  #dropzone .big{font-size:19px;font-weight:bold;color:var(--bar-dark);margin-bottom:10px}
   #dropzone p{color:var(--muted);max-width:520px;margin:0 auto 6px}
   #dropzone .steps{margin-top:18px;text-align:left;display:inline-block;color:var(--ink)}
   #dropzone .steps li{margin:4px 0 4px 20px}
   #err{max-width:860px;margin:14px auto;background:#fbe9e9;border:1px solid #d99;border-radius:6px;padding:12px 16px;color:#7a1f1f;display:none}
 
-  /* ---- Report document ---- */
+  /* ---- Report document, template style ---- */
   #report{max-width:860px;margin:26px auto 60px;background:var(--paper);box-shadow:0 1px 8px rgba(30,50,70,.12);display:none}
-  .doc{border-left:6px solid var(--blue);padding:34px 42px 42px}
-  .doc-head{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid var(--blue);padding-bottom:14px;margin-bottom:8px;flex-wrap:wrap}
-  .doc-head h2{color:var(--blue);font-size:22px}
-  .doc-head .who{font-size:13px;color:var(--muted);text-align:right}
-  .doc-head .who b{color:var(--ink)}
-  .tagline{font-size:11px;color:var(--muted);font-style:italic;margin-bottom:22px}
+  .doc{padding:30px 34px 40px}
+  .doc-title{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;font-size:13px;color:var(--muted)}
+  .doc-title b{color:var(--ink);font-size:16px}
 
-  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:18px 0 6px}
-  .card{background:var(--wash);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
-  .card .n{font-size:24px;font-weight:bold;color:var(--blue);line-height:1.1}
-  .card .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .bar{background:var(--bar);color:#fff;font-weight:bold;font-size:15px;padding:8px 14px;border:1px solid var(--bar-dark);margin-top:22px}
+  .bar.center{text-align:center}
+  .bar:first-of-type{margin-top:0}
 
-  h3.sec{color:var(--blue);font-size:15px;margin:30px 0 4px;padding-top:14px;border-top:1px solid var(--line)}
-  p.secnote{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+  .pctbox{border:1px solid var(--ink);border-top:none;text-align:center;font-size:26px;font-weight:bold;padding:22px 10px;background:#fff}
+  .pctbox small{display:block;font-size:11.5px;font-weight:normal;color:var(--muted);margin-top:6px}
 
-  .proj{padding:13px 0;border-bottom:1px solid var(--line)}
-  .proj:last-child{border-bottom:none}
-  .proj .top{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
-  .proj .name{font-weight:bold;font-size:15px;flex:1;min-width:200px}
-  .chip{font-size:11px;font-weight:bold;border-radius:10px;padding:2px 9px;white-space:nowrap}
-  .chip.dev{color:var(--dev);background:var(--dev-bg)}
-  .chip.test{color:var(--test);background:var(--test-bg)}
-  .chip.req{color:#5a6a7a;background:#eceff2}
-  .chip.hold{color:var(--hold);background:var(--hold-bg)}
-  .chip.done{color:var(--ok);background:var(--ok-bg)}
-  .proj .meta{font-size:13px;color:var(--muted);margin-top:4px}
-  .proj .meta b{color:var(--ink);font-weight:bold}
-  .proj .block{margin-top:5px;font-size:13px;color:var(--hold)}
-  .proj .block::before{content:"Roadblock: ";font-weight:bold}
-  .proj .latest{margin-top:5px;font-size:13px;color:var(--ink)}
-  .proj .latest::before{content:"Latest: ";font-weight:bold;color:var(--muted)}
+  table.tpl{width:100%;border-collapse:collapse;font-size:14px}
+  table.tpl th{background:#fff;font-weight:bold;text-align:left;padding:9px 12px;border-bottom:2px solid var(--border)}
+  table.tpl td{padding:9px 12px;vertical-align:top}
+  table.tpl tbody tr:nth-child(odd){background:var(--row-blue)}
+  table.tpl tbody tr:nth-child(even){background:var(--row-grey)}
+  table.tpl .st{text-align:center;font-weight:bold;width:70px;white-space:nowrap}
+  .st span{display:inline-block;min-width:44px;padding:3px 8px;border:1px solid rgba(0,0,0,.15)}
+  .st-c span{background:var(--st-c);color:#fff}
+  .st-g span{background:var(--st-g);color:#fff}
+  .st-y span{background:var(--st-y);color:#fff}
+  .st-ns span{background:#fff;color:var(--ink)}
+  td.datecol{white-space:nowrap;width:110px}
+  tr.note td{font-size:12.5px;color:#7a4a08;padding-top:0}
+  tr.note td::before{content:"Roadblock: ";font-weight:bold}
+  tr.subnote td{font-size:12.5px;color:var(--muted);padding-top:0}
 
-  ul.plain{list-style:none}
-  ul.plain li{padding:6px 0;border-bottom:1px dotted var(--line);font-size:13.5px;display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}
-  ul.plain li:last-child{border-bottom:none}
-  ul.plain .why{color:var(--muted);font-size:12.5px}
+  .legend{font-size:12px;color:var(--muted);margin-top:8px}
+  .legend b{font-weight:bold;color:var(--ink)}
 
-  .twocol{columns:2;column-gap:34px}
-  @media (max-width:640px){.twocol{columns:1}.doc{padding:24px 20px 30px}}
-  .twocol li{break-inside:avoid;font-size:13.5px;padding:3px 0}
-
-  .foot{margin-top:30px;padding-top:12px;border-top:2px solid var(--blue);font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+  .foot{margin-top:30px;padding-top:12px;border-top:2px solid var(--bar);font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
 
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
   .toast.show{opacity:1}
 
+  @media (max-width:640px){
+    .doc{padding:20px 14px 28px}
+    table.tpl{font-size:12.5px}
+    table.tpl th, table.tpl td{padding:7px 8px}
+    td.datecol{width:auto}
+  }
   @media print{
-    body{background:#fff;font-size:12px}
+    body{background:#fff;font-size:11.5px}
     .toolbar,#dropzone,#err,.toast{display:none !important}
     #report{box-shadow:none;margin:0;max-width:none}
-    .doc{padding:0 0 0 14px;border-left-width:4px}
-    h3.sec{break-after:avoid}
-    .proj{break-inside:avoid}
+    .doc{padding:0}
+    .bar{break-after:avoid}
+    table.tpl tr{break-inside:avoid}
+    .bar, .st span, table.tpl tbody tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
   @media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
@@ -144,9 +137,9 @@ const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&
 function toDate(v){
   if(v==null || v==="") return null;
   if(v instanceof Date && !isNaN(v)) return v;
-  if(typeof v==="number"){ // Excel serial
-    const d = XLSX.SSF ? new Date(Math.round((v-25569)*86400*1000)) : null;
-    return (d && !isNaN(d)) ? d : null;
+  if(typeof v==="number"){
+    const d = new Date(Math.round((v-25569)*86400*1000));
+    return !isNaN(d) ? d : null;
   }
   const s = String(v).trim();
   let d = new Date(s.replace(/,/, ""));
@@ -155,6 +148,7 @@ function toDate(v){
   if(m) return new Date(+m[1], +m[2]-1, +m[3]);
   return null;
 }
+const fmtShort = d => d ? (d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullYear()).slice(2) : "";
 const fmtDate = d => d ? d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
 const fmtRange = (a,b) => a.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " \u2013 " + b.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
 function mondayOf(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x; }
@@ -162,25 +156,12 @@ function firstLine(v){
   if(!v) return "";
   const s = String(v).replace(/_x000d_/gi,"\n").replace(/\r/g,"\n");
   const line = s.split("\n").map(t=>t.trim()).filter(Boolean)[0] || "";
-  return line.length>180 ? line.slice(0,177)+"\u2026" : line;
-}
-function commentInWeek(v, wkStart, wkEnd){
-  // Public_Comments entries look like: [8/31/2026 07:08 AM]: [Chuck Konkol]: text
-  if(!v) return "";
-  const s = String(v).replace(/_x000d_/gi,"\n").replace(/\r/g,"\n");
-  for(const line of s.split("\n")){
-    const m = line.match(/^\s*\[(\d{1,2}\/\d{1,2}\/\d{4})[^\]]*\]:?\s*(?:\[[^\]]*\]:?\s*)?(.*)$/);
-    if(m){
-      const d = new Date(m[1]);
-      if(!isNaN(d) && d>=wkStart && d<=wkEnd && m[2].trim()) return m[2].trim();
-    }
-  }
-  return "";
+  return line.length>160 ? line.slice(0,157)+"\u2026" : line;
 }
 
 /* ---------- parsing ---------- */
-let DATA = null;   // {info, daily, projects, tasks}
-let WEEK = null;   // {start, end}
+let DATA = null;
+let WEEK = null;
 
 function sheetToObjects(ws){
   const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:"", raw:true});
@@ -209,20 +190,27 @@ function parseWorkbook(wb){
   };
 }
 
-/* ---------- report building ---------- */
-const PRI = {High:0, Medium:1, Low:2, "":3};
-const chipFor = s => s==="Development" ? ["dev","Development"]
-  : s==="Testing" ? ["test","Testing"]
-  : s==="Requirement Gathering" ? ["req","Requirements"]
-  : s==="On-Hold" ? ["hold","On hold"]
-  : s==="Maintenance" ? ["req","Maintenance"]
-  : ["done","Completed"];
-
+/* ---------- status codes (template style) ---------- */
+/* C = Complete, G = In progress / on track, T = Testing (green), Y = On hold, N/S = Not started */
+function statusCode(p){
+  const blockedText = looksBlocked(p);
+  switch(p.Status){
+    case "Completed": return ["st-c","C"];
+    case "Development": return blockedText ? ["st-y","Y"] : ["st-g","G"];
+    case "Testing": return blockedText ? ["st-y","Y"] : ["st-g","T"];
+    case "Requirement Gathering": return ["st-ns","N/S"];
+    case "On-Hold": return ["st-y","Y"];
+    default: return ["st-ns","N/S"];
+  }
+}
 function looksBlocked(p){
   const t = ((p.Milestone||"")+" "+(p.Notes||"")).toLowerCase();
-  const hits = ["pending","on hold","waiting","gated","until"];
-  return hits.some(h=>t.includes(h)) ? firstLine(p.Milestone) || firstLine(p.Notes) : "";
+  return ["pending","on hold","waiting","gated","until"].some(h=>t.includes(h))
+    ? (firstLine(p.Milestone) || firstLine(p.Notes)) : "";
 }
+
+/* ---------- report ---------- */
+const PRI = {High:0, Medium:1, Low:2, "":3};
 
 function buildReport(){
   const {info, daily, projects, tasks} = DATA;
@@ -232,101 +220,101 @@ function buildReport(){
   active.sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3) || (toDate(b.Updated)||0)-(toDate(a.Updated)||0));
   const top = active.slice(0,10);
   const rest = active.slice(10);
-  const onHold = projects.filter(p=>p.Status==="On-Hold")
-    .sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
+  const onHold = projects.filter(p=>p.Status==="On-Hold").sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
   const maint = projects.filter(p=>p.Status==="Maintenance");
+  const completed = projects.filter(p=>p.Status==="Completed");
   const doneTasksWk = tasks.filter(t=>{
     const d = toDate(t.Updated) || toDate(t.End);
     return t.Status==="Completed" && d && d>=wkStart && d<=wkEnd;
   });
-  const doneProjWk = projects.filter(p=>{
+  const doneProjWk = completed.filter(p=>{
     const d = toDate(p.Updated);
-    return p.Status==="Completed" && d && d>=wkStart && d<=wkEnd;
+    return d && d>=wkStart && d<=wkEnd;
   });
-  const openTasks = tasks.filter(t=>t.Status!=="Completed");
+
+  // Overall portfolio completion: completed / (completed + active + on-hold).
+  // Maintenance systems are ongoing by design and are excluded.
+  const denom = completed.length + active.length + onHold.length;
+  const pct = denom ? Math.round(completed.length/denom*100) : 0;
 
   let h = "";
-  h += `<div class="doc-head">
-          <h2>Weekly Status Report</h2>
-          <div class="who"><b>${esc(info.user||"ckonkol")}</b> &middot; Information Technology<br>
-          Week of ${fmtRange(wkStart, WEEK.end)}<br>
-          ${info.exported ? "Data exported "+esc(fmtDate(info.exported)) : ""}</div>
-        </div>
-        <div class="tagline">Aqua-Aerobic Systems, Inc. &middot; Protecting the World's Water</div>`;
-
-  h += `<div class="cards">
-          <div class="card"><div class="n">${active.length}</div><div class="l">Active projects</div></div>
-          <div class="card"><div class="n">${onHold.length}</div><div class="l">On hold</div></div>
-          <div class="card"><div class="n">${maint.length}</div><div class="l">Systems in maintenance</div></div>
-          <div class="card"><div class="n">${daily.length}</div><div class="l">Daily checks &amp; reports</div></div>
-          <div class="card"><div class="n">${doneTasksWk.length + doneProjWk.length}</div><div class="l">Completed this week</div></div>
+  h += `<div class="doc-title">
+          <span><b>Weekly Status Report</b><br>${esc(info.user||"ckonkol")} &middot; Information Technology &middot; Aqua-Aerobic Systems, Inc.</span>
+          <span style="text-align:right">Week of ${fmtRange(wkStart, WEEK.end)}<br>${info.exported ? "Data exported "+esc(fmtDate(info.exported)) : ""}</span>
         </div>`;
 
-  h += `<h3 class="sec">Top projects</h3>
-        <p class="secnote">Active projects ordered by priority. Estimated dates come from the tracker and shift with the recurring workload below.</p>`;
+  h += `<div class="bar center">Overall Project Completion %</div>
+        <div class="pctbox">${pct}%
+          <small>${completed.length} of ${denom} tracked projects completed &middot; ${maint.length} systems in ongoing maintenance (excluded)</small>
+        </div>`;
+
+  h += `<div class="bar">Key Projects</div>
+        <table class="tpl">
+          <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Base Complete</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
   for(const p of top){
-    const [cls,label] = chipFor(p.Status);
-    const end = toDate(p.End);
+    const [cls,code] = statusCode(p);
+    const base = toDate(p.End);
     const block = looksBlocked(p);
-    const latest = commentInWeek(p.Public_Comments, wkStart, wkEnd);
-    const people = [p.Tester, p.Collaborators].filter(Boolean).join("; ");
-    h += `<div class="proj">
-            <div class="top"><span class="name">${esc(p.Name)}</span>
-              <span class="chip ${cls}">${label}</span>
-              ${p.Priority ? `<span class="chip ${p.Priority==="High"?"hold":"req"}">${esc(p.Priority)} priority</span>`:""}
-            </div>
-            <div class="meta">
-              ${end ? `Estimated completion: <b>${esc(fmtDate(end))}</b>` : `Estimated completion: <b>date pending</b>`}
-              ${p.Goal ? " &middot; "+esc(firstLine(p.Goal)) : ""}
-              ${people ? " &middot; With: "+esc(people) : ""}
-            </div>
-            ${block ? `<div class="block">${esc(block)}</div>` : (p.Milestone ? `<div class="meta">Milestone: ${esc(firstLine(p.Milestone))}</div>`:"")}
-            ${latest ? `<div class="latest">${esc(latest)}</div>` : ""}
-          </div>`;
+    h += `<tr>
+            <td><b>${esc(p.Name)}</b>${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
+            <td class="st ${cls}"><span>${code}</span></td>
+            <td class="datecol">${base ? esc(fmtShort(base)) : "TBD"}</td>
+            <td class="datecol"></td>
+          </tr>`;
+    if(block) h += `<tr class="note"><td colspan="4">${esc(block)}</td></tr>`;
   }
+  h += `</tbody></table>`;
   if(rest.length){
-    h += `<p class="secnote" style="margin-top:10px">Also active: ${rest.map(p=>esc(p.Name)).join("; ")}.</p>`;
+    h += `<p class="legend">Also active: ${rest.map(p=>esc(p.Name)).join("; ")}.</p>`;
   }
+  h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / blocked &middot; N/S = Not started</p>`;
 
   if(onHold.length){
-    h += `<h3 class="sec">On hold</h3><ul class="plain">`;
+    h += `<div class="bar">On Hold</div>
+          <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th colspan="2">Reason</th></tr></thead><tbody>`;
     for(const p of onHold){
       const why = firstLine(p.Milestone) || firstLine(p.Notes) || "";
-      h += `<li><span>${esc(p.Name)}</span><span class="why">${esc(why)}</span></li>`;
+      h += `<tr><td><b>${esc(p.Name)}</b></td><td class="st st-y"><span>Y</span></td><td colspan="2">${esc(why)}</td></tr>`;
     }
-    h += `</ul>`;
+    h += `</tbody></table>`;
   }
 
-  h += `<h3 class="sec">Recurring daily workload</h3>
-        <p class="secnote">Standing checks and reports completed before or during each workday, plus systems kept in production. This time comes off the top of every day and is the main variable behind the project dates above.</p>
-        <ul class="twocol">`;
+  h += `<div class="bar">Recurring Daily Workload</div>
+        <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
   for(const d of daily){
     const name = String(d.Name||"").split("@")[0].trim();
-    h += `<li>${esc(name)}</li>`;
+    h += `<tr><td>${esc(name)}</td><td>${esc(firstLine(d.Goal))}</td></tr>`;
   }
-  h += `</ul>`;
+  h += `</tbody></table>
+        <p class="legend">Standing time off the top of every workday; the main variable behind the estimated dates above.</p>`;
+
   if(maint.length){
-    h += `<p class="secnote" style="margin-top:12px">Systems in active maintenance (${maint.length}):</p><ul class="twocol">`;
-    for(const p of maint){ h += `<li>${esc(String(p.Name).replace(/:\s*$/,""))}</li>`; }
-    h += `</ul>`;
+    h += `<div class="bar">Systems in Maintenance (${maint.length})</div>
+          <table class="tpl"><tbody>`;
+    for(let i=0;i<maint.length;i+=2){
+      const a = maint[i], b = maint[i+1];
+      h += `<tr><td>${esc(String(a.Name).replace(/:\s*$/,""))}</td><td>${b?esc(String(b.Name).replace(/:\s*$/,"")):""}</td></tr>`;
+    }
+    h += `</tbody></table>`;
   }
 
-  h += `<h3 class="sec">Completed this week</h3>`;
+  h += `<div class="bar">Completed This Week</div>`;
   if(doneProjWk.length + doneTasksWk.length === 0){
-    h += `<p class="secnote">No items were closed in the selected week.</p>`;
+    h += `<table class="tpl"><tbody><tr><td>No items were closed in the selected week.</td></tr></tbody></table>`;
   } else {
-    h += `<ul class="plain">`;
-    for(const p of doneProjWk){ h += `<li><span><b>${esc(p.Name)}</b> (project)</span><span class="why">${esc(fmtDate(toDate(p.Updated)))}</span></li>`; }
-    for(const t of doneTasksWk){ h += `<li><span>${esc(t.Name)}</span><span class="why">${esc(fmtDate(toDate(t.Updated)||toDate(t.End)))}</span></li>`; }
-    h += `</ul>`;
-  }
-  if(openTasks.length){
-    h += `<p class="secnote" style="margin-top:10px">Open tasks carried forward: ${openTasks.map(t=>esc(t.Name)).join("; ")}.</p>`;
+    h += `<table class="tpl"><thead><tr><th>Item</th><th style="text-align:center">Status</th><th>Date</th></tr></thead><tbody>`;
+    for(const p of doneProjWk){
+      h += `<tr><td><b>${esc(p.Name)}</b> (project)</td><td class="st st-c"><span>C</span></td><td class="datecol">${esc(fmtShort(toDate(p.Updated)))}</td></tr>`;
+    }
+    for(const t of doneTasksWk){
+      h += `<tr><td>${esc(t.Name)}</td><td class="st st-c"><span>C</span></td><td class="datecol">${esc(fmtShort(toDate(t.Updated)||toDate(t.End)))}</td></tr>`;
+    }
+    h += `</tbody></table>`;
   }
 
   h += `<div class="foot">
           <span>Generated from the Daily Aqua Briefing export &middot; ${esc(new Date().toLocaleDateString("en-US"))}</span>
-          <span>Aqua-Aerobic Systems, Inc. IT</span>
+          <span>Aqua-Aerobic Systems, Inc. IT &middot; Protecting the World's Water</span>
         </div>`;
 
   $("doc").innerHTML = h;
@@ -368,8 +356,8 @@ function reportText(){
     for(const n of el.childNodes){
       if(n.nodeType===3){ out.push(n.textContent); }
       else if(n.nodeType===1){
-        if(n.matches("h2,h3")) out.push("\n\n"+n.textContent.toUpperCase()+"\n");
-        else if(n.matches("li,.proj,.card")) { out.push("\n"); walk(n,out); out.push(""); }
+        if(n.matches(".bar")) out.push("\n\n"+n.textContent.toUpperCase()+"\n");
+        else if(n.matches("tr,.pctbox")) { out.push("\n"); walk(n,out); out.push(""); }
         else walk(n,out);
       }
     }
@@ -407,8 +395,6 @@ document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTr
 
 $("printBtn").addEventListener("click", ()=>window.print());
 $("webBtn").addEventListener("click", ()=>{
-  // Snapshot the rendered report as a self-contained HTML file: styles inlined,
-  // data baked in, no scripts. Safe to email as an attachment or upload to a web server.
   const css = document.querySelector("style").textContent;
   const user = (DATA && DATA.info.user) || "report";
   const wk = WEEK ? WEEK.start.toISOString().slice(0,10) : "week";
