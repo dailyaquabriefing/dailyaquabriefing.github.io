@@ -5,6 +5,17 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-01
+
+### Added
+- Weekly report (`weekly-report.html`) now connects directly to Firestore — enter a briefing User ID and hit **Connect**; no Excel export/upload needed.
+- Auto-connect via URL: `weekly-report.html?report=<id>` builds the report on page load. The last-used ID is remembered and prefilled.
+- Live data maps the new multi-milestone list into the report's `Milestone` field (next open milestone + its Est/Act or Base date), falling back to the legacy single field.
+
+### Changed
+- Drop zone replaced by a connect card; the `.xlsx` drop/browse remains as an offline fallback box below it.
+- Report header shows "Live data as of <date>" (briefing `lastUpdated`) in live mode; footer states whether the report came from live data or an export.
+
 ## [1.1.0] - 2026-09-01
 
 ### Added

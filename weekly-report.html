@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Weekly Report — Daily Aqua Briefing</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bar:#2E75B6;          /* section bar blue, matches template */
@@ -34,13 +36,19 @@
   .weekpick{display:flex;align-items:center;gap:6px;font-size:13px}
   .weekpick select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none}
 
-  /* ---- Drop zone ---- */
-  #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--border);border-radius:8px;padding:56px 32px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s}
+  /* ---- Drop zone / connect card ---- */
+  #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--border);border-radius:8px;padding:40px 32px;text-align:center;transition:border-color .15s, background .15s}
   #dropzone.drag{border-color:var(--bar);background:#f4f8fc}
   #dropzone .big{font-size:19px;font-weight:bold;color:var(--bar-dark);margin-bottom:10px}
   #dropzone p{color:var(--muted);max-width:520px;margin:0 auto 6px}
-  #dropzone .steps{margin-top:18px;text-align:left;display:inline-block;color:var(--ink)}
-  #dropzone .steps li{margin:4px 0 4px 20px}
+  #connectRow{display:flex;justify-content:center;gap:8px;margin:18px auto 6px;flex-wrap:wrap}
+  #connectRow input{font-family:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--border);border-radius:4px;width:240px;max-width:100%}
+  #connectRow button{background:var(--bar);color:#fff;border:none;border-radius:4px;padding:10px 22px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit}
+  #connectRow button:disabled{opacity:.55;cursor:default}
+  #connectRow button:focus-visible, #connectRow input:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
+  #dropfile{margin:22px auto 0;max-width:420px;border:1px dashed var(--border);border-radius:6px;padding:14px 18px;color:var(--muted);font-size:13px;cursor:pointer;background:#fafcfe}
+  #dropfile:hover{border-color:var(--bar)}
+  #dropfile:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
   #err{max-width:860px;margin:14px auto;background:#fbe9e9;border:1px solid #d99;border-radius:6px;padding:12px 16px;color:#7a1f1f;display:none}
 
   /* ---- Report document, template style ---- */
@@ -116,14 +124,17 @@
 
 <div id="err"></div>
 
-<div id="dropzone" tabindex="0" role="button" aria-label="Load briefing export file">
-  <div class="big">Drop your briefing export here</div>
-  <p>This page turns the Daily Aqua Briefing Excel export into a weekly status report for the steering committee.</p>
-  <ol class="steps">
-    <li>Open <b>dailyaquabriefing.github.io</b> and view your briefing</li>
-    <li>Tap <b>Export to Excel</b></li>
-    <li>Drop the downloaded <b>Briefing_&hellip;.xlsx</b> file here (or use Load export)</li>
-  </ol>
+<div id="dropzone">
+  <div class="big">Build your weekly report</div>
+  <p>This page turns your Daily Aqua Briefing into a weekly status report for the steering committee.</p>
+  <p>Enter your briefing <b>User ID</b> to pull the data directly — no Excel export needed.</p>
+  <div id="connectRow">
+    <input type="text" id="liveUser" placeholder="User ID (e.g. jdoe)" autocomplete="off">
+    <button id="liveBtn">Connect</button>
+  </div>
+  <div id="dropfile" tabindex="0" role="button" aria-label="Load briefing export file">
+    Or drop a <b>Briefing_&hellip;.xlsx</b> export here / click to browse (offline fallback)
+  </div>
 </div>
 
 <div id="report"><div class="doc" id="doc"></div></div>
@@ -162,6 +173,89 @@ function firstLine(v){
 /* ---------- parsing ---------- */
 let DATA = null;
 let WEEK = null;
+let SOURCE = null; /* "live" or "file" */
+
+/* ---------- live Firestore connection ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+  authDomain: "dailybriefing-fe7df.firebaseapp.com",
+  projectId: "dailybriefing-fe7df",
+  storageBucket: "dailybriefing-fe7df.firebasestorage.app",
+  messagingSenderId: "",
+  appId: ""
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function stripHtml(html){
+  if(!html) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || "").trim();
+}
+
+/* Next open milestone (multi-milestone list), else the legacy single field */
+function milestoneSummary(item){
+  if(Array.isArray(item.milestones) && item.milestones.length){
+    const next = item.milestones.find(m=>!m.done);
+    if(!next) return "All milestones complete";
+    const d = next.estActDate || next.baseDate;
+    return (next.name || "") + (d ? " ("+d+")" : "");
+  }
+  return item.milestone || "";
+}
+
+/* Map a Firestore item to the same row shape the Excel sheets produce */
+function itemToRow(item){
+  if(typeof item === "string"){
+    return {Name:item, Status:"", Priority:"", Goal:"", Milestone:"", Notes:"", Start:"", End:"", Updated:""};
+  }
+  return {
+    Name: item.name || "",
+    Status: item.status || "",
+    Priority: item.priority || "",
+    Goal: item.goal || "",
+    Milestone: milestoneSummary(item),
+    Notes: stripHtml(item.notes || ""),
+    Start: item.startDate || "",
+    End: item.endDate || "",
+    Updated: item.lastUpdated || ""
+  };
+}
+
+function loadLive(reportId){
+  const id = String(reportId||"").toLowerCase().trim();
+  if(!id){
+    $("err").textContent = "Please enter your briefing User ID (e.g. jdoe).";
+    $("err").style.display = "block";
+    return;
+  }
+  $("err").style.display = "none";
+  const btn = $("liveBtn");
+  btn.disabled = true; btn.textContent = "Connecting…";
+
+  db.collection("briefings").doc(id).get().then(doc=>{
+    if(!doc.exists) throw new Error("No briefing found for \""+id+"\". Check the User ID.");
+    const d = doc.data();
+    let updated = null;
+    if(d.lastUpdated) updated = d.lastUpdated.toDate ? d.lastUpdated.toDate() : toDate(d.lastUpdated);
+    DATA = {
+      info: { user: d.reportId || id, exported: updated || new Date() },
+      daily: (d.structuredDailyTasks || d.dailyTasks || []).map(itemToRow),
+      projects: (d.structuredProjects || d.projects || []).map(itemToRow),
+      tasks: (d.structuredActiveTasks || d.activeTasks || []).map(itemToRow)
+    };
+    SOURCE = "live";
+    localStorage.setItem("weeklyReportUser", id);
+    setupWeeks();
+    buildReport();
+  }).catch(ex=>{
+    $("err").textContent = "Could not load live data: " + ex.message;
+    $("err").style.display = "block";
+  }).finally(()=>{
+    btn.disabled = false; btn.textContent = "Connect";
+  });
+}
 
 function sheetToObjects(ws){
   const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:"", raw:true});
@@ -240,7 +334,7 @@ function buildReport(){
   let h = "";
   h += `<div class="doc-title">
           <span><b>Weekly Status Report</b><br>${esc(info.user||"ckonkol")} &middot; Information Technology &middot; Aqua-Aerobic Systems, Inc.</span>
-          <span style="text-align:right">Week of ${fmtRange(wkStart, WEEK.end)}<br>${info.exported ? "Data exported "+esc(fmtDate(info.exported)) : ""}</span>
+          <span style="text-align:right">Week of ${fmtRange(wkStart, WEEK.end)}<br>${info.exported ? (SOURCE==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}</span>
         </div>`;
 
   h += `<div class="bar center">Overall Project Completion %</div>
@@ -314,7 +408,7 @@ function buildReport(){
   }
 
   h += `<div class="foot">
-          <span>Generated from the Daily Aqua Briefing export &middot; ${esc(new Date().toLocaleDateString("en-US"))}</span>
+          <span>Generated from the Daily Aqua Briefing ${SOURCE==="live" ? "live data" : "export"} &middot; ${esc(new Date().toLocaleDateString("en-US"))}</span>
           <span>Aqua-Aerobic Systems, Inc. IT &middot; Protecting the World's Water</span>
         </div>`;
 
@@ -375,6 +469,7 @@ function loadFile(file){
     try{
       const wb = XLSX.read(new Uint8Array(e.target.result), {type:"array", cellDates:true});
       DATA = parseWorkbook(wb);
+      SOURCE = "file";
       setupWeeks();
       buildReport();
     }catch(ex){
@@ -385,14 +480,29 @@ function loadFile(file){
   reader.readAsArrayBuffer(file);
 }
 $("file").addEventListener("change", e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+$("liveBtn").addEventListener("click", ()=> loadLive($("liveUser").value));
+$("liveUser").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadLive($("liveUser").value); } });
 const dz = $("dropzone");
-dz.addEventListener("click", ()=> $("file").click());
-dz.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); $("file").click(); } });
+const df = $("dropfile");
+df.addEventListener("click", ()=> $("file").click());
+df.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); $("file").click(); } });
 ["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.add("drag");}));
 ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.remove("drag");}));
 dz.addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
 document.body.addEventListener("dragover", e=>e.preventDefault());
 document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(f && DATA===null) loadFile(f); });
+
+/* Auto-connect from ?report=<id> (or ?user=<id>); otherwise prefill the last-used ID */
+{
+  const params = new URLSearchParams(location.search);
+  const urlUser = params.get("report") || params.get("user");
+  if(urlUser){
+    $("liveUser").value = urlUser;
+    loadLive(urlUser);
+  } else {
+    $("liveUser").value = localStorage.getItem("weeklyReportUser") || "";
+  }
+}
 
 $("printBtn").addEventListener("click", ()=>window.print());
 $("webBtn").addEventListener("click", ()=>{
