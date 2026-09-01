@@ -268,6 +268,11 @@
         .milestone-row .ms-name-field { flex: 1 1 180px; }
         .milestone-row input { padding: 6px; }
         .ms-done .ms-name-input { text-decoration: line-through; color: #888; }
+        .milestone-row .ms-check-field { align-items: center; }
+        .milestone-row .ms-check-field input { padding: 0; width: 18px; height: 18px; margin-top: 6px; }
+        .milestone-row .ms-reason-field { flex: 1 1 100%; }
+        .milestone-row .ms-reason-field label { color: #c0392b; }
+        .milestone-row .ms-reason-field input { border-color: #ffc9c9; background: #fff5f5; }
 
         /* --- MOBILE RESPONSIVE STYLES --- */
         @media (max-width: 768px) {
@@ -1260,6 +1265,37 @@
                 estField.appendChild(estInput);
                 row.appendChild(estField);
 
+                // In Progress / On-Hold are mutually exclusive; neither = Not Started
+                const progField = document.createElement('div');
+                progField.className = 'ms-field ms-check-field';
+                progField.innerHTML = '<label>In Progress</label>';
+                const progChk = document.createElement('input');
+                progChk.type = 'checkbox';
+                progChk.checked = !!ms.inProgress;
+                progChk.title = 'Milestone is being worked on';
+                progChk.onchange = () => {
+                    tempMilestones[idx].inProgress = progChk.checked;
+                    if (progChk.checked) tempMilestones[idx].onHold = false;
+                    renderMilestonesList();
+                };
+                progField.appendChild(progChk);
+                row.appendChild(progField);
+
+                const holdField = document.createElement('div');
+                holdField.className = 'ms-field ms-check-field';
+                holdField.innerHTML = '<label>On-Hold</label>';
+                const holdChk = document.createElement('input');
+                holdChk.type = 'checkbox';
+                holdChk.checked = !!ms.onHold;
+                holdChk.title = 'Milestone is on hold';
+                holdChk.onchange = () => {
+                    tempMilestones[idx].onHold = holdChk.checked;
+                    if (holdChk.checked) tempMilestones[idx].inProgress = false;
+                    renderMilestonesList();
+                };
+                holdField.appendChild(holdChk);
+                row.appendChild(holdField);
+
                 const del = document.createElement('button');
                 del.className = 'btn-del-att';
                 del.innerHTML = '&times;';
@@ -1267,12 +1303,25 @@
                 del.onclick = () => removeMilestone(idx);
                 row.appendChild(del);
 
+                if (ms.onHold) {
+                    const reasonField = document.createElement('div');
+                    reasonField.className = 'ms-field ms-reason-field';
+                    reasonField.innerHTML = '<label>On-Hold Reason</label>';
+                    const reasonInput = document.createElement('input');
+                    reasonInput.type = 'text';
+                    reasonInput.placeholder = 'e.g. Waiting on vendor quote';
+                    reasonInput.value = ms.holdReason || '';
+                    reasonInput.onchange = () => { tempMilestones[idx].holdReason = reasonInput.value; };
+                    reasonField.appendChild(reasonInput);
+                    row.appendChild(reasonField);
+                }
+
                 container.appendChild(row);
             });
         }
 
         function addMilestone() {
-            tempMilestones.push({ name: '', baseDate: '', estActDate: '', done: false });
+            tempMilestones.push({ name: '', baseDate: '', estActDate: '', done: false, inProgress: false, onHold: false, holdReason: '' });
             renderMilestonesList();
             const inputs = document.querySelectorAll('#m-milestones-list .ms-name-input');
             if (inputs.length) inputs[inputs.length - 1].focus();

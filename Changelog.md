@@ -5,6 +5,17 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-09-01
+
+### Added
+- Milestones now have explicit **In Progress** and **On-Hold** checkboxes in the admin (mutually exclusive), plus an **On-Hold Reason** field that appears when On-Hold is checked.
+- Weekly report milestone codes follow the checkboxes: C = done or both dates entered (explicit flags override), Y = on hold (reason shown in italics) or past its date, G = in progress, N/S = neither flag checked.
+- Viewer milestone table shows the new states: ✅ done, ⏸️ on hold with the reason under the name, ⚠️ overdue, ⏳ in progress, ⚪ not started.
+- Excel export Milestones column writes `[Done|On-Hold|In Progress|Not Started]` state tokens and a `Reason:` segment for held milestones; the weekly report's `.xlsx` fallback parses them (legacy `[Open]` rows still work).
+
+### Changed
+- Milestones saved before this release have no flags and show N/S until marked In Progress or completed.
+
 ## [1.6.0] - 2026-09-01
 
 ### Changed

@@ -232,24 +232,32 @@ function itemToRow(item){
   };
 }
 
-/* Parse the Excel export's Milestones cell ("[Done|Open] Name — Base: d | Est/Act: d" per line) */
+/* Parse the Excel export's Milestones cell
+   ("[Done|On-Hold|In Progress|Not Started|Open] Name — Base: d | Est/Act: d | Reason: text" per line) */
 function parseMilestonesCell(v){
   if(!v) return [];
   const lines = String(v).replace(/_x000d_/gi,"\n").replace(/\r/g,"\n").split("\n").map(t=>t.trim()).filter(Boolean);
   const out = [];
   for(const line of lines){
-    const m = line.match(/^\[(Done|Open)\]\s*(.*)$/i);
+    const m = line.match(/^\[(Done|Open|On-Hold|In Progress|Not Started)\]\s*(.*)$/i);
     if(!m) continue;
-    let name = m[2], baseDate = "", estActDate = "";
-    const parts = name.split(/\s+—\s+(?=Base:|Est\/Act:)/);
+    const state = m[1].toLowerCase();
+    let name = m[2], baseDate = "", estActDate = "", holdReason = "";
+    const parts = name.split(/\s+—\s+(?=Base:|Est\/Act:|Reason:)/);
     if(parts.length > 1){
       name = parts[0];
       for(const seg of parts[1].split("|").map(s=>s.trim())){
         if(seg.startsWith("Base:")) baseDate = seg.slice(5).trim();
         else if(seg.startsWith("Est/Act:")) estActDate = seg.slice(8).trim();
+        else if(seg.startsWith("Reason:")) holdReason = seg.slice(7).trim();
       }
     }
-    out.push({name: name, baseDate: baseDate, estActDate: estActDate, done: /^done$/i.test(m[1])});
+    out.push({
+      name: name, baseDate: baseDate, estActDate: estActDate, holdReason: holdReason,
+      done: state === "done",
+      onHold: state === "on-hold",
+      inProgress: state === "in progress"
+    });
   }
   return out;
 }
@@ -440,15 +448,21 @@ function buildReport(){
     if(block) h += `<tr class="note"><td colspan="4">${esc(block)}</td></tr>`;
     for(const ms of (p.MilestoneList||[])){
       const b = toDate(ms.baseDate), e = toDate(ms.estActDate);
-      /* Complete when marked done, or when both Base and Est/Act dates are entered.
-         N/S when there is no activity on the milestone (no dates, not done). */
-      const complete = ms.done || (b && e);
-      const noActivity = !complete && !b && !e;
+      /* C when marked done, or both dates entered without an explicit In Progress / On-Hold flag.
+         Y when on hold (reason shown) or past its date. G when flagged In Progress.
+         N/S when neither flag is checked. */
+      const complete = ms.done || (b && e && !ms.inProgress && !ms.onHold);
       const due = e || b;
-      const late = !complete && due && due < new Date();
-      const [mcls,mcode] = complete ? ["st-c","C"] : (noActivity ? ["st-ns","N/S"] : (late ? ["st-y","Y"] : ["st-g","G"]));
+      const late = !complete && !ms.onHold && due && due < new Date();
+      let mcls, mcode;
+      if(complete)            { mcls="st-c";  mcode="C"; }
+      else if(ms.onHold)      { mcls="st-y";  mcode="Y"; }
+      else if(late)           { mcls="st-y";  mcode="Y"; }
+      else if(ms.inProgress)  { mcls="st-g";  mcode="G"; }
+      else                    { mcls="st-ns"; mcode="N/S"; }
+      const holdNote = ms.onHold && ms.holdReason ? ` — <i>On hold: ${esc(ms.holdReason)}</i>` : (ms.onHold ? " — <i>On hold</i>" : "");
       h += `<tr class="msrow">
-              <td>${complete ? "✔" : "◦"} ${esc(ms.name)}</td>
+              <td>${complete ? "✔" : "◦"} ${esc(ms.name)}${holdNote}</td>
               <td class="st ${mcls}"><span>${mcode}</span></td>
               <td class="datecol${late && !e ? " late" : ""}">${b ? "Base " + esc(fmtShort(b)) : ""}</td>
               <td class="datecol${late && e ? " late" : ""}">${e ? (complete ? "Act " : "Est ") + esc(fmtShort(e)) : ""}</td>
@@ -464,7 +478,7 @@ function buildReport(){
   }
   h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing.</p>`;
   if(top.some(p=>(p.MilestoneList||[]).length)){
-    h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or Base and Est/Act dates both entered) &middot; G = in progress &middot; Y = past its date without completion &middot; N/S = no activity yet &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
+    h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or both dates entered) &middot; G = in progress &middot; Y = on hold (reason shown) or past its date &middot; N/S = not started &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
   }
 
   if(onHold.length){

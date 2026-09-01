@@ -417,12 +417,17 @@ if (safeNotes) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const rowsHtml = milestones.map(m => {
-                const isOverdue = !m.done && m.estActDate && new Date(m.estActDate + 'T00:00:00') < today;
-                const icon = m.done ? '✅' : (isOverdue ? '⚠️' : '⏳');
+                const isOverdue = !m.done && !m.onHold && m.estActDate && new Date(m.estActDate + 'T00:00:00') < today;
+                let icon = '⚪';
+                if (m.done) icon = '✅';
+                else if (m.onHold) icon = '⏸️';
+                else if (isOverdue) icon = '⚠️';
+                else if (m.inProgress) icon = '⏳';
                 const nameStyle = m.done ? 'color:#888; text-decoration:line-through;' : '';
                 const estStyle = isOverdue ? 'color:#dc3545; font-weight:bold;' : 'color:#555;';
+                const holdNote = m.onHold && m.holdReason ? `<div style="font-size:0.9em; color:#c0392b; font-style:italic;">On hold: ${linkify(m.holdReason)}</div>` : '';
                 return `<tr>
-                    <td style="padding:3px 8px; border:1px solid #eee; ${nameStyle}">${icon} ${linkify(m.name || '')}</td>
+                    <td style="padding:3px 8px; border:1px solid #eee; ${nameStyle}">${icon} ${linkify(m.name || '')}${holdNote}</td>
                     <td style="padding:3px 8px; border:1px solid #eee; text-align:center; color:#555;">${m.baseDate || '—'}</td>
                     <td style="padding:3px 8px; border:1px solid #eee; text-align:center; ${estStyle}">${m.estActDate || '—'}</td>
                 </tr>`;
@@ -959,10 +964,15 @@ function exportReportToExcel() {
             let milestonesStr = "";
             if (item.milestones && item.milestones.length > 0) {
                 milestonesStr = item.milestones.map(m => {
+                    let state = "Not Started";
+                    if (m.done) state = "Done";
+                    else if (m.onHold) state = "On-Hold";
+                    else if (m.inProgress) state = "In Progress";
                     let dates = [];
                     if (m.baseDate) dates.push(`Base: ${m.baseDate}`);
                     if (m.estActDate) dates.push(`Est/Act: ${m.estActDate}`);
-                    return `[${m.done ? 'Done' : 'Open'}] ${m.name}${dates.length ? ' — ' + dates.join(' | ') : ''}`;
+                    if (m.onHold && m.holdReason) dates.push(`Reason: ${m.holdReason}`);
+                    return `[${state}] ${m.name}${dates.length ? ' — ' + dates.join(' | ') : ''}`;
                 }).join("\r\n");
             }
 
