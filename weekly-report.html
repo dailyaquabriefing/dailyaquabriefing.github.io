@@ -142,10 +142,10 @@ function toDate(v){
     return !isNaN(d) ? d : null;
   }
   const s = String(v).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return new Date(+m[1], +m[2]-1, +m[3]);
   let d = new Date(s.replace(/,/, ""));
   if(!isNaN(d)) return d;
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if(m) return new Date(+m[1], +m[2]-1, +m[3]);
   return null;
 }
 const fmtShort = d => d ? (d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullYear()).slice(2) : "";
@@ -250,16 +250,17 @@ function buildReport(){
 
   h += `<div class="bar">Key Projects</div>
         <table class="tpl">
-          <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Base Complete</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
+          <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
   for(const p of top){
     const [cls,code] = statusCode(p);
-    const base = toDate(p.End);
+    const start = toDate(p.Start);
+    const est = toDate(p.End);
     const block = looksBlocked(p);
     h += `<tr>
             <td><b>${esc(p.Name)}</b>${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
             <td class="st ${cls}"><span>${code}</span></td>
-            <td class="datecol">${base ? esc(fmtShort(base)) : "TBD"}</td>
-            <td class="datecol"></td>
+            <td class="datecol">${start ? esc(fmtShort(start)) : ""}</td>
+            <td class="datecol">${est ? esc(fmtShort(est)) : "TBD"}</td>
           </tr>`;
     if(block) h += `<tr class="note"><td colspan="4">${esc(block)}</td></tr>`;
   }
