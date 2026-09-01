@@ -381,7 +381,10 @@
                 <h1>Dashboard</h1>
                 <small id="current-report-id" style="font-weight:bold; color:rgba(255,255,255,0.8); display:block;">...</small>
             </div>
-            <button class="logout-btn" onclick="logout()">Logout</button>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <a id="view-briefing-link" href="#" target="_blank" class="logout-btn" style="text-decoration:none; display:none;">View My Briefing</a>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
         </header>
 
         <div class="tabs">
@@ -696,6 +699,9 @@
         function initializeDashboard() {
             document.getElementById('app-container').style.display = 'block';
             document.getElementById('current-report-id').textContent = "Managing: " + managedReportId;
+            const viewLink = document.getElementById('view-briefing-link');
+            viewLink.href = "index.html?report=" + encodeURIComponent(managedReportId);
+            viewLink.style.display = 'inline-block';
             document.getElementById('settings-report-id-display').value = managedReportId; 
             loadData();
         }
