@@ -69,12 +69,14 @@
   table.tpl td{padding:9px 12px;vertical-align:top}
   table.tpl tbody tr:nth-child(odd){background:var(--row-blue)}
   table.tpl tbody tr:nth-child(even){background:var(--row-grey)}
-  table.tpl .st{text-align:center;font-weight:bold;width:70px;white-space:nowrap}
+  table.tpl .st{text-align:center;font-weight:bold;width:1%;white-space:nowrap}
   .st span{display:inline-block;min-width:44px;padding:3px 8px;border:1px solid rgba(0,0,0,.15)}
   .st-c span{background:var(--st-c);color:#fff}
   .st-g span{background:var(--st-g);color:#fff}
   .st-y span{background:var(--st-y);color:#fff}
   .st-ns span{background:#fff;color:var(--ink)}
+  .st-chip{display:inline-block;padding:3px 10px;border:1px solid rgba(0,0,0,.15);color:#fff;font-weight:bold;font-size:12px;white-space:nowrap}
+  .statusgrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;border:1px solid var(--ink);border-top:none;padding:14px 12px;background:#fff}
   td.datecol{white-space:nowrap;width:110px}
   tr.note td{font-size:12.5px;color:#7a4a08;padding-top:0}
   tr.note td::before{content:"Roadblock: ";font-weight:bold}
@@ -106,7 +108,7 @@
     .doc{padding:0}
     .bar{break-after:avoid}
     table.tpl tr{break-inside:avoid}
-    .bar, .st span, table.tpl tbody tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .bar, .st span, .st-chip, table.tpl tbody tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
   @media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
@@ -313,19 +315,27 @@ function parseWorkbook(wb){
   };
 }
 
-/* ---------- status codes (template style) ---------- */
-/* C = Complete, G = In progress / on track, T = Testing (green), Y = On hold, N/S = Not started */
-function statusCode(p){
-  const blockedText = looksBlocked(p);
-  switch(p.Status){
-    case "Completed": return ["st-c","C"];
-    case "Development": return blockedText ? ["st-y","Y"] : ["st-g","G"];
-    case "Testing": return blockedText ? ["st-y","Y"] : ["st-g","T"];
-    case "Requirement Gathering": return ["st-ns","N/S"];
-    case "On-Hold": return ["st-y","Y"];
-    default: return ["st-ns","N/S"];
-  }
+/* ---------- status display (uses the briefing's real project statuses) ---------- */
+const STATUS_ORDER = ["Future","Requirement Gathering","On Track","Development","Testing","Training","Completed","Follow-Up","Maintenance","Delayed","On-Hold"];
+const STATUS_COLORS = {
+  "Future":                "#adb5bd",
+  "Requirement Gathering": "#17a2b8",
+  "On Track":              "#28a745",
+  "Development":           "#6610f2",
+  "Testing":               "#ff9f43",
+  "Training":              "#20c997",
+  "Completed":             "#800080",
+  "Follow-Up":             "#fd7e14",
+  "Maintenance":           "#9b59b6",
+  "Delayed":               "#dc3545",
+  "On-Hold":               "#6c757d"
+};
+function statusChip(status, label){
+  const c = STATUS_COLORS[status] || "#6c757d";
+  return `<span class="st-chip" style="background:${c}">${esc(label || status || "N/A")}</span>`;
 }
+/* In-flight statuses shown in the Key Projects table */
+const ACTIVE_STATUSES = ["On Track","Development","Testing","Training","Requirement Gathering","Follow-Up","Delayed"];
 function looksBlocked(p){
   const t = ((p.Milestone||"")+" "+(p.Notes||"")).toLowerCase();
   return ["pending","on hold","waiting","gated","until"].some(h=>t.includes(h))
@@ -339,13 +349,19 @@ function buildReport(){
   const {info, daily, projects, tasks} = DATA;
   const wkStart = WEEK.start, wkEnd = new Date(WEEK.end.getTime()+86399000);
 
-  const active = projects.filter(p=>["Development","Testing","Requirement Gathering"].includes(p.Status));
+  const active = projects.filter(p=>ACTIVE_STATUSES.includes(p.Status));
   active.sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3) || (toDate(b.Updated)||0)-(toDate(a.Updated)||0));
   const top = active.slice(0,10);
   const rest = active.slice(10);
   const onHold = projects.filter(p=>p.Status==="On-Hold").sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
   const maint = projects.filter(p=>p.Status==="Maintenance");
   const completed = projects.filter(p=>p.Status==="Completed");
+  const future = projects.filter(p=>p.Status==="Future");
+
+  // Project counts per status, in the briefing's status order (unknown statuses appended)
+  const statusCounts = {};
+  for(const p of projects){ const s = p.Status || "N/A"; statusCounts[s] = (statusCounts[s]||0) + 1; }
+  const statusKeys = [...STATUS_ORDER.filter(s=>statusCounts[s]), ...Object.keys(statusCounts).filter(s=>!STATUS_ORDER.includes(s))];
   const doneTasksWk = tasks.filter(t=>{
     const d = toDate(t.Updated) || toDate(t.End);
     return t.Status==="Completed" && d && d>=wkStart && d<=wkEnd;
@@ -368,20 +384,22 @@ function buildReport(){
 
   h += `<div class="bar center">Overall Project Completion %</div>
         <div class="pctbox">${pct}%
-          <small>${completed.length} of ${denom} tracked projects completed &middot; ${maint.length} systems in ongoing maintenance (excluded)</small>
+          <small>${completed.length} of ${denom} tracked projects completed &middot; ${maint.length} in ongoing maintenance, ${future.length} future (excluded)</small>
         </div>`;
+
+  h += `<div class="bar center">Status of Projects</div>
+        <div class="statusgrid">${statusKeys.map(s=>statusChip(s, s + ": " + statusCounts[s])).join("")}</div>`;
 
   h += `<div class="bar">Key Projects</div>
         <table class="tpl">
           <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
   for(const p of top){
-    const [cls,code] = statusCode(p);
     const start = toDate(p.Start);
     const est = toDate(p.End);
     const block = looksBlocked(p);
     h += `<tr>
             <td><b>${esc(p.Name)}</b>${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
-            <td class="st ${cls}"><span>${code}</span></td>
+            <td class="st">${statusChip(p.Status)}</td>
             <td class="datecol">${start ? esc(fmtShort(start)) : ""}</td>
             <td class="datecol">${est ? esc(fmtShort(est)) : "TBD"}</td>
           </tr>`;
@@ -401,7 +419,10 @@ function buildReport(){
   if(rest.length){
     h += `<p class="legend">Also active: ${rest.map(p=>esc(p.Name)).join("; ")}.</p>`;
   }
-  h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / blocked &middot; N/S = Not started</p>`;
+  if(future.length){
+    h += `<p class="legend">Up next (Future): ${future.map(p=>esc(p.Name)).join("; ")}.</p>`;
+  }
+  h += `<p class="legend"><b>Status</b> shows each project's current stage in the Daily Aqua Briefing. "Roadblock" lines flag items waiting on someone or something.</p>`;
   if(top.some(p=>(p.MilestoneList||[]).length)){
     h += `<p class="legend"><b>Milestones</b> (indented rows): ✔ = complete &middot; ◦ = open &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date &middot; red = past estimated date</p>`;
   }
@@ -411,7 +432,7 @@ function buildReport(){
           <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th colspan="2">Reason</th></tr></thead><tbody>`;
     for(const p of onHold){
       const why = firstLine(p.Milestone) || firstLine(p.Notes) || "";
-      h += `<tr><td><b>${esc(p.Name)}</b></td><td class="st st-y"><span>Y</span></td><td colspan="2">${esc(why)}</td></tr>`;
+      h += `<tr><td><b>${esc(p.Name)}</b></td><td class="st">${statusChip(p.Status)}</td><td colspan="2">${esc(why)}</td></tr>`;
     }
     h += `</tbody></table>`;
   }
@@ -441,10 +462,10 @@ function buildReport(){
   } else {
     h += `<table class="tpl"><thead><tr><th>Item</th><th style="text-align:center">Status</th><th>Date</th></tr></thead><tbody>`;
     for(const p of doneProjWk){
-      h += `<tr><td><b>${esc(p.Name)}</b> (project)</td><td class="st st-c"><span>C</span></td><td class="datecol">${esc(fmtShort(toDate(p.Updated)))}</td></tr>`;
+      h += `<tr><td><b>${esc(p.Name)}</b> (project)</td><td class="st">${statusChip("Completed")}</td><td class="datecol">${esc(fmtShort(toDate(p.Updated)))}</td></tr>`;
     }
     for(const t of doneTasksWk){
-      h += `<tr><td>${esc(t.Name)}</td><td class="st st-c"><span>C</span></td><td class="datecol">${esc(fmtShort(toDate(t.Updated)||toDate(t.End)))}</td></tr>`;
+      h += `<tr><td>${esc(t.Name)}</td><td class="st">${statusChip("Completed")}</td><td class="datecol">${esc(fmtShort(toDate(t.Updated)||toDate(t.End)))}</td></tr>`;
     }
     h += `</tbody></table>`;
   }

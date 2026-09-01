@@ -5,6 +5,19 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-01
+
+### Added
+- Weekly report: new **Status of Projects** section under the completion % — colored chips with the project count per status, using the briefing app's status order and colors.
+- "Up next (Future)" line under the Key Projects table lists pipeline projects.
+
+### Changed
+- Status columns (Key Projects, On Hold, Completed This Week) now show each project's actual briefing status as a colored chip instead of template letter codes (C/G/T/Y/N-S); the letter-code legend was replaced accordingly.
+- Overall completion % caption now states that maintenance and future projects are excluded from the denominator.
+
+### Fixed
+- Projects with status On Track, Training, Follow-Up, or Delayed no longer disappear from the report — Key Projects now includes all in-flight statuses (previously only Development, Testing, and Requirement Gathering were shown, hiding projects in the app's default "On Track" status).
+
 ## [1.4.0] - 2026-09-01
 
 ### Added
