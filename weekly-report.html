@@ -32,8 +32,10 @@
   .toolbar button:disabled{opacity:.45;cursor:default}
   .toolbar button:focus-visible, .toolbar label.btn:focus-within{outline:3px solid #ffd268;outline-offset:2px}
   .toolbar input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
-  .weekpick{display:flex;align-items:center;gap:6px;font-size:13px}
-  .weekpick select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none}
+  .filters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}
+  .filters select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none;max-width:180px}
+  .filters button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:4px;padding:6px 12px;font-size:12.5px;font-weight:bold;cursor:pointer;font-family:inherit}
+  .filters button:focus-visible, .filters select:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
   /* ---- Drop zone / connect card ---- */
   #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--border);border-radius:8px;padding:40px 32px;text-align:center;transition:border-color .15s, background .15s}
   #dropzone.drag{border-color:var(--bar);background:#f4f8fc}
@@ -53,6 +55,7 @@
   .doc{padding:30px 34px 40px}
   .doc-title{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;font-size:13px;color:var(--muted)}
   .doc-title b{color:var(--ink);font-size:16px}
+  .filterline{background:#fff6e5;border:1px solid #e0a02f;border-radius:4px;padding:8px 12px;font-size:12.5px;color:#7a4a08;margin-bottom:14px}
   .bar{background:var(--bar);color:#fff;font-weight:bold;font-size:15px;padding:8px 14px;border:1px solid var(--bar-dark);margin-top:22px}
   .bar.center{text-align:center}
   .bar:first-of-type{margin-top:0}
@@ -72,6 +75,8 @@
   .st-chip{display:inline-block;padding:3px 10px;border:1px solid rgba(0,0,0,.15);color:#fff;font-weight:bold;font-size:12px;white-space:nowrap}
   .st .stname{display:block;font-size:10.5px;color:#fff;font-weight:bold;margin-top:3px;white-space:normal;max-width:110px;margin-left:auto;margin-right:auto}
   .statusgrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;border:1px solid var(--ink);border-top:none;padding:14px 12px;background:#fff}
+  .statusgrid .st-chip{cursor:pointer}
+  .statusgrid .st-chip.active{outline:3px solid var(--ink);outline-offset:1px}
   td.datecol{white-space:nowrap;width:110px}
   tr.note td{font-size:12.5px;color:#7a4a08;padding-top:0}
   tr.note td::before{content:"Roadblock: ";font-weight:bold}
@@ -92,8 +97,9 @@
     .toolbar{padding:10px 12px;gap:8px}
     .toolbar h1{font-size:15px;flex:1 1 100%;min-width:0}
     .toolbar button, .toolbar label.btn{flex:1 1 calc(50% - 8px);padding:10px 8px;font-size:12.5px;text-align:center}
-    .weekpick{flex:1 1 100%;justify-content:space-between}
-    .weekpick select{flex:1;min-width:0}
+    .filters{flex:1 1 100%}
+    .filters select{flex:1 1 calc(50% - 6px);min-width:0;max-width:none}
+    .filters button{flex:1 1 100%}
     /* Connect card: stacked, full-width controls */
     #dropzone{margin:18px 12px;padding:24px 16px}
     #dropzone .big{font-size:17px}
@@ -135,9 +141,29 @@
   <h1>Weekly Report Builder
     <small>Daily Aqua Briefing &middot; Aqua-Aerobic Systems, Inc.</small>
   </h1>
-  <div class="weekpick" id="weekpickWrap" style="display:none">
-    <label for="weekSel">Week:</label>
-    <select id="weekSel"></select>
+  <div class="filters" id="filterWrap" style="display:none">
+    <select id="fStatus" aria-label="Filter by status"></select>
+    <select id="fPriority" aria-label="Filter by priority">
+      <option value="">All priorities</option>
+      <option value="High">High priority</option>
+      <option value="Medium">Medium priority</option>
+      <option value="Low">Low priority</option>
+    </select>
+    <select id="fFocus" aria-label="Focus view">
+      <option value="">No focus</option>
+      <option value="attention">Needs attention</option>
+      <option value="due30">Due within 30 days</option>
+      <option value="overdue">Past est. complete</option>
+      <option value="nodate">No est. date (TBD)</option>
+    </select>
+    <select id="fDone" aria-label="Recently completed window">
+      <option value="7" selected>Completed: last 7 days</option>
+      <option value="14">Completed: last 14 days</option>
+      <option value="30">Completed: last 30 days</option>
+      <option value="90">Completed: last 90 days</option>
+      <option value="">Completed: all time</option>
+    </select>
+    <button id="fClear" type="button">Clear</button>
   </div>
   <label class="btn">Load export<input type="file" id="file" accept=".xlsx"></label>
   <button id="copyBtn" disabled>Copy as email text</button>
@@ -186,8 +212,6 @@ function toDate(v){
 }
 const fmtShort = d => d ? (d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullYear()).slice(2) : "";
 const fmtDate = d => d ? d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
-const fmtRange = (a,b) => a.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " \u2013 " + b.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-function mondayOf(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x; }
 
 function firstLine(v){
   if(!v) return "";
@@ -198,7 +222,6 @@ function firstLine(v){
 
 /* ---------- parsing ---------- */
 let DATA = null;
-let WEEK = null;
 let SOURCE = null; /* "live" or "file" */
 
 /* ---------- live Firestore connection ---------- */
@@ -303,7 +326,7 @@ function loadLive(reportId){
     };
     SOURCE = "live";
     localStorage.setItem("weeklyReportUser", id);
-    setupWeeks();
+    setupFilters();
     buildReport();
   }).catch(ex=>{
     $("err").textContent = "Could not load live data: " + ex.message;
@@ -357,9 +380,10 @@ const STATUS_COLORS = {
   "On-Hold": "#6c757d"
 };
 
-function statusChip(status, label){
+function statusChip(status, label, activeStatus){
   const c = STATUS_COLORS[status] || "#6c757d";
-  return `<span class="st-chip" style="background:${c}">${esc(label || status || "N/A")}</span>`;
+  const on = activeStatus && activeStatus === status ? " active" : "";
+  return `<span class="st-chip${on}" data-status="${esc(status)}" role="button" tabindex="0" style="background:${c}">${esc(label || status || "N/A")}</span>`;
 }
 
 /* Small stage label under the letter code — background matches the
@@ -404,9 +428,29 @@ const PRI = {High:0, Medium:1, Low:2, "":3};
 
 function buildReport(){
   const {info, daily, projects, tasks} = DATA;
-  const wkStart = WEEK.start, wkEnd = new Date(WEEK.end.getTime()+86399000);
 
-  const active = projects.filter(p=>ACTIVE_STATUSES.includes(p.Status));
+  /* ---- meeting filters ---- */
+  const now = new Date();
+  const in30 = new Date(now.getTime() + 30*86400000);
+  const matchesFilters = p => {
+    if(FILTERS.status && p.Status !== FILTERS.status) return false;
+    if(FILTERS.priority && (p.Priority||"") !== FILTERS.priority) return false;
+    if(FILTERS.focus){
+      const end = toDate(p.End);
+      const done = p.Status === "Completed";
+      switch(FILTERS.focus){
+        case "attention": if(!(p.Status==="Delayed" || p.Status==="On-Hold" || looksBlocked(p))) return false; break;
+        case "due30": if(done || !end || end < now || end > in30) return false; break;
+        case "overdue": if(done || !end || end >= now) return false; break;
+        case "nodate": if(done || end) return false; break;
+      }
+    }
+    return true;
+  };
+  const anyFilter = !!(FILTERS.status || FILTERS.priority || FILTERS.focus);
+  const visible = anyFilter ? projects.filter(matchesFilters) : projects;
+
+  const active = visible.filter(p=>ACTIVE_STATUSES.includes(p.Status));
   /* Attention-first sort: Delayed/roadblocked projects first, then priority,
      then nearest Est/Act complete date, then most recently updated. */
   active.sort((a,b)=>{
@@ -420,52 +464,75 @@ function buildReport(){
     if(eA!==eB) return eA-eB;
     return (toDate(b.Updated)||0)-(toDate(a.Updated)||0);
   });
-  const top = active.slice(0,10);
-  const rest = active.slice(10);
+  /* Filtered views show every match; the default view keeps the top-10 focus */
+  const top = anyFilter ? active : active.slice(0,10);
+  const rest = anyFilter ? [] : active.slice(10);
 
-  const onHold = projects.filter(p=>p.Status==="On-Hold").sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
-  const maint = projects.filter(p=>p.Status==="Maintenance");
-  const completed = projects.filter(p=>p.Status==="Completed");
-  const future = projects.filter(p=>p.Status==="Future");
+  const onHold = visible.filter(p=>p.Status==="On-Hold").sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
+  const maint = visible.filter(p=>p.Status==="Maintenance");
+  const completed = visible.filter(p=>p.Status==="Completed");
+  const future = visible.filter(p=>p.Status==="Future");
 
   // Project counts per status, in the briefing's status order (unknown statuses appended)
   const statusCounts = {};
   for(const p of projects){ const s = p.Status || "N/A"; statusCounts[s] = (statusCounts[s]||0) + 1; }
   const statusKeys = [...STATUS_ORDER.filter(s=>statusCounts[s]), ...Object.keys(statusCounts).filter(s=>!STATUS_ORDER.includes(s))];
 
+  const doneCut = FILTERS.doneDays ? new Date(now.getTime() - FILTERS.doneDays*86400000) : null;
   const doneTasksWk = tasks.filter(t=>{
+    if(t.Status!=="Completed") return false;
+    if(FILTERS.status && FILTERS.status!=="Completed") return false;
+    if(FILTERS.priority && (t.Priority||"")!==FILTERS.priority) return false;
     const d = toDate(t.Updated) || toDate(t.End);
-    return t.Status==="Completed" && d && d>=wkStart && d<=wkEnd;
+    return d ? (!doneCut || d>=doneCut) : !doneCut;
   });
   const doneProjWk = completed.filter(p=>{
     const d = toDate(p.Updated);
-    return d && d>=wkStart && d<=wkEnd;
+    return d ? (!doneCut || d>=doneCut) : !doneCut;
   });
 
-  // Overall portfolio completion: completed / (completed + active + on-hold).
-  // Maintenance systems are ongoing by design and are excluded.
-  const denom = completed.length + active.length + onHold.length;
-  const pct = denom ? Math.round(completed.length/denom*100) : 0;
+  // Overall portfolio completion — always the full portfolio, unaffected by filters:
+  // completed / (completed + active + on-hold). Maintenance is ongoing by design and excluded.
+  const allActive = projects.filter(p=>ACTIVE_STATUSES.includes(p.Status));
+  const allOnHold = projects.filter(p=>p.Status==="On-Hold");
+  const allCompleted = projects.filter(p=>p.Status==="Completed");
+  const allMaint = projects.filter(p=>p.Status==="Maintenance");
+  const allFuture = projects.filter(p=>p.Status==="Future");
+  const denom = allCompleted.length + allActive.length + allOnHold.length;
+  const pct = denom ? Math.round(allCompleted.length/denom*100) : 0;
 
   let h = "";
 
   h += `<div class="doc-title">
     <span><b>Weekly Status Report</b><br>${esc(info.user||"ckonkol")} &middot; Information Technology &middot; Aqua-Aerobic Systems, Inc.</span>
-    <span style="text-align:right">Week of ${fmtRange(wkStart, WEEK.end)}<br>${info.exported ? (SOURCE==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}</span>
+    <span style="text-align:right">${esc(fmtDate(now))}<br>${info.exported ? (SOURCE==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}</span>
   </div>`;
+
+  if(anyFilter){
+    const focusNames = {attention:"Needs attention", due30:"Due within 30 days", overdue:"Past est. complete", nodate:"No est. date (TBD)"};
+    const bits = [];
+    if(FILTERS.status) bits.push("Status: "+FILTERS.status);
+    if(FILTERS.priority) bits.push("Priority: "+FILTERS.priority);
+    if(FILTERS.focus) bits.push("Focus: "+focusNames[FILTERS.focus]);
+    h += `<div class="filterline"><b>Filtered view</b> \u2014 ${esc(bits.join(" \u00b7 "))} \u00b7 showing ${visible.length} of ${projects.length} projects</div>`;
+  }
 
   h += `<div class="bar center">Overall Project Completion %</div>
   <div class="pctbox">${pct}%
-    <small>${completed.length} of ${denom} tracked projects completed &middot; ${maint.length} in ongoing maintenance, ${future.length} future (excluded)</small>
+    <small>${allCompleted.length} of ${denom} tracked projects completed &middot; ${allMaint.length} in ongoing maintenance, ${allFuture.length} future (excluded)</small>
   </div>`;
 
   h += `<div class="bar center">Status of Projects</div>
-  <div class="statusgrid">${statusKeys.map(s=>statusChip(s, s + ": " + statusCounts[s])).join("")}</div>`;
+  <div class="statusgrid">${statusKeys.map(s=>statusChip(s, s + ": " + statusCounts[s], FILTERS.status)).join("")}</div>
+  <p class="legend" style="text-align:center">Tap any status above to filter the report; tap it again (or Clear, in the toolbar) to show everything.</p>`;
 
-  h += `<div class="bar">Key Projects</div>
+  h += `<div class="bar">${anyFilter ? "Projects \u2014 filtered (" + top.length + ")" : "Key Projects"}</div>
   <table class="tpl">
   <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
 
+  if(!top.length){
+    h += `<tr><td colspan="4">No active projects match the current filters.</td></tr>`;
+  }
   for(const p of top){
     const [cls,code] = statusCode(p);
     const start = toDate(p.Start);
@@ -524,14 +591,16 @@ function buildReport(){
     h += `</tbody></table>`;
   }
 
-  h += `<div class="bar">Recurring Daily Workload</div>
-  <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
-  for(const d of daily){
-    const name = String(d.Name||"").split("@")[0].trim();
-    h += `<tr><td>${esc(name)}</td><td>${esc(firstLine(d.Goal))}</td></tr>`;
+  if(!anyFilter){
+    h += `<div class="bar">Recurring Daily Workload</div>
+    <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
+    for(const d of daily){
+      const name = String(d.Name||"").split("@")[0].trim();
+      h += `<tr><td>${esc(name)}</td><td>${esc(firstLine(d.Goal))}</td></tr>`;
+    }
+    h += `</tbody></table>
+    <p class="legend">Standing time off the top of every workday; the main variable behind the estimated dates above.</p>`;
   }
-  h += `</tbody></table>
-  <p class="legend">Standing time off the top of every workday; the main variable behind the estimated dates above.</p>`;
 
   if(maint.length){
     h += `<div class="bar">Systems in Maintenance (${maint.length})</div>
@@ -543,9 +612,11 @@ function buildReport(){
     h += `</tbody></table>`;
   }
 
-  h += `<div class="bar">Completed This Week</div>`;
+  const doneTitle = FILTERS.doneDays ? "Recently Completed (last " + FILTERS.doneDays + " days)" : "Recently Completed (all time)";
+  if(!anyFilter || doneProjWk.length + doneTasksWk.length){
+  h += `<div class="bar">${doneTitle}</div>`;
   if(doneProjWk.length + doneTasksWk.length === 0){
-    h += `<table class="tpl"><tbody><tr><td>No items were closed in the selected week.</td></tr></tbody></table>`;
+    h += `<table class="tpl"><tbody><tr><td>No items were closed in this window.</td></tr></tbody></table>`;
   } else {
     h += `<table class="tpl"><thead><tr><th>Item</th><th style="text-align:center">Status</th><th>Date</th></tr></thead><tbody>`;
     for(const p of doneProjWk){
@@ -555,6 +626,7 @@ function buildReport(){
       h += `<tr><td>${esc(t.Name)}</td><td class="st st-c"><span>C</span></td><td class="datecol">${esc(fmtShort(toDate(t.Updated)||toDate(t.End)))}</td></tr>`;
     }
     h += `</tbody></table>`;
+  }
   }
 
   h += `<div class="foot">
@@ -570,35 +642,54 @@ function buildReport(){
   $("printBtn").disabled = false;
 }
 
-/* ---------- week selector ---------- */
-function setupWeeks(){
-  const anchor = DATA.info.exported || new Date();
-  const sel = $("weekSel");
+/* ---------- meeting filters ---------- */
+const FILTERS = { status:"", priority:"", focus:"", doneDays:7 };
+
+function setupFilters(){
+  const sel = $("fStatus");
   sel.innerHTML = "";
-  for(let i=0;i<8;i++){
-    const start = mondayOf(anchor); start.setDate(start.getDate()-7*i);
-    const end = new Date(start); end.setDate(end.getDate()+6);
-    const opt = document.createElement("option");
-    opt.value = start.toISOString();
-    opt.textContent = fmtRange(start,end);
-    sel.appendChild(opt);
+  const all = document.createElement("option");
+  all.value = ""; all.textContent = "All statuses";
+  sel.appendChild(all);
+  const present = new Set(DATA.projects.map(p=>p.Status).filter(Boolean));
+  const list = [...STATUS_ORDER.filter(s=>present.has(s)), ...[...present].filter(s=>!STATUS_ORDER.includes(s))];
+  for(const s of list){
+    const o = document.createElement("option");
+    o.value = s; o.textContent = s;
+    sel.appendChild(o);
   }
-  sel.onchange = () => {
-    const start = new Date(sel.value);
-    const end = new Date(start); end.setDate(end.getDate()+6);
-    WEEK = {start, end};
-    buildReport();
-    /* Make the change obvious: jump to the report header and confirm.
-       (Only the header week range and "Completed This Week" depend on the week.) */
-    $("report").scrollIntoView({behavior:"smooth", block:"start"});
-    const t = $("toast");
-    t.textContent = "Showing week of " + fmtRange(start, end);
-    t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 2000);
-  };
-  const start = mondayOf(anchor), end = new Date(start); end.setDate(end.getDate()+6);
-  WEEK = {start, end};
-  $("weekpickWrap").style.display = "flex";
+  if(FILTERS.status && !present.has(FILTERS.status)) FILTERS.status = "";
+  sel.value = FILTERS.status;
+  $("filterWrap").style.display = "flex";
 }
+
+function applyFilters(){
+  FILTERS.status = $("fStatus").value;
+  FILTERS.priority = $("fPriority").value;
+  FILTERS.focus = $("fFocus").value;
+  FILTERS.doneDays = +$("fDone").value || 0;
+  buildReport();
+}
+["fStatus","fPriority","fFocus","fDone"].forEach(id=>$(id).addEventListener("change", applyFilters));
+$("fClear").addEventListener("click", ()=>{
+  $("fStatus").value = ""; $("fPriority").value = ""; $("fFocus").value = ""; $("fDone").value = "7";
+  applyFilters();
+});
+/* Tap a status chip in the key to toggle that status filter */
+$("doc").addEventListener("click", e=>{
+  const chip = e.target.closest && e.target.closest(".statusgrid .st-chip[data-status]");
+  if(!chip) return;
+  const s = chip.getAttribute("data-status");
+  const sel = $("fStatus");
+  if(![...sel.options].some(o=>o.value===s)) return;
+  sel.value = (FILTERS.status === s) ? "" : s;
+  applyFilters();
+});
+$("doc").addEventListener("keydown", e=>{
+  if((e.key==="Enter" || e.key===" ") && e.target.matches && e.target.matches(".statusgrid .st-chip[data-status]")){
+    e.preventDefault(); e.target.click();
+  }
+});
 
 /* ---------- plain-text copy ---------- */
 function reportText(){
@@ -626,7 +717,7 @@ function loadFile(file){
       const wb = XLSX.read(new Uint8Array(e.target.result), {type:"array", cellDates:true});
       DATA = parseWorkbook(wb);
       SOURCE = "file";
-      setupWeeks();
+      setupFilters();
       buildReport();
     }catch(ex){
       $("err").textContent = "Could not read that file: " + ex.message;
@@ -665,7 +756,7 @@ document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTr
 $("printBtn").addEventListener("click", ()=>{
   /* Browsers use the page title as the suggested "Save as PDF" filename */
   const user = (DATA && DATA.info.user) || "report";
-  const wk = WEEK ? WEEK.start.toISOString().slice(0,10) : new Date().toISOString().slice(0,10);
+  const wk = new Date().toISOString().slice(0,10);
   const prevTitle = document.title;
   document.title = "Weekly Report — " + user + " - " + wk;
   const restore = ()=>{ document.title = prevTitle; window.removeEventListener("afterprint", restore); };
@@ -677,8 +768,8 @@ $("printBtn").addEventListener("click", ()=>{
 $("webBtn").addEventListener("click", ()=>{
   const css = document.querySelector("style").textContent;
   const user = (DATA && DATA.info.user) || "report";
-  const wk = WEEK ? WEEK.start.toISOString().slice(0,10) : "week";
-  const title = "Weekly Status Report \u2014 " + user + " \u2014 week of " + wk;
+  const wk = new Date().toISOString().slice(0,10);
+  const title = "Weekly Status Report \u2014 " + user + " \u2014 " + wk;
   const page = "<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"UTF-8\">" +
     "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
     "<title>" + esc(title) + "</title><style>" + css +
