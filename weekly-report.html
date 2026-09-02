@@ -153,7 +153,7 @@
       <option value="">No focus</option>
       <option value="attention">Needs attention</option>
       <option value="due30">Due within 30 days</option>
-      <option value="overdue">Past est. complete</option>
+      <option value="overdue">Overdue (past est. date)</option>
       <option value="nodate">No est. date (TBD)</option>
     </select>
     <select id="fDone" aria-label="Recently completed window">
@@ -423,6 +423,20 @@ function looksBlocked(p){
     ? (firstLine(p.Milestone) || firstLine(p.Notes)) : "";
 }
 
+/* True when any milestone would render a Y chip: on hold, or past its date and not complete.
+   Mirrors the C/G/Y logic used for the indented milestone rows. */
+function hasAttentionMilestone(p){
+  const nowT = new Date();
+  return (p.MilestoneList||[]).some(ms=>{
+    const b = toDate(ms.baseDate), e = toDate(ms.estActDate);
+    const complete = ms.done || (b && e && !ms.inProgress && !ms.onHold);
+    if(complete) return false;
+    if(ms.onHold) return true;
+    const due = e || b;
+    return !!(due && due < nowT);
+  });
+}
+
 /* ---------- report ---------- */
 const PRI = {High:0, Medium:1, Low:2, "":3};
 
@@ -439,7 +453,7 @@ function buildReport(){
       const end = toDate(p.End);
       const done = p.Status === "Completed";
       switch(FILTERS.focus){
-        case "attention": if(!(p.Status==="Delayed" || p.Status==="On-Hold" || looksBlocked(p))) return false; break;
+        case "attention": if(statusCode(p)[1] !== "Y" && !hasAttentionMilestone(p)) return false; break;
         case "due30": if(done || !end || end < now || end > in30) return false; break;
         case "overdue": if(done || !end || end >= now) return false; break;
         case "nodate": if(done || end) return false; break;
@@ -509,7 +523,7 @@ function buildReport(){
   </div>`;
 
   if(anyFilter){
-    const focusNames = {attention:"Needs attention", due30:"Due within 30 days", overdue:"Past est. complete", nodate:"No est. date (TBD)"};
+    const focusNames = {attention:"Needs attention", due30:"Due within 30 days", overdue:"Overdue (past est. date)", nodate:"No est. date (TBD)"};
     const bits = [];
     if(FILTERS.status) bits.push("Status: "+FILTERS.status);
     if(FILTERS.priority) bits.push("Priority: "+FILTERS.priority);
