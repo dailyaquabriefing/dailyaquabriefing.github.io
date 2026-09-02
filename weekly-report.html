@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Weekly Report — Daily Aqua Briefing</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 <style>
@@ -168,7 +170,7 @@
   <input type="file" id="file" accept=".xlsx" aria-hidden="true">
   <button id="copyBtn" disabled>Copy as email text</button>
   <button id="webBtn" disabled>Download web report</button>
-  <button id="printBtn" disabled>Print / Save PDF</button>
+  <button id="printBtn" disabled>Save PDF</button>
 </div>
 
 <div id="err"></div>
@@ -222,6 +224,7 @@ function firstLine(v){
 
 /* ---------- parsing ---------- */
 let DATA = null;
+let MODEL = null; /* computed report model, reused by the PDF export */
 let SOURCE = null; /* "live" or "file" */
 
 /* ---------- live Firestore connection ---------- */
@@ -648,6 +651,22 @@ function buildReport(){
     <span>Aqua-Aerobic Systems, Inc. IT &middot; Protecting the World's Water</span>
   </div>`;
 
+  MODEL = {
+    info, top, onHold, maint, future, daily,
+    statusKeys, statusCounts, anyFilter, doneTasksWk, doneProjWk, doneTitle, pct,
+    pctSmall: allCompleted.length + " of " + denom + " tracked projects completed \u00b7 " + allMaint.length + " in ongoing maintenance, " + allFuture.length + " future (excluded)",
+    exportedLine: info.exported ? (SOURCE==="live" ? "Live data as of " : "Data exported ") + fmtDate(info.exported) : "",
+    filterLine: ""
+  };
+  if(anyFilter){
+    const fn = {attention:"Needs attention", due30:"Due within 30 days", overdue:"Overdue (past est. date)", nodate:"No est. date (TBD)"};
+    const fb = [];
+    if(FILTERS.status) fb.push("Status: "+FILTERS.status);
+    if(FILTERS.priority) fb.push("Priority: "+FILTERS.priority);
+    if(FILTERS.focus) fb.push("Focus: "+fn[FILTERS.focus]);
+    MODEL.filterLine = fb.join(" \u00b7 ") + " \u00b7 showing " + visible.length + " of " + projects.length + " projects";
+  }
+
   $("doc").innerHTML = h;
   /* Page title doubles as the suggested "Save as PDF" filename */
   document.title = "Weekly Report — " + (info.user || "report") + " - " + now.toISOString().slice(0,10);
@@ -769,32 +788,204 @@ document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTr
   }
 }
 
-/* Safari silently swallows window.print() if its "automatic printing" prompt was
-   dismissed with Ignore. A real anchor click (like the download button's) clears the
-   block, so we prime each print with a harmless synthetic anchor click first.
-   beforeprint tells us whether the dialog actually opened. */
-let printFired = false;
-window.addEventListener("beforeprint", ()=>{ printFired = true; $("err").style.display = "none"; });
+/* ---------- PDF export (jsPDF + AutoTable) ---------- */
+function hexToRgb(hx){
+  const m = /^#?([0-9a-f]{6})$/i.exec(hx||"");
+  if(!m) return [108,117,125];
+  const n = parseInt(m[1],16);
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+
+function saveAsPdf(){
+  if(!MODEL) return;
+  const m = MODEL;
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({unit:"pt", format:"letter"});
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const M = 40, W = pageW - M*2;
+  const BAR = [46,117,182];
+  const MUTED = [90,106,122];
+  const stFill = {"st-c":"#41a0d6","st-g":"#57b45c","st-y":"#e0a02f"};
+  let y = M;
+  const ensure = need => { if(y + need > pageH - M){ pdf.addPage(); y = M; } };
+  const bar = (text, center) => {
+    ensure(30);
+    pdf.setFillColor(BAR[0],BAR[1],BAR[2]); pdf.rect(M, y, W, 20, "F");
+    pdf.setTextColor(255,255,255); pdf.setFont("helvetica","bold"); pdf.setFontSize(11);
+    if(center) pdf.text(text, pageW/2, y+13.5, {align:"center"});
+    else pdf.text(text, M+8, y+13.5);
+    y += 26;
+  };
+  const small = (text, color) => {
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(8.5);
+    const c = color || MUTED; pdf.setTextColor(c[0],c[1],c[2]);
+    const lines = pdf.splitTextToSize(text, W);
+    ensure(lines.length*11 + 4);
+    pdf.text(lines, M, y+9); y += lines.length*11 + 6;
+  };
+  const stCell = (cls, text, fs) => cls === "st-ns"
+    ? {content:text, styles:{halign:"center", fontSize:fs||9}}
+    : {content:text, styles:{fillColor:hexToRgb(stFill[cls]), textColor:255, halign:"center", fontStyle:"bold", fontSize:fs||9}};
+  const table = opts => {
+    pdf.autoTable(Object.assign({
+      startY: y, margin:{left:M, right:M}, theme:"striped",
+      styles:{font:"helvetica", fontSize:9, cellPadding:4, textColor:[26,26,26]},
+      headStyles:{fillColor:[238,243,248], textColor:[26,26,26], fontStyle:"bold"},
+      alternateRowStyles:{fillColor:[219,231,242]}
+    }, opts));
+    y = pdf.lastAutoTable.finalY + 8;
+  };
+
+  /* header */
+  pdf.setTextColor(26,26,26); pdf.setFont("helvetica","bold"); pdf.setFontSize(15);
+  pdf.text("Weekly Status Report", M, y+12);
+  pdf.setFont("helvetica","normal"); pdf.setFontSize(9); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+  pdf.text(fmtDate(new Date()), pageW-M, y+12, {align:"right"});
+  y += 20;
+  pdf.text((m.info.user||"ckonkol") + " \u00b7 Information Technology \u00b7 Aqua-Aerobic Systems, Inc.", M, y+9);
+  if(m.exportedLine) pdf.text(m.exportedLine, pageW-M, y+9, {align:"right"});
+  y += 24;
+
+  if(m.filterLine) small("Filtered view \u2014 " + m.filterLine, [122,74,8]);
+
+  /* overall completion */
+  bar("Overall Project Completion %", true);
+  ensure(44);
+  pdf.setFont("helvetica","bold"); pdf.setFontSize(20); pdf.setTextColor(26,26,26);
+  pdf.text(m.pct + "%", pageW/2, y+16, {align:"center"});
+  pdf.setFont("helvetica","normal"); pdf.setFontSize(8.5); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+  pdf.text(m.pctSmall, pageW/2, y+30, {align:"center"});
+  y += 42;
+
+  /* status key */
+  bar("Status of Projects", true);
+  pdf.setFontSize(9); pdf.setFont("helvetica","bold");
+  let cx = M;
+  ensure(22);
+  for(const s of m.statusKeys){
+    const label = s + ": " + m.statusCounts[s];
+    const wch = pdf.getTextWidth(label) + 14;
+    if(cx + wch > pageW - M){ cx = M; y += 22; ensure(22); }
+    const c = hexToRgb(STATUS_COLORS[s] || "#6c757d");
+    pdf.setFillColor(c[0],c[1],c[2]);
+    pdf.rect(cx, y, wch, 16, "F");
+    pdf.setTextColor(255,255,255);
+    pdf.text(label, cx + wch/2, y + 11, {align:"center"});
+    cx += wch + 8;
+  }
+  y += 28;
+
+  /* key projects */
+  const kpBody = [];
+  if(!m.top.length){
+    kpBody.push([{content:"No active projects match the current filters.", colSpan:4}]);
+  }
+  for(const p of m.top){
+    const [cls, code] = statusCode(p);
+    const start = toDate(p.Start), est = toDate(p.End);
+    kpBody.push([
+      {content: p.Name + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold"}},
+      stCell(cls, code + "\n" + (p.Status||"")),
+      start ? fmtShort(start) : "",
+      est ? fmtShort(est) : "TBD"
+    ]);
+    const block = looksBlocked(p);
+    if(block) kpBody.push([{content:"Roadblock: " + block, colSpan:4, styles:{textColor:[122,74,8], fontSize:8}}]);
+    for(const ms of (p.MilestoneList||[])){
+      const b2 = toDate(ms.baseDate), e2 = toDate(ms.estActDate);
+      const complete = ms.done || (b2 && e2 && !ms.inProgress && !ms.onHold);
+      const due = e2 || b2;
+      const late = !complete && !ms.onHold && due && due < new Date();
+      let mcls, mcode;
+      if(complete){ mcls="st-c"; mcode="C"; }
+      else if(ms.onHold || late){ mcls="st-y"; mcode="Y"; }
+      else if(ms.inProgress){ mcls="st-g"; mcode="G"; }
+      else { mcls="st-ns"; mcode="N/S"; }
+      const holdNote = ms.onHold ? (ms.holdReason ? " \u2014 On hold: " + ms.holdReason : " \u2014 On hold") : "";
+      kpBody.push([
+        {content:"    " + (complete ? "\u2713 " : "\u25e6 ") + ms.name + holdNote, styles:{fontSize:8, textColor:MUTED}},
+        stCell(mcls, mcode, 8),
+        {content: b2 ? "Base " + fmtShort(b2) : "", styles:{fontSize:8, textColor: (late && !e2) ? [176,42,42] : MUTED}},
+        {content: e2 ? (complete ? "Act " : "Est ") + fmtShort(e2) : "", styles:{fontSize:8, textColor: (late && e2) ? [176,42,42] : MUTED}}
+      ]);
+    }
+  }
+  bar(m.anyFilter ? "Projects \u2014 filtered (" + m.top.length + ")" : "Key Projects");
+  table({
+    head:[["Project","Status","Start","Est/Act Complete"]],
+    body: kpBody,
+    columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:62}, 3:{cellWidth:88}}
+  });
+  small("Status: C = Complete \u00b7 G = In progress, on track \u00b7 T = In testing \u00b7 Y = On hold / delayed / blocked \u00b7 N/S = Not started. The stage name in each status cell is the project's current stage in the Daily Aqua Briefing.");
+
+  /* on hold */
+  if(m.onHold.length){
+    bar("On Hold");
+    table({
+      head:[["Project","Status","Reason"]],
+      body: m.onHold.map(p=>[
+        {content:p.Name, styles:{fontStyle:"bold"}},
+        stCell("st-y","Y\nOn-Hold"),
+        firstLine(p.Milestone) || firstLine(p.Notes) || ""
+      ]),
+      columnStyles:{1:{cellWidth:78, halign:"center"}}
+    });
+  }
+
+  /* daily workload — unfiltered view only */
+  if(!m.anyFilter && m.daily.length){
+    bar("Recurring Daily Workload");
+    table({
+      head:[["Daily check / report","Purpose"]],
+      body: m.daily.map(d=>[String(d.Name||"").split("@")[0].trim(), firstLine(d.Goal)])
+    });
+    small("Standing time off the top of every workday; the main variable behind the estimated dates above.");
+  }
+
+  /* maintenance */
+  if(m.maint.length){
+    bar("Systems in Maintenance (" + m.maint.length + ")");
+    const mb = [];
+    for(let i=0;i<m.maint.length;i+=2){
+      mb.push([String(m.maint[i].Name).replace(/:\s*$/,""), m.maint[i+1] ? String(m.maint[i+1].Name).replace(/:\s*$/,"") : ""]);
+    }
+    table({ body: mb });
+  }
+
+  /* recently completed */
+  if(!m.anyFilter || m.doneProjWk.length + m.doneTasksWk.length){
+    bar(m.doneTitle);
+    if(m.doneProjWk.length + m.doneTasksWk.length === 0){
+      table({ body:[["No items were closed in this window."]] });
+    } else {
+      table({
+        head:[["Item","Status","Date"]],
+        body: [
+          ...m.doneProjWk.map(p=>[{content:p.Name + " (project)", styles:{fontStyle:"bold"}}, stCell("st-c","C"), fmtShort(toDate(p.Updated))]),
+          ...m.doneTasksWk.map(t=>[t.Name, stCell("st-c","C"), fmtShort(toDate(t.Updated)||toDate(t.End))])
+        ],
+        columnStyles:{1:{cellWidth:50, halign:"center"}, 2:{cellWidth:70}}
+      });
+    }
+  }
+
+  /* footer */
+  ensure(20);
+  pdf.setFont("helvetica","normal"); pdf.setFontSize(8); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+  pdf.text("Generated from the Daily Aqua Briefing " + (SOURCE==="live" ? "live data" : "export") + " \u00b7 " + new Date().toLocaleDateString("en-US"), M, y+10);
+  pdf.text("Aqua-Aerobic Systems, Inc. IT \u00b7 Protecting the World's Water", pageW-M, y+10, {align:"right"});
+
+  pdf.save("WeeklyReport_" + (m.info.user||"report") + "_" + new Date().toISOString().slice(0,10) + ".pdf");
+}
+
 $("printBtn").addEventListener("click", ()=>{
-  printFired = false;
   try{
-    const a = document.createElement("a");
-    a.href = "#print"; a.style.display = "none";
-    document.body.appendChild(a); a.click(); a.remove();
-    if(location.hash === "#print") history.replaceState(null, "", location.pathname + location.search);
-  }catch(e){}
-  window.print();
-  setTimeout(()=>{
-    if(printFired) return;
-    const b = $("err");
-    b.innerHTML = "<b>The browser blocked the print dialog.</b> " +
-      "<button id=\"printReset\" style=\"background:var(--bar);color:#fff;border:none;border-radius:4px;padding:8px 14px;font-weight:bold;font-family:inherit;cursor:pointer\">Reset print</button> " +
-      "&mdash; tap it, <b>cancel</b> the download that pops up, then tap Print again. " +
-      "(Or close and reopen this tab and choose <b>Allow</b> when asked.)";
-    b.style.display = "block";
-    $("printReset").addEventListener("click", ()=>{ $("webBtn").click(); });
-    b.scrollIntoView({behavior:"smooth", block:"center"});
-  }, 800);
+    saveAsPdf();
+  }catch(ex){
+    $("err").textContent = "Could not generate the PDF: " + ex.message;
+    $("err").style.display = "block";
+  }
 });
 
 $("webBtn").addEventListener("click", ()=>{
