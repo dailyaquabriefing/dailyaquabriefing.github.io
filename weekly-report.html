@@ -770,17 +770,29 @@ document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTr
 }
 
 /* Safari silently swallows window.print() if its "automatic printing" prompt was
-   dismissed with Ignore. beforeprint tells us whether the dialog actually opened. */
+   dismissed with Ignore. A real anchor click (like the download button's) clears the
+   block, so we prime each print with a harmless synthetic anchor click first.
+   beforeprint tells us whether the dialog actually opened. */
 let printFired = false;
 window.addEventListener("beforeprint", ()=>{ printFired = true; $("err").style.display = "none"; });
 $("printBtn").addEventListener("click", ()=>{
   printFired = false;
+  try{
+    const a = document.createElement("a");
+    a.href = "#print"; a.style.display = "none";
+    document.body.appendChild(a); a.click(); a.remove();
+    if(location.hash === "#print") history.replaceState(null, "", location.pathname + location.search);
+  }catch(e){}
   window.print();
   setTimeout(()=>{
     if(printFired) return;
     const b = $("err");
-    b.innerHTML = "<b>The browser blocked the print dialog.</b> Quick fix: tap <b>Download web report</b>, cancel the download, then tap Print again &mdash; that resets the block. Or close and reopen this tab (choose <b>Allow</b> if prompted), or use the browser's Share / menu button and pick <b>Print</b> there.";
+    b.innerHTML = "<b>The browser blocked the print dialog.</b> " +
+      "<button id=\"printReset\" style=\"background:var(--bar);color:#fff;border:none;border-radius:4px;padding:8px 14px;font-weight:bold;font-family:inherit;cursor:pointer\">Reset print</button> " +
+      "&mdash; tap it, <b>cancel</b> the download that pops up, then tap Print again. " +
+      "(Or close and reopen this tab and choose <b>Allow</b> when asked.)";
     b.style.display = "block";
+    $("printReset").addEventListener("click", ()=>{ $("webBtn").click(); });
     b.scrollIntoView({behavior:"smooth", block:"center"});
   }, 800);
 });
