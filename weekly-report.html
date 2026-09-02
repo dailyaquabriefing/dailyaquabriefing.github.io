@@ -9,22 +9,21 @@
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 <style>
   :root{
-    --bar:#2E75B6;          /* section bar blue, matches template */
+    --bar:#2E75B6; /* section bar blue, matches template */
     --bar-dark:#215a8f;
     --ink:#1a1a1a;
     --muted:#5a6a7a;
     --paper:#ffffff;
     --wash:#eef3f8;
-    --row-blue:#dbe7f2;     /* alternating row blue */
-    --row-grey:#efefef;     /* alternating row grey */
+    --row-blue:#dbe7f2; /* alternating row blue */
+    --row-grey:#efefef; /* alternating row grey */
     --border:#9db8d2;
-    --st-c:#41a0d6;         /* Complete */
-    --st-g:#57b45c;         /* Green / on track */
-    --st-y:#e0a02f;         /* Yellow / on hold, at risk */
+    --st-c:#41a0d6; /* Complete */
+    --st-g:#57b45c; /* Green / on track */
+    --st-y:#e0a02f; /* Yellow / on hold, at risk */
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:Arial, Helvetica, sans-serif;color:var(--ink);background:var(--wash);font-size:15px;line-height:1.4}
-
   /* ---- App chrome (hidden on print) ---- */
   .toolbar{background:var(--bar-dark);color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
   .toolbar h1{font-size:17px;font-weight:bold;flex:1;min-width:220px}
@@ -35,7 +34,6 @@
   .toolbar input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
   .weekpick{display:flex;align-items:center;gap:6px;font-size:13px}
   .weekpick select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none}
-
   /* ---- Drop zone / connect card ---- */
   #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--border);border-radius:8px;padding:40px 32px;text-align:center;transition:border-color .15s, background .15s}
   #dropzone.drag{border-color:var(--bar);background:#f4f8fc}
@@ -50,20 +48,16 @@
   #dropfile:hover{border-color:var(--bar)}
   #dropfile:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
   #err{max-width:860px;margin:14px auto;background:#fbe9e9;border:1px solid #d99;border-radius:6px;padding:12px 16px;color:#7a1f1f;display:none}
-
   /* ---- Report document, template style ---- */
   #report{max-width:860px;margin:26px auto 60px;background:var(--paper);box-shadow:0 1px 8px rgba(30,50,70,.12);display:none}
   .doc{padding:30px 34px 40px}
   .doc-title{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;font-size:13px;color:var(--muted)}
   .doc-title b{color:var(--ink);font-size:16px}
-
   .bar{background:var(--bar);color:#fff;font-weight:bold;font-size:15px;padding:8px 14px;border:1px solid var(--bar-dark);margin-top:22px}
   .bar.center{text-align:center}
   .bar:first-of-type{margin-top:0}
-
   .pctbox{border:1px solid var(--ink);border-top:none;text-align:center;font-size:26px;font-weight:bold;padding:22px 10px;background:#fff}
   .pctbox small{display:block;font-size:11.5px;font-weight:normal;color:var(--muted);margin-top:6px}
-
   table.tpl{width:100%;border-collapse:collapse;font-size:14px}
   table.tpl th{background:#fff;font-weight:bold;text-align:left;padding:9px 12px;border-bottom:2px solid var(--border)}
   table.tpl td{padding:9px 12px;vertical-align:top}
@@ -76,7 +70,7 @@
   .st-y span{background:var(--st-y);color:#fff}
   .st-ns span{background:#fff;color:var(--ink)}
   .st-chip{display:inline-block;padding:3px 10px;border:1px solid rgba(0,0,0,.15);color:#fff;font-weight:bold;font-size:12px;white-space:nowrap}
-  .st .stname{display:block;font-size:10.5px;color:var(--muted);font-weight:normal;margin-top:3px;white-space:normal;max-width:110px;margin-left:auto;margin-right:auto}
+  .st .stname{display:block;font-size:10.5px;color:#fff;font-weight:bold;margin-top:3px;white-space:normal;max-width:110px;margin-left:auto;margin-right:auto}
   .statusgrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;border:1px solid var(--ink);border-top:none;padding:14px 12px;background:#fff}
   td.datecol{white-space:nowrap;width:110px}
   tr.note td{font-size:12.5px;color:#7a4a08;padding-top:0}
@@ -87,20 +81,41 @@
   tr.msrow td:first-child{padding-left:30px}
   tr.msrow .st span{min-width:34px;padding:1px 6px;font-size:11px}
   tr.msrow td.late{color:#b02a2a;font-weight:bold}
-
   .legend{font-size:12px;color:var(--muted);margin-top:8px}
   .legend b{font-weight:bold;color:var(--ink)}
-
   .foot{margin-top:30px;padding-top:12px;border-top:2px solid var(--bar);font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
-
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
   .toast.show{opacity:1}
-
   @media (max-width:640px){
-    .doc{padding:20px 14px 28px}
-    table.tpl{font-size:12.5px}
-    table.tpl th, table.tpl td{padding:7px 8px}
-    td.datecol{width:auto}
+    body{font-size:14px}
+    /* Toolbar: title on its own line, buttons in a 2-up grid */
+    .toolbar{padding:10px 12px;gap:8px}
+    .toolbar h1{font-size:15px;flex:1 1 100%;min-width:0}
+    .toolbar button, .toolbar label.btn{flex:1 1 calc(50% - 8px);padding:10px 8px;font-size:12.5px;text-align:center}
+    .weekpick{flex:1 1 100%;justify-content:space-between}
+    .weekpick select{flex:1;min-width:0}
+    /* Connect card: stacked, full-width controls */
+    #dropzone{margin:18px 12px;padding:24px 16px}
+    #dropzone .big{font-size:17px}
+    #connectRow{flex-direction:column;align-items:stretch}
+    #connectRow input{width:100%}
+    #dropfile{max-width:none}
+    /* Report document */
+    #report{margin:14px 8px 40px}
+    .doc{padding:16px 10px 24px}
+    .doc-title{flex-direction:column;gap:4px}
+    .doc-title span{text-align:left !important}
+    .pctbox{font-size:22px;padding:16px 8px}
+    .bar{font-size:14px;padding:7px 10px}
+    table.tpl{font-size:12px}
+    table.tpl th, table.tpl td{padding:6px 6px}
+    td.datecol{width:auto;white-space:normal}
+    .st span{min-width:32px;padding:2px 6px}
+    .st .stname{font-size:9.5px;max-width:84px}
+    .st-chip{font-size:11px;padding:3px 8px}
+    .statusgrid{padding:10px 8px;gap:6px}
+    tr.msrow td:first-child{padding-left:14px}
+    .foot{flex-direction:column;gap:4px}
   }
   @media print{
     body{background:#fff;font-size:11.5px}
@@ -150,9 +165,11 @@
 
 <script>
 "use strict";
+
 /* ---------- helpers ---------- */
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
 function toDate(v){
   if(v==null || v==="") return null;
   if(v instanceof Date && !isNaN(v)) return v;
@@ -171,6 +188,7 @@ const fmtShort = d => d ? (d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullY
 const fmtDate = d => d ? d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "";
 const fmtRange = (a,b) => a.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + " \u2013 " + b.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
 function mondayOf(d){ const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); return x; }
+
 function firstLine(v){
   if(!v) return "";
   const s = String(v).replace(/_x000d_/gi,"\n").replace(/\r/g,"\n");
@@ -272,7 +290,6 @@ function loadLive(reportId){
   $("err").style.display = "none";
   const btn = $("liveBtn");
   btn.disabled = true; btn.textContent = "Connecting…";
-
   db.collection("briefings").doc(id).get().then(doc=>{
     if(!doc.exists) throw new Error("No briefing found for \""+id+"\". Check the User ID.");
     const d = doc.data();
@@ -327,22 +344,32 @@ function parseWorkbook(wb){
 /* ---------- status display (uses the briefing's real project statuses) ---------- */
 const STATUS_ORDER = ["Delayed","Requirement Gathering","On Track","Development","Testing","Training","Follow-Up","Future","On-Hold","Completed","Maintenance"];
 const STATUS_COLORS = {
-  "Future":                "#adb5bd",
+  "Future": "#adb5bd",
   "Requirement Gathering": "#17a2b8",
-  "On Track":              "#28a745",
-  "Development":           "#6610f2",
-  "Testing":               "#ff9f43",
-  "Training":              "#20c997",
-  "Completed":             "#800080",
-  "Follow-Up":             "#fd7e14",
-  "Maintenance":           "#9b59b6",
-  "Delayed":               "#dc3545",
-  "On-Hold":               "#6c757d"
+  "On Track": "#28a745",
+  "Development": "#6610f2",
+  "Testing": "#ff9f43",
+  "Training": "#20c997",
+  "Completed": "#800080",
+  "Follow-Up": "#fd7e14",
+  "Maintenance": "#9b59b6",
+  "Delayed": "#dc3545",
+  "On-Hold": "#6c757d"
 };
+
 function statusChip(status, label){
   const c = STATUS_COLORS[status] || "#6c757d";
   return `<span class="st-chip" style="background:${c}">${esc(label || status || "N/A")}</span>`;
 }
+
+/* Small stage label under the letter code — background matches the
+   Status of Projects key colors (STATUS_COLORS), not the letter chip. */
+function stageLabel(status){
+  if(!status) return "";
+  const c = STATUS_COLORS[status] || "#6c757d";
+  return `<span class="stname" style="background:${c}">${esc(status)}</span>`;
+}
+
 /* In-flight statuses shown in the Key Projects table */
 const ACTIVE_STATUSES = ["On Track","Development","Testing","Training","Requirement Gathering","Follow-Up","Delayed"];
 
@@ -365,6 +392,7 @@ function statusCode(p){
     default: return ["st-ns","N/S"];
   }
 }
+
 function looksBlocked(p){
   const t = ((p.Milestone||"")+" "+(p.Notes||"")).toLowerCase();
   return ["pending","on hold","waiting","gated","until"].some(h=>t.includes(h))
@@ -394,6 +422,7 @@ function buildReport(){
   });
   const top = active.slice(0,10);
   const rest = active.slice(10);
+
   const onHold = projects.filter(p=>p.Status==="On-Hold").sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
   const maint = projects.filter(p=>p.Status==="Maintenance");
   const completed = projects.filter(p=>p.Status==="Completed");
@@ -403,6 +432,7 @@ function buildReport(){
   const statusCounts = {};
   for(const p of projects){ const s = p.Status || "N/A"; statusCounts[s] = (statusCounts[s]||0) + 1; }
   const statusKeys = [...STATUS_ORDER.filter(s=>statusCounts[s]), ...Object.keys(statusCounts).filter(s=>!STATUS_ORDER.includes(s))];
+
   const doneTasksWk = tasks.filter(t=>{
     const d = toDate(t.Updated) || toDate(t.End);
     return t.Status==="Completed" && d && d>=wkStart && d<=wkEnd;
@@ -418,33 +448,35 @@ function buildReport(){
   const pct = denom ? Math.round(completed.length/denom*100) : 0;
 
   let h = "";
+
   h += `<div class="doc-title">
-          <span><b>Weekly Status Report</b><br>${esc(info.user||"ckonkol")} &middot; Information Technology &middot; Aqua-Aerobic Systems, Inc.</span>
-          <span style="text-align:right">Week of ${fmtRange(wkStart, WEEK.end)}<br>${info.exported ? (SOURCE==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}</span>
-        </div>`;
+    <span><b>Weekly Status Report</b><br>${esc(info.user||"ckonkol")} &middot; Information Technology &middot; Aqua-Aerobic Systems, Inc.</span>
+    <span style="text-align:right">Week of ${fmtRange(wkStart, WEEK.end)}<br>${info.exported ? (SOURCE==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}</span>
+  </div>`;
 
   h += `<div class="bar center">Overall Project Completion %</div>
-        <div class="pctbox">${pct}%
-          <small>${completed.length} of ${denom} tracked projects completed &middot; ${maint.length} in ongoing maintenance, ${future.length} future (excluded)</small>
-        </div>`;
+  <div class="pctbox">${pct}%
+    <small>${completed.length} of ${denom} tracked projects completed &middot; ${maint.length} in ongoing maintenance, ${future.length} future (excluded)</small>
+  </div>`;
 
   h += `<div class="bar center">Status of Projects</div>
-        <div class="statusgrid">${statusKeys.map(s=>statusChip(s, s + ": " + statusCounts[s])).join("")}</div>`;
+  <div class="statusgrid">${statusKeys.map(s=>statusChip(s, s + ": " + statusCounts[s])).join("")}</div>`;
 
   h += `<div class="bar">Key Projects</div>
-        <table class="tpl">
-          <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
+  <table class="tpl">
+  <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
+
   for(const p of top){
     const [cls,code] = statusCode(p);
     const start = toDate(p.Start);
     const est = toDate(p.End);
     const block = looksBlocked(p);
     h += `<tr>
-            <td><b>${esc(p.Name)}</b>${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
-            <td class="st ${cls}"><span>${code}</span><span class="stname">${esc(p.Status||"")}</span></td>
-            <td class="datecol">${start ? esc(fmtShort(start)) : ""}</td>
-            <td class="datecol">${est ? esc(fmtShort(est)) : "TBD"}</td>
-          </tr>`;
+      <td><b>${esc(p.Name)}</b>${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
+      <td class="st ${cls}"><span>${code}</span>${stageLabel(p.Status)}</td>
+      <td class="datecol">${start ? esc(fmtShort(start)) : ""}</td>
+      <td class="datecol">${est ? esc(fmtShort(est)) : "TBD"}</td>
+    </tr>`;
     if(block) h += `<tr class="note"><td colspan="4">${esc(block)}</td></tr>`;
     for(const ms of (p.MilestoneList||[])){
       const b = toDate(ms.baseDate), e = toDate(ms.estActDate);
@@ -455,54 +487,55 @@ function buildReport(){
       const due = e || b;
       const late = !complete && !ms.onHold && due && due < new Date();
       let mcls, mcode;
-      if(complete)            { mcls="st-c";  mcode="C"; }
-      else if(ms.onHold)      { mcls="st-y";  mcode="Y"; }
-      else if(late)           { mcls="st-y";  mcode="Y"; }
-      else if(ms.inProgress)  { mcls="st-g";  mcode="G"; }
-      else                    { mcls="st-ns"; mcode="N/S"; }
+      if(complete) { mcls="st-c"; mcode="C"; }
+      else if(ms.onHold) { mcls="st-y"; mcode="Y"; }
+      else if(late) { mcls="st-y"; mcode="Y"; }
+      else if(ms.inProgress) { mcls="st-g"; mcode="G"; }
+      else { mcls="st-ns"; mcode="N/S"; }
       const holdNote = ms.onHold && ms.holdReason ? ` — <i>On hold: ${esc(ms.holdReason)}</i>` : (ms.onHold ? " — <i>On hold</i>" : "");
       h += `<tr class="msrow">
-              <td>${complete ? "✔" : "◦"} ${esc(ms.name)}${holdNote}</td>
-              <td class="st ${mcls}"><span>${mcode}</span></td>
-              <td class="datecol${late && !e ? " late" : ""}">${b ? "Base " + esc(fmtShort(b)) : ""}</td>
-              <td class="datecol${late && e ? " late" : ""}">${e ? (complete ? "Act " : "Est ") + esc(fmtShort(e)) : ""}</td>
-            </tr>`;
+        <td>${complete ? "✔" : "◦"} ${esc(ms.name)}${holdNote}</td>
+        <td class="st ${mcls}"><span>${mcode}</span></td>
+        <td class="datecol${late && !e ? " late" : ""}">${b ? "Base " + esc(fmtShort(b)) : ""}</td>
+        <td class="datecol${late && e ? " late" : ""}">${e ? (complete ? "Act " : "Est ") + esc(fmtShort(e)) : ""}</td>
+      </tr>`;
     }
   }
   h += `</tbody></table>`;
+
   if(rest.length){
     h += `<p class="legend">Also active: ${rest.map(p=>esc(p.Name)).join("; ")}.</p>`;
   }
   if(future.length){
     h += `<p class="legend">Up next (Future): ${future.map(p=>esc(p.Name)).join("; ")}.</p>`;
   }
-  h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing.</p>`;
+  h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing, colored to match the Status of Projects key above.</p>`;
   if(top.some(p=>(p.MilestoneList||[]).length)){
     h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or both dates entered) &middot; G = in progress &middot; Y = on hold (reason shown) or past its date &middot; N/S = not started &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
   }
 
   if(onHold.length){
     h += `<div class="bar">On Hold</div>
-          <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th colspan="2">Reason</th></tr></thead><tbody>`;
+    <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th colspan="2">Reason</th></tr></thead><tbody>`;
     for(const p of onHold){
       const why = firstLine(p.Milestone) || firstLine(p.Notes) || "";
-      h += `<tr><td><b>${esc(p.Name)}</b></td><td class="st st-y"><span>Y</span><span class="stname">On-Hold</span></td><td colspan="2">${esc(why)}</td></tr>`;
+      h += `<tr><td><b>${esc(p.Name)}</b></td><td class="st st-y"><span>Y</span>${stageLabel("On-Hold")}</td><td colspan="2">${esc(why)}</td></tr>`;
     }
     h += `</tbody></table>`;
   }
 
   h += `<div class="bar">Recurring Daily Workload</div>
-        <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
+  <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
   for(const d of daily){
     const name = String(d.Name||"").split("@")[0].trim();
     h += `<tr><td>${esc(name)}</td><td>${esc(firstLine(d.Goal))}</td></tr>`;
   }
   h += `</tbody></table>
-        <p class="legend">Standing time off the top of every workday; the main variable behind the estimated dates above.</p>`;
+  <p class="legend">Standing time off the top of every workday; the main variable behind the estimated dates above.</p>`;
 
   if(maint.length){
     h += `<div class="bar">Systems in Maintenance (${maint.length})</div>
-          <table class="tpl"><tbody>`;
+    <table class="tpl"><tbody>`;
     for(let i=0;i<maint.length;i+=2){
       const a = maint[i], b = maint[i+1];
       h += `<tr><td>${esc(String(a.Name).replace(/:\s*$/,""))}</td><td>${b?esc(String(b.Name).replace(/:\s*$/,"")):""}</td></tr>`;
@@ -525,9 +558,9 @@ function buildReport(){
   }
 
   h += `<div class="foot">
-          <span>Generated from the Daily Aqua Briefing ${SOURCE==="live" ? "live data" : "export"} &middot; ${esc(new Date().toLocaleDateString("en-US"))}</span>
-          <span>Aqua-Aerobic Systems, Inc. IT &middot; Protecting the World's Water</span>
-        </div>`;
+    <span>Generated from the Daily Aqua Briefing ${SOURCE==="live" ? "live data" : "export"} &middot; ${esc(new Date().toLocaleDateString("en-US"))}</span>
+    <span>Aqua-Aerobic Systems, Inc. IT &middot; Protecting the World's Water</span>
+  </div>`;
 
   $("doc").innerHTML = h;
   $("report").style.display = "block";
@@ -596,9 +629,11 @@ function loadFile(file){
   };
   reader.readAsArrayBuffer(file);
 }
+
 $("file").addEventListener("change", e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
 $("liveBtn").addEventListener("click", ()=> loadLive($("liveUser").value));
 $("liveUser").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadLive($("liveUser").value); } });
+
 const dz = $("dropzone");
 const df = $("dropfile");
 df.addEventListener("click", ()=> $("file").click());
@@ -632,6 +667,7 @@ $("printBtn").addEventListener("click", ()=>{
   window.print();
   setTimeout(restore, 2000); /* fallback if afterprint never fires */
 });
+
 $("webBtn").addEventListener("click", ()=>{
   const css = document.querySelector("style").textContent;
   const user = (DATA && DATA.info.user) || "report";
@@ -650,6 +686,7 @@ $("webBtn").addEventListener("click", ()=>{
   document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
 });
+
 $("copyBtn").addEventListener("click", async ()=>{
   try{
     await navigator.clipboard.writeText(reportText());
@@ -660,5 +697,6 @@ $("copyBtn").addEventListener("click", async ()=>{
   }
 });
 </script>
+
 </body>
 </html>
