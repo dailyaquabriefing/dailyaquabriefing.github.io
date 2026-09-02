@@ -779,7 +779,7 @@ $("printBtn").addEventListener("click", ()=>{
   setTimeout(()=>{
     if(printFired) return;
     const b = $("err");
-    b.innerHTML = "<b>The browser blocked the print dialog.</b> Close this tab, reopen the page, and tap Print once (choose <b>Allow</b> if prompted) &mdash; or use the browser's Share / menu button and pick <b>Print</b> there, which is never blocked.";
+    b.innerHTML = "<b>The browser blocked the print dialog.</b> Quick fix: tap <b>Download web report</b>, cancel the download, then tap Print again &mdash; that resets the block. Or close and reopen this tab (choose <b>Allow</b> if prompted), or use the browser's Share / menu button and pick <b>Print</b> there.";
     b.style.display = "block";
     b.scrollIntoView({behavior:"smooth", block:"center"});
   }, 800);
