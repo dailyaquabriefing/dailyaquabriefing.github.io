@@ -588,6 +588,12 @@ function setupWeeks(){
     const end = new Date(start); end.setDate(end.getDate()+6);
     WEEK = {start, end};
     buildReport();
+    /* Make the change obvious: jump to the report header and confirm.
+       (Only the header week range and "Completed This Week" depend on the week.) */
+    $("report").scrollIntoView({behavior:"smooth", block:"start"});
+    const t = $("toast");
+    t.textContent = "Showing week of " + fmtRange(start, end);
+    t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 2000);
   };
   const start = mondayOf(anchor), end = new Date(start); end.setDate(end.getDate()+6);
   WEEK = {start, end};
@@ -690,7 +696,7 @@ $("webBtn").addEventListener("click", ()=>{
 $("copyBtn").addEventListener("click", async ()=>{
   try{
     await navigator.clipboard.writeText(reportText());
-    const t=$("toast"); t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1600);
+    const t=$("toast"); t.textContent="Copied"; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),1600);
   }catch(e){
     $("err").textContent="Copy failed — select the report text and copy manually.";
     $("err").style.display="block";
