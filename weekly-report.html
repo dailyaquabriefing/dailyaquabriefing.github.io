@@ -649,6 +649,8 @@ function buildReport(){
   </div>`;
 
   $("doc").innerHTML = h;
+  /* Page title doubles as the suggested "Save as PDF" filename */
+  document.title = "Weekly Report — " + (info.user || "report") + " - " + now.toISOString().slice(0,10);
   $("report").style.display = "block";
   $("dropzone").style.display = "none";
   $("copyBtn").disabled = false;
@@ -767,16 +769,20 @@ document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTr
   }
 }
 
+/* Safari silently swallows window.print() if its "automatic printing" prompt was
+   dismissed with Ignore. beforeprint tells us whether the dialog actually opened. */
+let printFired = false;
+window.addEventListener("beforeprint", ()=>{ printFired = true; $("err").style.display = "none"; });
 $("printBtn").addEventListener("click", ()=>{
-  /* Browsers use the page title as the suggested "Save as PDF" filename */
-  const user = (DATA && DATA.info.user) || "report";
-  const wk = new Date().toISOString().slice(0,10);
-  const prevTitle = document.title;
-  document.title = "Weekly Report — " + user + " - " + wk;
-  const restore = ()=>{ document.title = prevTitle; window.removeEventListener("afterprint", restore); };
-  window.addEventListener("afterprint", restore);
+  printFired = false;
   window.print();
-  setTimeout(restore, 2000); /* fallback if afterprint never fires */
+  setTimeout(()=>{
+    if(printFired) return;
+    const b = $("err");
+    b.innerHTML = "<b>The browser blocked the print dialog.</b> Close this tab, reopen the page, and tap Print once (choose <b>Allow</b> if prompted) &mdash; or use the browser's Share / menu button and pick <b>Print</b> there, which is never blocked.";
+    b.style.display = "block";
+    b.scrollIntoView({behavior:"smooth", block:"center"});
+  }, 800);
 });
 
 $("webBtn").addEventListener("click", ()=>{
