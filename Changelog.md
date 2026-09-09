@@ -5,6 +5,22 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-09-09
+
+### Added
+- **Assigned To** field on Projects and Active Tasks (requested by James for the weekly report):
+  - Admin edit modal: new dropdown after Status/Priority with Steve Williams, Chuck Konkol, Dan Burns, Paul Stanek, Matt Markley, Mark Milligan, Nick Schroeder, Carmen Shields, N/A, and **Other (Enter Name)** — picking Other reveals a text box for a custom name. New items default to **N/A**; choosing Other with a blank name also saves as N/A.
+  - Weekly report: new **Assigned To** column in the Key Projects, On Hold, and Recently Completed tables. Works in both live Firestore mode and the `.xlsx` drop fallback (reads the export's new `Assigned_To` column). Unassigned projects show **N/A**. Carries through to the jsPDF "Print / Save PDF" export, the downloadable web report, and "Copy as email text".
+  - Viewer (`app.js`): expanded item details show a green "👤 Assigned To" badge; the admin list preview shows 👤 with the assignee next to Status and Priority.
+  - Excel export: new `Assigned_To` column (defaults to N/A).
+- Shared site navigation bar (`nav.js`) added to every page (Briefing, Dashboard, Status Report, Setup, Help, Users (IT)). It remembers the last used report ID (from `?report=`/`?daily=` or the admin dashboard) so the Briefing and Status Report links stay personalized, highlights the current page, and hides itself when printing.
+
+### Changed
+- Merged the separately uploaded weekly-report rework (status/priority/focus filters with tappable status chips, direct PDF download via jsPDF, "Recently Completed" window) with the Assigned To column integrated into all of its render paths, including the PDF tables.
+- Home page: the old inline nav links (Weekly Status Report / Admin Dashboard / How to Use) were removed in favor of the shared nav bar; Analytics and Export to Excel stay in the report toolbar.
+- Items saved before this release have no assignee stored and show **N/A** on the weekly report until edited.
+- How-to page documents the new Assigned To field.
+
 ## [1.7.1] - 2026-09-01
 
 ### Changed

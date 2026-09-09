@@ -303,14 +303,15 @@ html += '<ol style="padding-left:20px;">';
 
 filteredItems.forEach((item) => {
     const index = originalItems.indexOf(item);
-        let name, notes = '', status, priority = '', milestone = '', milestones = [], tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
+        let name, notes = '', status, priority = '', assignedTo = '', milestone = '', milestones = [], tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
         let dailyChecks = item.dailyChecks || [];    
         
         if (typeof item === 'object' && item !== null && item.name) {
             name = item.name;
             notes = item.notes || '';
             status = item.status;
-            priority = item.priority; 
+            priority = item.priority;
+            assignedTo = item.assignedTo;
             milestone = item.milestone;
             milestones = Array.isArray(item.milestones) ? item.milestones : [];
             tester = item.tester;
@@ -402,6 +403,7 @@ if (safeNotes) {
         if (lastUpdated) dateParts.push(`Updated: ${lastUpdated}`);
         if (endDate) dateParts.push(`End: ${endDate}`);
         if (dateParts.length > 0) metaHtml += `<div style="font-size:0.8em; color:#777; margin-top:2px;">📅 ${dateParts.join(' | ')}</div>`;
+        if (assignedTo) metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#e8f5e9; color:#2e7d32; padding:1px 6px; border-radius:4px; border:1px solid #c8e6c9;">👤 Assigned To: ${assignedTo}</span></div>`;
         if (tester) metaHtml += `<div style="margin-top:2px;"><span style="font-size:0.75em; background:#eef; color:#336; padding:1px 6px; border-radius:4px; border:1px solid #dde;">👤 Tester: ${tester}</span></div>`;
 
         // Attachments
@@ -863,7 +865,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (targetId) {
         document.getElementById('link-weekly').href = "?report=" + encodeURIComponent(targetId);
         document.getElementById('link-daily').href = "?daily=" + encodeURIComponent(targetId);
-        document.getElementById('link-status-report').href = "weekly-report.html?report=" + encodeURIComponent(targetId);
 
         db.collection('briefings').doc(targetId).get().then(doc => {
             if (doc.exists) {
@@ -982,6 +983,7 @@ function exportReportToExcel() {
                 Daily_Check_Status: checkStatus,
                 Daily_Check_Note: stripHtml(checkNote),
                 Priority: item.priority || "",
+                Assigned_To: item.assignedTo || "N/A",
                 Goal: item.goal || "",
                 Milestone: item.milestone || "",
                 Milestones: milestonesStr,

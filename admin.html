@@ -344,6 +344,7 @@
         }
 /* duplicate overrides removed — consolidated above */
     </style>
+<script src="nav.js" defer></script>
 </head>
 <body>
 
@@ -491,6 +492,23 @@
                         <option value="Low">Low</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="form-group complex-only">
+                <label>Assigned To</label>
+                <select id="m-assigned" class="w-full" onchange="onAssignedChange()">
+                    <option value="Steve Williams">Steve Williams</option>
+                    <option value="Chuck Konkol">Chuck Konkol</option>
+                    <option value="Dan Burns">Dan Burns</option>
+                    <option value="Paul Stanek">Paul Stanek</option>
+                    <option value="Matt Markley">Matt Markley</option>
+                    <option value="Mark Milligan">Mark Milligan</option>
+                    <option value="Nick Schroeder">Nick Schroeder</option>
+                    <option value="Carmen Shields">Carmen Shields</option>
+                    <option value="N/A">N/A</option>
+                    <option value="Other">Other (Enter Name)</option>
+                </select>
+                <input type="text" id="m-assigned-other" class="w-full" placeholder="Enter name..." style="display:none; margin-top:8px;">
             </div>
 
             <div class="form-group">
@@ -702,6 +720,8 @@
             const viewLink = document.getElementById('view-briefing-link');
             viewLink.href = "index.html?report=" + encodeURIComponent(managedReportId);
             viewLink.style.display = 'inline-block';
+            // Let the shared nav bar (nav.js) personalize its links too.
+            try { localStorage.setItem('dab_reportId', managedReportId); } catch (e) {}
             document.getElementById('settings-report-id-display').value = managedReportId; 
             loadData();
         }
@@ -881,6 +901,7 @@
                         <div style="font-size:0.9em; margin-top:4px;">
                             <span class="badge ${statusClass}">${item.status}</span>
                             <span style="color:#666; margin-left:10px;">Prior: ${item.priority}</span>
+                            <span style="color:#666; margin-left:10px;">👤 ${item.assignedTo || 'N/A'}</span>
                         </div>
                         <div style="font-size:0.85em; color:#555; margin-top:4px;">
                             ${msStr}
@@ -995,6 +1016,38 @@
             renderModalComments();
         }
 
+        // --- ASSIGNED TO LOGIC ---
+        // Names offered in the dropdown; anything else is stored via "Other".
+        const ASSIGNED_OPTIONS = ["Steve Williams", "Chuck Konkol", "Dan Burns", "Paul Stanek", "Matt Markley", "Mark Milligan", "Nick Schroeder", "Carmen Shields", "N/A"];
+
+        function onAssignedChange() {
+            const isOther = document.getElementById('m-assigned').value === 'Other';
+            const otherInput = document.getElementById('m-assigned-other');
+            otherInput.style.display = isOther ? 'block' : 'none';
+            if (isOther) otherInput.focus();
+        }
+
+        function getAssignedValue() {
+            const sel = document.getElementById('m-assigned').value;
+            if (sel !== 'Other') return sel;
+            return document.getElementById('m-assigned-other').value.trim() || 'N/A';
+        }
+
+        function setAssignedFields(value) {
+            const assignedSel = document.getElementById('m-assigned');
+            const otherInput = document.getElementById('m-assigned-other');
+            const val = value || 'N/A';
+            if (ASSIGNED_OPTIONS.includes(val)) {
+                assignedSel.value = val;
+                otherInput.value = '';
+                otherInput.style.display = 'none';
+            } else {
+                assignedSel.value = 'Other';
+                otherInput.value = val;
+                otherInput.style.display = 'block';
+            }
+        }
+
         // --- EDIT MODAL LOGIC ---
         let editIndex = -1;
         let tempDailyChecks = []; // Store checks temporarily while modal is open
@@ -1033,7 +1086,7 @@
                 itContainer.style.display = 'none';
             }
             
-            let item = {name: '', status: 'On Track', priority: 'High', milestone: '', milestones: [], notes: '', tester: '', startDate: '', lastUpdated: '', endDate: '', goal: '', attachments: [], itComments: ''};
+            let item = {name: '', status: 'On Track', priority: 'High', assignedTo: 'N/A', milestone: '', milestones: [], notes: '', tester: '', startDate: '', lastUpdated: '', endDate: '', goal: '', attachments: [], itComments: ''};
             
             if (!isNew) {
                 const list = type === 'project' ? localData.projects : (type === 'active' ? localData.activeTasks : localData.dailyTasks);
@@ -1071,6 +1124,7 @@
             document.getElementById('m-name').value = item.name || '';
             document.getElementById('m-status').value = item.status || 'On Track';
             document.getElementById('m-priority').value = item.priority || 'High';
+            setAssignedFields(item.assignedTo);
             
             // RICH TEXT POPULATION
             // Handle possibility of existing plain text vs HTML
@@ -1138,6 +1192,7 @@
             const complexData = {
                 status: document.getElementById('m-status').value,
                 priority: document.getElementById('m-priority').value,
+                assignedTo: getAssignedValue(),
             };
 
             if (editIndex === -1) { 

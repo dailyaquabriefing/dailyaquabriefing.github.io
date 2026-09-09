@@ -80,6 +80,7 @@
   .statusgrid .st-chip{cursor:pointer}
   .statusgrid .st-chip.active{outline:3px solid var(--ink);outline-offset:1px}
   td.datecol{white-space:nowrap;width:110px}
+  td.asgncol{white-space:nowrap;width:130px}
   tr.note td{font-size:12.5px;color:#7a4a08;padding-top:0}
   tr.note td::before{content:"Roadblock: ";font-weight:bold}
   tr.subnote td{font-size:12.5px;color:var(--muted);padding-top:0}
@@ -136,6 +137,7 @@
   }
   @media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
+<script src="nav.js" defer></script>
 </head>
 <body>
 
@@ -260,12 +262,13 @@ function milestoneSummary(item){
 /* Map a Firestore item to the same row shape the Excel sheets produce */
 function itemToRow(item){
   if(typeof item === "string"){
-    return {Name:item, Status:"", Priority:"", Goal:"", Milestone:"", Notes:"", Start:"", End:"", Updated:"", MilestoneList:[]};
+    return {Name:item, Status:"", Priority:"", Assigned:"N/A", Goal:"", Milestone:"", Notes:"", Start:"", End:"", Updated:"", MilestoneList:[]};
   }
   return {
     Name: item.name || "",
     Status: item.status || "",
     Priority: item.priority || "",
+    Assigned: item.assignedTo || "N/A",
     Goal: item.goal || "",
     Milestone: milestoneSummary(item),
     Notes: stripHtml(item.notes || ""),
@@ -358,7 +361,7 @@ function parseWorkbook(wb){
       if(r.Metric==="Exported") info.exported = toDate(r.Count);
     }
   }
-  const withMilestones = r => { r.MilestoneList = parseMilestonesCell(r.Milestones); return r; };
+  const withMilestones = r => { r.MilestoneList = parseMilestonesCell(r.Milestones); r.Assigned = r.Assigned_To || "N/A"; return r; };
   return {
     info,
     daily: sheetToObjects(wb.Sheets["Daily Tasks"]),
@@ -545,10 +548,10 @@ function buildReport(){
 
   h += `<div class="bar">${anyFilter ? "Projects \u2014 filtered (" + top.length + ")" : "Key Projects"}</div>
   <table class="tpl">
-  <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
+  <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
 
   if(!top.length){
-    h += `<tr><td colspan="4">No active projects match the current filters.</td></tr>`;
+    h += `<tr><td colspan="5">No active projects match the current filters.</td></tr>`;
   }
   for(const p of top){
     const [cls,code] = statusCode(p);
@@ -558,10 +561,11 @@ function buildReport(){
     h += `<tr>
       <td><b>${esc(p.Name)}</b>${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
       <td class="st ${cls}"><span>${code}</span>${stageLabel(p.Status)}</td>
+      <td class="asgncol">${esc(p.Assigned||"N/A")}</td>
       <td class="datecol">${start ? esc(fmtShort(start)) : ""}</td>
       <td class="datecol">${est ? esc(fmtShort(est)) : "TBD"}</td>
     </tr>`;
-    if(block) h += `<tr class="note"><td colspan="4">${esc(block)}</td></tr>`;
+    if(block) h += `<tr class="note"><td colspan="5">${esc(block)}</td></tr>`;
     for(const ms of (p.MilestoneList||[])){
       const b = toDate(ms.baseDate), e = toDate(ms.estActDate);
       /* C when marked done, or both dates entered without an explicit In Progress / On-Hold flag.
@@ -580,6 +584,7 @@ function buildReport(){
       h += `<tr class="msrow">
         <td>${complete ? "✔" : "◦"} ${esc(ms.name)}${holdNote}</td>
         <td class="st ${mcls}"><span>${mcode}</span></td>
+        <td></td>
         <td class="datecol${late && !e ? " late" : ""}">${b ? "Base " + esc(fmtShort(b)) : ""}</td>
         <td class="datecol${late && e ? " late" : ""}">${e ? (complete ? "Act " : "Est ") + esc(fmtShort(e)) : ""}</td>
       </tr>`;
@@ -600,10 +605,10 @@ function buildReport(){
 
   if(onHold.length){
     h += `<div class="bar">On Hold</div>
-    <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th colspan="2">Reason</th></tr></thead><tbody>`;
+    <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Assigned To</th><th colspan="2">Reason</th></tr></thead><tbody>`;
     for(const p of onHold){
       const why = firstLine(p.Milestone) || firstLine(p.Notes) || "";
-      h += `<tr><td><b>${esc(p.Name)}</b></td><td class="st st-y"><span>Y</span>${stageLabel("On-Hold")}</td><td colspan="2">${esc(why)}</td></tr>`;
+      h += `<tr><td><b>${esc(p.Name)}</b></td><td class="st st-y"><span>Y</span>${stageLabel("On-Hold")}</td><td class="asgncol">${esc(p.Assigned||"N/A")}</td><td colspan="2">${esc(why)}</td></tr>`;
     }
     h += `</tbody></table>`;
   }
@@ -635,12 +640,12 @@ function buildReport(){
   if(doneProjWk.length + doneTasksWk.length === 0){
     h += `<table class="tpl"><tbody><tr><td>No items were closed in this window.</td></tr></tbody></table>`;
   } else {
-    h += `<table class="tpl"><thead><tr><th>Item</th><th style="text-align:center">Status</th><th>Date</th></tr></thead><tbody>`;
+    h += `<table class="tpl"><thead><tr><th>Item</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Date</th></tr></thead><tbody>`;
     for(const p of doneProjWk){
-      h += `<tr><td><b>${esc(p.Name)}</b> (project)</td><td class="st st-c"><span>C</span></td><td class="datecol">${esc(fmtShort(toDate(p.Updated)))}</td></tr>`;
+      h += `<tr><td><b>${esc(p.Name)}</b> (project)</td><td class="st st-c"><span>C</span></td><td class="asgncol">${esc(p.Assigned||"N/A")}</td><td class="datecol">${esc(fmtShort(toDate(p.Updated)))}</td></tr>`;
     }
     for(const t of doneTasksWk){
-      h += `<tr><td>${esc(t.Name)}</td><td class="st st-c"><span>C</span></td><td class="datecol">${esc(fmtShort(toDate(t.Updated)||toDate(t.End)))}</td></tr>`;
+      h += `<tr><td>${esc(t.Name)}</td><td class="st st-c"><span>C</span></td><td class="asgncol">${esc(t.Assigned||"N/A")}</td><td class="datecol">${esc(fmtShort(toDate(t.Updated)||toDate(t.End)))}</td></tr>`;
     }
     h += `</tbody></table>`;
   }
@@ -879,7 +884,7 @@ function saveAsPdf(){
   /* key projects */
   const kpBody = [];
   if(!m.top.length){
-    kpBody.push([{content:"No active projects match the current filters.", colSpan:4}]);
+    kpBody.push([{content:"No active projects match the current filters.", colSpan:5}]);
   }
   for(const p of m.top){
     const [cls, code] = statusCode(p);
@@ -887,11 +892,12 @@ function saveAsPdf(){
     kpBody.push([
       {content: p.Name + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold"}},
       stCell(cls, code + "\n" + (p.Status||"")),
+      p.Assigned || "N/A",
       start ? fmtShort(start) : "",
       est ? fmtShort(est) : "TBD"
     ]);
     const block = looksBlocked(p);
-    if(block) kpBody.push([{content:"Roadblock: " + block, colSpan:4, styles:{textColor:[122,74,8], fontSize:8}}]);
+    if(block) kpBody.push([{content:"Roadblock: " + block, colSpan:5, styles:{textColor:[122,74,8], fontSize:8}}]);
     for(const ms of (p.MilestoneList||[])){
       const b2 = toDate(ms.baseDate), e2 = toDate(ms.estActDate);
       const complete = ms.done || (b2 && e2 && !ms.inProgress && !ms.onHold);
@@ -906,6 +912,7 @@ function saveAsPdf(){
       kpBody.push([
         {content:"    " + (complete ? "\u2713 " : "\u25e6 ") + ms.name + holdNote, styles:{fontSize:8, textColor:MUTED}},
         stCell(mcls, mcode, 8),
+        "",
         {content: b2 ? "Base " + fmtShort(b2) : "", styles:{fontSize:8, textColor: (late && !e2) ? [176,42,42] : MUTED}},
         {content: e2 ? (complete ? "Act " : "Est ") + fmtShort(e2) : "", styles:{fontSize:8, textColor: (late && e2) ? [176,42,42] : MUTED}}
       ]);
@@ -913,9 +920,9 @@ function saveAsPdf(){
   }
   bar(m.anyFilter ? "Projects \u2014 filtered (" + m.top.length + ")" : "Key Projects");
   table({
-    head:[["Project","Status","Start","Est/Act Complete"]],
+    head:[["Project","Status","Assigned To","Start","Est/Act Complete"]],
     body: kpBody,
-    columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:62}, 3:{cellWidth:88}}
+    columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}, 3:{cellWidth:58}, 4:{cellWidth:80}}
   });
   small("Status: C = Complete \u00b7 G = In progress, on track \u00b7 T = In testing \u00b7 Y = On hold / delayed / blocked \u00b7 N/S = Not started. The stage name in each status cell is the project's current stage in the Daily Aqua Briefing.");
 
@@ -923,13 +930,14 @@ function saveAsPdf(){
   if(m.onHold.length){
     bar("On Hold");
     table({
-      head:[["Project","Status","Reason"]],
+      head:[["Project","Status","Assigned To","Reason"]],
       body: m.onHold.map(p=>[
         {content:p.Name, styles:{fontStyle:"bold"}},
         stCell("st-y","Y\nOn-Hold"),
+        p.Assigned || "N/A",
         firstLine(p.Milestone) || firstLine(p.Notes) || ""
       ]),
-      columnStyles:{1:{cellWidth:78, halign:"center"}}
+      columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}}
     });
   }
 
@@ -960,12 +968,12 @@ function saveAsPdf(){
       table({ body:[["No items were closed in this window."]] });
     } else {
       table({
-        head:[["Item","Status","Date"]],
+        head:[["Item","Status","Assigned To","Date"]],
         body: [
-          ...m.doneProjWk.map(p=>[{content:p.Name + " (project)", styles:{fontStyle:"bold"}}, stCell("st-c","C"), fmtShort(toDate(p.Updated))]),
-          ...m.doneTasksWk.map(t=>[t.Name, stCell("st-c","C"), fmtShort(toDate(t.Updated)||toDate(t.End))])
+          ...m.doneProjWk.map(p=>[{content:p.Name + " (project)", styles:{fontStyle:"bold"}}, stCell("st-c","C"), p.Assigned || "N/A", fmtShort(toDate(p.Updated))]),
+          ...m.doneTasksWk.map(t=>[t.Name, stCell("st-c","C"), t.Assigned || "N/A", fmtShort(toDate(t.Updated)||toDate(t.End))])
         ],
-        columnStyles:{1:{cellWidth:50, halign:"center"}, 2:{cellWidth:70}}
+        columnStyles:{1:{cellWidth:50, halign:"center"}, 2:{cellWidth:70}, 3:{cellWidth:70}}
       });
     }
   }
