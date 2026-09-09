@@ -5,6 +5,14 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-09-09
+
+### Added
+- Milestones can now be rearranged: each milestone row in the admin edit modal has ▲/▼ buttons (disabled at the ends of the list). Order matters downstream — the viewer and weekly report show milestones in list order, and the "next open milestone" summary is the first unfinished one, so moving a milestone up makes it the next one reported.
+
+### Changed
+- Help page milestone bullet mentions the new reorder buttons.
+
 ## [1.9.0] - 2026-09-09
 
 ### Removed

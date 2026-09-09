@@ -260,6 +260,9 @@
         .milestone-row .ms-reason-field { flex: 1 1 100%; }
         .milestone-row .ms-reason-field label { color: #c0392b; }
         .milestone-row .ms-reason-field input { border-color: #ffc9c9; background: #fff5f5; }
+        .btn-ms-move { color: #0078D4; background: none; border: 1px solid #cfe0f4; border-radius: 3px; cursor: pointer; font-size: 0.75em; padding: 2px 6px; margin-right: 2px; }
+        .btn-ms-move:hover:not(:disabled) { background: #eef7ff; }
+        .btn-ms-move:disabled { color: #ccc; border-color: #eee; cursor: default; }
 
         /* --- MOBILE RESPONSIVE STYLES --- */
         @media (max-width: 768px) {
@@ -1344,6 +1347,22 @@
                 holdField.appendChild(holdChk);
                 row.appendChild(holdField);
 
+                const up = document.createElement('button');
+                up.className = 'btn-ms-move';
+                up.innerHTML = '&#9650;';
+                up.title = 'Move milestone up';
+                up.disabled = idx === 0;
+                up.onclick = () => moveMilestone(idx, -1);
+                row.appendChild(up);
+
+                const down = document.createElement('button');
+                down.className = 'btn-ms-move';
+                down.innerHTML = '&#9660;';
+                down.title = 'Move milestone down';
+                down.disabled = idx === tempMilestones.length - 1;
+                down.onclick = () => moveMilestone(idx, 1);
+                row.appendChild(down);
+
                 const del = document.createElement('button');
                 del.className = 'btn-del-att';
                 del.innerHTML = '&times;';
@@ -1378,6 +1397,14 @@
         function removeMilestone(idx) {
             if(!confirm("Remove milestone?")) return;
             tempMilestones.splice(idx, 1);
+            renderMilestonesList();
+        }
+
+        function moveMilestone(idx, direction) {
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= tempMilestones.length) return;
+            const moved = tempMilestones.splice(idx, 1)[0];
+            tempMilestones.splice(newIdx, 0, moved);
             renderMilestonesList();
         }
 
