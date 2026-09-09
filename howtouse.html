@@ -87,23 +87,20 @@
         <a href="index.html" class="back-link">&larr; Back to Report</a>
         
         <h1>How to Use Aqua Daily Briefing</h1>
-        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your <strong>Task Priorities</strong> with automated <strong>Outlook Data</strong> into one secure, shareable dashboard.</p>
+        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized daily co-pilot. It combines your <strong>Daily Tasks</strong>, <strong>Projects</strong>, and <strong>Active Tasks</strong> into one secure, shareable dashboard — plus a one-click <strong>Weekly Status Report</strong> for the steering committee.</p>
 
-        <h2>The Two-Part System</h2>
-        <ol>
-            <li><strong>The Web Dashboard:</strong> Your command center for managing Tasks, Projects, and Security Settings.</li>
-            <li><strong>The Outlook Agent:</strong> A background tool that securely syncs your <strong>calendar and emails</strong> to the report.</li>
-        </ol>
+        <h2>Finding Your Way Around <span class="new-feature">NEW</span></h2>
+        <p>Every page shares a navigation bar at the top: <strong>🏠 Briefing</strong>, <strong>Dashboard</strong>, <strong>Status Report</strong>, <strong>Help</strong>, and <strong>Users (IT)</strong>. Once you open your briefing, the bar remembers your User ID and keeps the Briefing and Status Report links pointed at your data.</p>
 
         <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
 
-        <h2>Step 1: Admin Dashboard & Setup</h2>
-        <p>Use the Admin Dashboard to manage what appears on your report.</p>
+        <h2>Step 1: Admin Dashboard & First-Time Login</h2>
+        <p>Use the Admin Dashboard to manage what appears on your report. There is no software to install — everything runs in the browser.</p>
         <div class="step-box">
             <ol>
-                <li>Go to the <a href="admin.html" target="_blank"><strong>Admin Dashboard</strong></a>.</li>
-                <li><strong>First Time?</strong> Click <strong>"First Time User? Setup Here"</strong> on the login screen to link your email to your Aqua User ID (e.g., <code>jdoe</code>).</li>
-                <li><strong>Logging In:</strong> Use your email and password to access the dashboard.</li>
+                <li>Go to the <a href="admin.html" target="_blank"><strong>Admin Dashboard</strong></a> (or click <strong>Dashboard</strong> in the navigation bar).</li>
+                <li><strong>Logging In:</strong> Sign in with the email and default password provided by IT.</li>
+                <li><strong>First Time?</strong> After your first sign-in, you'll be prompted to link your account to your <strong>Aqua Network User ID</strong> (e.g., <code>jdoe</code>). That ID becomes your report address.</li>
             </ol>
         </div>
 
@@ -124,7 +121,7 @@
                 <li><strong>Multiple Attachments <span class="new-feature">NEW</span>:</strong> You can now upload multiple files or add manual links (e.g., SharePoint URLs) to a single task.</li>
                 <li><strong>Assigned To <span class="new-feature">NEW</span>:</strong> Pick who owns the item from the dropdown, or choose "Other" to type a name. Unassigned items show as N/A on the Weekly Report.</li>
                 <li><strong>Collaborators:</strong> Tag teams (e.g., "Design Team") to display a yellow Team badge.</li>
-                <li><strong>Milestones:</strong> Track the next major goal (🏁).</li>
+                <li><strong>Milestones <span class="new-feature">IMPROVED</span>:</strong> Add multiple milestones (🏁) per item, each with a Base Complete date, an Est/Act Complete date, and In Progress / On-Hold flags (with an on-hold reason). Progress like "2/5 complete" shows on the report.</li>
                 <li><strong>Dates:</strong> Set Start and End dates. The <strong>Last Updated</strong> field updates automatically.</li>
                 <li><strong>Private Comments <span class="new-feature">NEW</span>:</strong> Private notes for internal use.</li>
             </ul>
@@ -178,6 +175,7 @@
                 <li><strong>Where:</strong> Click <strong style="color:#27ae60;">&#128229; Export to Excel</strong> in the top nav.</li>
                 <li><strong>What's New:</strong>
                     <ul>
+                        <li>Includes the <strong>Assigned To</strong> column and the full <strong>Milestones</strong> list.</li>
                         <li>Includes the full <strong>Daily Check History</strong> log.</li>
                         <li>Includes <strong>Analytics Overview</strong> as the first sheet.</li>
                         <li>Automatically strips HTML for clean, readable text cells.</li>
@@ -186,8 +184,8 @@
                 </li>
                 <li><strong>Smart Security:</strong>
                     <ul>
-                        <li>If exported from the <strong>Public View</strong>, it excludes Private Comments and Outlook Data.</li>
-                        <li>If exported from the <strong>Private (Unlocked) View</strong>, it <em>includes</em> Private Comments, Meetings, and Emails.</li>
+                        <li>If exported from the <strong>Public View</strong>, it excludes Private Comments.</li>
+                        <li>If exported from the <strong>Private (Unlocked) View</strong>, it <em>includes</em> Private Comments.</li>
                     </ul>
                 </li>
             </ul>
@@ -208,14 +206,14 @@
             </ul>
         </div>
 
-        <h2>Step 8: Viewing Reports</h2>
-        <p>You have two views available based on your needs:</p>
-        
+        <h2>Step 8: Viewing & Sharing Reports</h2>
+        <p>You have three views available based on your needs:</p>
+
         <div class="step-box">
             <h3>🔒 Daily Briefing (Private)</h3>
             <p><strong>URL:</strong> <code>/?daily=YOUR_ID</code></p>
             <ul>
-                <li><strong>Includes:</strong> Tasks, Projects, <strong>Private Comments</strong>, Meetings, Unread Emails.</li>
+                <li><strong>Includes:</strong> Tasks, Projects, Active Tasks, and <strong>Private Comments</strong>.</li>
                 <li><strong>Security:</strong> Protected by your Passcode.</li>
             </ul>
 
@@ -223,7 +221,15 @@
             <p><strong>URL:</strong> <code>/?report=YOUR_ID</code></p>
             <ul>
                 <li><strong>Includes:</strong> Tasks, Projects, Resources, and Public Comments.</li>
-                <li><strong>No Sensitive Data:</strong> Hides emails, meetings, and <strong>Private Comments</strong>.</li>
+                <li><strong>No Sensitive Data:</strong> Hides <strong>Private Comments</strong>.</li>
+            </ul>
+
+            <h3>📋 Weekly Status Report Builder <span class="new-feature">NEW</span></h3>
+            <p><strong>URL:</strong> <code>weekly-report.html?report=YOUR_ID</code> (or click <strong>Status Report</strong> in the navigation bar)</p>
+            <ul>
+                <li>Builds a steering-committee style status report straight from your live briefing data: overall completion %, status chips, Key Projects with milestones and <strong>Assigned To</strong>, On Hold, Recurring Daily Workload, and Recently Completed.</li>
+                <li><strong>Filters <span class="new-feature">NEW</span>:</strong> Tap a status chip, or filter by priority and focus (needs attention, due within 30 days, overdue, no est. date).</li>
+                <li><strong>Outputs:</strong> Download as a <strong>PDF</strong>, download a standalone web page, or <strong>copy as email text</strong>. An <code>.xlsx</code> export can also be dropped on the page as an offline fallback.</li>
             </ul>
         </div>
 

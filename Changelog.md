@@ -5,6 +5,20 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-09-09
+
+### Removed
+- Setup wizard (`setup.html`) deleted — the desktop Outlook sync agent is no longer used, so the install walkthrough is obsolete. Removed the Setup link from the shared nav bar (`nav.js`), the "First Time User? Setup Here" buttons on the home page and admin login, and the setup/agent references on the Users (IT) page (including step 4 of the copy-paste welcome email, which now points to the help page).
+
+### Changed
+- Help page (`howtouse.html`) refreshed to match the current app:
+  - "Two-Part System" (dashboard + Outlook agent) replaced with a "Finding Your Way Around" section describing the shared navigation bar.
+  - Step 1 now covers first-time login directly on the Admin Dashboard (sign in with IT-provided credentials, link your Aqua Network ID when prompted) — no software install.
+  - Milestones bullet updated for the multi-milestone list (Base/Est-Act dates, In Progress / On-Hold flags with reason).
+  - Excel export section mentions the new Assigned To column and Milestones list; Outlook data references removed.
+  - New "Weekly Status Report Builder" subsection under Viewing & Sharing Reports: live data connection, status/priority/focus filters, PDF download, standalone web page, copy-as-email-text, and the `.xlsx` offline fallback.
+  - Meetings/Unread Emails removed from the Daily Briefing description (agent-fed data).
+
 ## [1.8.1] - 2026-09-09
 
 ### Added

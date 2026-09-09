@@ -24,7 +24,6 @@
         { href: 'index.html' + q, label: '🏠 Briefing', match: 'index.html' },
         { href: 'admin.html', label: 'Dashboard', match: 'admin.html' },
         { href: 'weekly-report.html' + q, label: 'Status Report', match: 'weekly-report.html' },
-        { href: 'setup.html', label: 'Setup', match: 'setup.html' },
         { href: 'howtouse.html', label: 'Help', match: 'howtouse.html' },
         { href: 'users.html', label: 'Users (IT)', match: 'users.html' }
     ];
