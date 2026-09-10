@@ -5,6 +5,21 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.2] - 2026-09-10
+
+### Fixed
+- **Incident:** deleting a test user that was linked to reportId `ckonkol` deleted the real ckonkol briefing (the delete removes whatever briefing the deleted account is linked to). Recovery: the full document was captured from Firestore's ~1-hour version retention via a point-in-time read (snapshot from 2 minutes before the wipe, zero data loss) and saved to `C:\Users\CKonkol\Projects\Dailybriefing\backups\`; data restored to Firestore.
+- `manageUsers` delete now has two server-side guards (deployed): briefing data is **kept** if any other account is still linked to the same report ID, and the calling admin's own briefing can never be deleted. The function reports `dataDeleted`/`dataNote` so the Users page shows what actually happened.
+- `updateBriefing` now passes through `structuredDailyTasks`/`structuredProjects`/`structuredActiveTasks`/`passcode`, enabling full-document restores from a snapshot or export.
+
+### Changed
+- Users (IT) page: delete confirm and result messages reflect the guards ("briefing data kept — another account is still linked…").
+- Admin dashboard: linking your Network ID now warns (with item count) if a briefing for that ID already exists with data — preventing a test account from silently claiming a real user's briefing, which is how the incident started.
+
+### Security/DR notes
+- Recommend enabling Firestore **Point-in-Time Recovery** (7-day window) and scheduled backups; today's recovery only worked because it was caught within the ~1-hour version retention.
+- `updateBriefing` remains an unauthenticated endpoint (pre-existing, from the retired desktop agent) — worth locking down or removing in the future.
+
 ## [1.16.1] - 2026-09-10
 
 ### Fixed

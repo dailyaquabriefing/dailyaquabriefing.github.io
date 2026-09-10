@@ -712,15 +712,28 @@
             const input = document.getElementById('setup-report-id');
             const val = input.value.toLowerCase().trim();
             if (!val) { alert("Please enter an ID."); return; }
-            
-            db.collection('user_prefs').doc(currentUser.uid).set({
-                reportId: val,
-                email: currentUser.email
-            }).then(() => {
-                managedReportId = val;
-                document.getElementById('setup-modal').style.display = 'none';
-                initializeDashboard();
-            }).catch(e => alert("Error saving ID: " + e.message));
+
+            // Warn if this ID already has briefing data — it likely belongs to
+            // someone else (linking to it makes this account manage their report).
+            db.collection('briefings').doc(val).get().then(doc => {
+                if (doc.exists) {
+                    const d = doc.data() || {};
+                    const items = (d.structuredProjects || []).length +
+                                  (d.structuredActiveTasks || []).length +
+                                  (d.structuredDailyTasks || []).length;
+                    if (items > 0 && !confirm('A briefing for "' + val + '" already exists with ' + items + ' item(s) — it may belong to someone else.\n\nOnly continue if this really is YOUR Aqua Network ID.\n\nLink to it anyway?')) {
+                        return;
+                    }
+                }
+                db.collection('user_prefs').doc(currentUser.uid).set({
+                    reportId: val,
+                    email: currentUser.email
+                }).then(() => {
+                    managedReportId = val;
+                    document.getElementById('setup-modal').style.display = 'none';
+                    initializeDashboard();
+                }).catch(e => alert("Error saving ID: " + e.message));
+            }).catch(e => alert("Error checking ID: " + e.message));
         }
 
         function initializeDashboard() {

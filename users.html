@@ -424,15 +424,20 @@
             const email = u.email || uid;
             const reportId = (u.reportId || '').toLowerCase();
             const dataNote = reportId
-                ? '\n\nThis removes their login AND deletes their briefing / status report data ("' + reportId + '").'
+                ? '\n\nThis removes their login AND deletes their briefing / status report data ("' + reportId + '") — unless another account is still linked to that ID, in which case the data is kept.'
                 : '\n\nThis removes their login. (No briefing data to delete — they never linked a Network ID.)';
             if (!confirm('Delete ' + email + '?' + dataNote)) return;
             try {
                 // The manageUsers function deletes the login, the user_prefs mapping,
                 // and the briefing / _outlook documents (client deletes are blocked by
-                // the Firestore rules, so this must happen server-side).
+                // the Firestore rules, so this must happen server-side). It keeps the
+                // data when another account is still linked to the same report ID, or
+                // when the ID is the calling admin's own briefing.
                 const resp = await api({ action: 'delete', uid: uid });
-                showMsg(email + ' deleted' + (resp.reportId ? ' (briefing data removed too).' : '.'), false);
+                let note = '.';
+                if (resp.dataDeleted) note = ' (briefing data removed too).';
+                else if (resp.dataNote) note = ' (briefing data ' + resp.dataNote + ').';
+                showMsg(email + ' deleted' + note, false);
                 loadUsers();
             } catch (e) {
                 showMsg('Delete failed: ' + e.message, true);
