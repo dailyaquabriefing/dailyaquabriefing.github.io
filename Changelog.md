@@ -5,6 +5,12 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1] - 2026-09-10
+
+### Fixed
+- User deletion now **actually** removes briefing data. The 1.16.0 approach deleted from the browser, but the Firestore security rules deny client-side deletes on `briefings/*` (verified with a direct REST test — the login was removed while the data delete was silently rejected). The cleanup moved into the `manageUsers` Cloud Function, where the Admin SDK bypasses rules: delete now removes the Auth login, the `user_prefs` mapping, `briefings/<networkid>`, and `briefings/<networkid>_outlook` in one call. Function updated and deployed to Firebase (project dailybriefing-fe7df) on 2026-09-10; source lives in `C:\Users\CKonkol\Projects\Dailybriefing\functions\index.js`.
+- Users (IT) page simplified accordingly: no more client-side Firestore delete (and the Firestore SDK include it needed was removed); the success message reports whether briefing data was removed based on the function's response.
+
 ## [1.16.0] - 2026-09-10
 
 ### Changed
