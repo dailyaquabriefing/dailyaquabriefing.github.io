@@ -899,7 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 document.getElementById('loading-overlay').classList.add('hidden');
                 document.getElementById('default-message').classList.remove('hidden');
-                document.getElementById('report-subtitle').innerText = "ID not found";
+                document.getElementById('report-subtitle').innerText = "No briefing found for \"" + targetId + "\". New user? Sign in to the Dashboard once to set it up.";
             }
         }).catch(error => {
             console.error("Error getting document:", error);

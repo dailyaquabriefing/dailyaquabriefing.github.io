@@ -5,6 +5,12 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1] - 2026-09-10
+
+### Fixed
+- New users can now open "View My Briefing" and their Status Report right after first login, before adding any items. Cause: the `briefings/<id>` document was only created when the first item was saved, so the viewer showed "ID not found" and the status report errored. The Dashboard now writes an empty briefing document automatically the first time it loads for an ID with no data.
+- Friendlier messages when a briefing genuinely doesn't exist: the viewer says 'No briefing found for "<id>". New user? Sign in to the Dashboard once to set it up.' and the status report's connect error explains the same (welcome email steps 1-3).
+
 ## [1.15.0] - 2026-09-10
 
 ### Added

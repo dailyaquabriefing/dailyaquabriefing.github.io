@@ -754,6 +754,7 @@
         function logout() { auth.signOut(); }
 
         // --- DATA OPERATIONS ---
+        let briefingDocCreated = false; // guard so the empty skeleton is only written once
         function loadData() {
             if (!managedReportId) return;
             db.collection('briefings').doc(managedReportId).onSnapshot(doc => {
@@ -773,6 +774,12 @@
                     document.getElementById('settings-passcode').value = localData.passcode;
                 } else {
                     localData = { dailyTasks: [], projects: [], activeTasks: [], passcode: "" };
+                    // New user, no briefing doc yet: create an empty one right away so
+                    // "View My Briefing" and the Status Report work before any items exist.
+                    if (!briefingDocCreated) {
+                        briefingDocCreated = true;
+                        pushData();
+                    }
                 }
                 renderAll();
             });

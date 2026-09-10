@@ -367,7 +367,7 @@ function parseIds(input){
 
 function fetchReport(id){
   return db.collection("briefings").doc(id).get().then(doc=>{
-    if(!doc.exists) throw new Error("No briefing found for \""+id+"\". Check the User ID.");
+    if(!doc.exists) throw new Error("No briefing found for \""+id+"\". Check the User ID — or, if this user is new, have them sign in to the Dashboard once (welcome email steps 1-3) to set up their briefing.");
     const d = doc.data();
     let updated = null;
     if(d.lastUpdated) updated = d.lastUpdated.toDate ? d.lastUpdated.toDate() : toDate(d.lastUpdated);
