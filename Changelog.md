@@ -5,6 +5,12 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-09-10
+
+### Changed
+- Users (IT) page: **deleting a user now also deletes their briefing data.** Previously Delete only removed the Firebase Auth login — the `briefings/<networkid>` document was untouched by design (the old confirm even said "their briefing data stays in the database"), so deleted users kept a working status report and still appeared in the Status Report's "Add user…" dropdown. Delete now removes the briefing document and the legacy `<id>_outlook` sync document after the login is deleted, and the confirm dialog states exactly what will be removed. If the user never linked a Network ID, only the login is deleted (nothing else exists).
+- If the data cleanup fails after the login was already deleted, the page reports it clearly instead of pretending everything was removed.
+
 ## [1.15.1] - 2026-09-10
 
 ### Fixed

@@ -239,6 +239,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -248,6 +249,7 @@
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const db = firebase.firestore();
 
         const FUNCTION_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/manageUsers";
         let currentUser = null;
@@ -420,11 +422,28 @@
         }
 
         async function deleteUser(uid) {
-            const email = (usersByUid[uid] || {}).email || uid;
-            if (!confirm('Delete ' + email + '?\n\nThis removes their login and dashboard link. Their briefing data stays in the database.')) return;
+            const u = usersByUid[uid] || {};
+            const email = u.email || uid;
+            const reportId = (u.reportId || '').toLowerCase();
+            const dataNote = reportId
+                ? '\n\nThis removes their login AND deletes their briefing / status report data ("' + reportId + '").'
+                : '\n\nThis removes their login. (No briefing data to delete — they never linked a Network ID.)';
+            if (!confirm('Delete ' + email + '?' + dataNote)) return;
             try {
                 await api({ action: 'delete', uid: uid });
-                showMsg(email + ' deleted.', false);
+                // Also remove their briefing document (and old Outlook sync doc) so the
+                // status report, viewer, and "Add user" dropdown stop showing them.
+                if (reportId) {
+                    try {
+                        await db.collection('briefings').doc(reportId).delete();
+                        await db.collection('briefings').doc(reportId + '_outlook').delete();
+                    } catch (e2) {
+                        showMsg(email + ' login deleted, but briefing data could not be removed: ' + e2.message, true);
+                        loadUsers();
+                        return;
+                    }
+                }
+                showMsg(email + ' deleted' + (reportId ? ' (briefing data removed too).' : '.'), false);
                 loadUsers();
             } catch (e) {
                 showMsg('Delete failed: ' + e.message, true);
