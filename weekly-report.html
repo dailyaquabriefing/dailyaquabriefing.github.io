@@ -1127,7 +1127,7 @@ function saveAsPdf(){
   const table = opts => {
     pdf.autoTable(Object.assign({
       startY: y, margin:{left:M, right:M}, theme:"striped",
-      styles:{font:"helvetica", fontSize:9, cellPadding:4, textColor:[26,26,26]},
+      styles:{font:"helvetica", fontSize:9, cellPadding:4, textColor:[26,26,26], overflow:"linebreak"},
       headStyles:{fillColor:[238,243,248], textColor:[26,26,26], fontStyle:"bold"},
       alternateRowStyles:{fillColor:[219,231,242]}
     }, opts));
@@ -1145,8 +1145,13 @@ function saveAsPdf(){
   pdf.text((m.info.user||"ckonkol") + " \u00b7 Information Technology \u00b7 Aqua-Aerobic Systems, Inc.", M, y+9);
   if(m.exportedLine) pdf.text(m.exportedLine, pageW-M, y+9, {align:"right"});
   y += 24;
+  pdf.setDrawColor(BAR[0],BAR[1],BAR[2]); pdf.setLineWidth(1.5);
+  pdf.line(M, y, pageW-M, y);
+  y += 12;
 
   if(m.filterLine) small("Filtered view \u2014 " + m.filterLine, [122,74,8]);
+  const hiddenSecs = SECTION_DEFS.filter(d=>!SECTIONS[d[0]]).map(d=>d[1]);
+  if(hiddenSecs.length) small("Sections hidden from this report: " + hiddenSecs.join(", "), [122,74,8]);
 
   /* overall completion */
   if(SECTIONS.pct){
@@ -1211,7 +1216,7 @@ function saveAsPdf(){
       else { mcls="st-ns"; mcode="N/S"; }
       const holdNote = ms.onHold ? (ms.holdReason ? " \u2014 On hold: " + ms.holdReason : " \u2014 On hold") : "";
       kpBody.push([
-        {content:"    " + (complete ? "\u2713 " : "\u25e6 ") + ms.name + holdNote, styles:{fontSize:8, textColor:MUTED}},
+        {content:"    " + "\u2022 " + ms.name + holdNote, styles:{fontSize:8, textColor:MUTED}},
         stCell(mcls, mcode, 8),
         "",
         {content: b2 ? "Base " + fmtShort(b2) : "", styles:{fontSize:8, textColor: (late && !e2) ? [176,42,42] : MUTED}},
@@ -1301,18 +1306,25 @@ function saveAsPdf(){
     }
   }
 
-  /* footer */
-  ensure(20);
-  pdf.setFont("helvetica","normal"); pdf.setFontSize(8); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
-  pdf.text("Generated from the Daily Aqua Briefing " + m.srcWord + " \u00b7 " + new Date().toLocaleDateString("en-US"), M, y+10);
-  pdf.text("Aqua-Aerobic Systems, Inc. IT \u00b7 Protecting the World's Water", pageW-M, y+10, {align:"right"});
-
   };
 
   MODELS.forEach((mm, i)=>{
     if(i>0){ pdf.addPage(); y = M; }
     renderModel(mm);
   });
+
+  /* page footers: rule, company line, generated-from, page numbers */
+  const pageCount = pdf.getNumberOfPages();
+  const genLine = "Generated from the Daily Aqua Briefing " + (MODELS[0] ? MODELS[0].srcWord : "data") + " · " + new Date().toLocaleDateString("en-US");
+  for(let pg=1; pg<=pageCount; pg++){
+    pdf.setPage(pg);
+    pdf.setDrawColor(BAR[0],BAR[1],BAR[2]); pdf.setLineWidth(1);
+    pdf.line(M, pageH-32, pageW-M, pageH-32);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
+    pdf.text("Aqua-Aerobic Systems, Inc. IT · Protecting the World's Water", M, pageH-22);
+    pdf.text("Page " + pg + " of " + pageCount, pageW-M, pageH-22, {align:"right"});
+    pdf.text(genLine, M, pageH-12);
+  }
 
   const names = REPORTS.map(r=>r.info.user||"report").join("+");
   pdf.save("WeeklyReport_" + names + "_" + new Date().toISOString().slice(0,10) + ".pdf");

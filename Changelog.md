@@ -5,6 +5,18 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.2] - 2026-09-10
+
+### Fixed
+- Save PDF: milestone rows no longer show garbage characters (`'`, `%æ`) with stretched letter-spacing and clipped names. Cause: the ✓/◦ markers aren't in the PDF font's character set (jsPDF built-in Helvetica), which also broke its text-width math. Milestones now use a safe bullet (•); done/held state still shows via the C/G/Y/N-S code chip.
+- Long milestone names and hold reasons now wrap inside their cell instead of bleeding into neighboring columns (explicit line-break overflow on all PDF tables).
+
+### Added
+- Save PDF shows what was selected: a "Sections hidden from this report: …" line appears under the header whenever any section toggles are off (alongside the existing "Filtered view" line).
+
+### Changed
+- More professional PDF layout: blue rule under the report header, and a proper footer on every page — rule, company line, "Generated from…" line, and **Page X of Y** — replacing the single footer block that only appeared after the last table.
+
 ## [1.14.1] - 2026-09-09
 
 ### Changed
