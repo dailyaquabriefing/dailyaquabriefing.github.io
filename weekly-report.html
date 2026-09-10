@@ -47,7 +47,10 @@
   .userbar input{font-family:inherit;font-size:12.5px;padding:6px 8px;border-radius:4px;border:none;width:130px}
   .userbar > button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:4px;padding:6px 10px;font-size:12.5px;font-weight:bold;cursor:pointer;font-family:inherit}
   .userbar input:focus-visible, .userbar button:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
+  .mergelbl{display:inline-flex;align-items:center;gap:5px;color:#fff;font-weight:bold;cursor:pointer;padding:4px 8px;border:1px solid rgba(255,255,255,.5);border-radius:4px;background:rgba(255,255,255,.08);font-size:12.5px}
+  .mergelbl input{accent-color:#fff;cursor:pointer}
   hr.user-sep{border:0;border-top:4px double var(--border);margin:38px 0 30px}
+  .ownertag{display:inline-block;background:#eef3f8;color:#215a8f;border:1px solid #9db8d2;border-radius:3px;font-size:10.5px;padding:0 5px;margin-left:6px;font-weight:bold;vertical-align:middle;white-space:nowrap}
   /* ---- Drop zone / connect card ---- */
   #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--border);border-radius:8px;padding:40px 32px;text-align:center;transition:border-color .15s, background .15s}
   #dropzone.drag{border-color:var(--bar);background:#f4f8fc}
@@ -184,6 +187,7 @@
     <span id="userChips" style="display:contents"></span>
     <input type="text" id="addUserInput" placeholder="Add user&hellip;" autocomplete="off" aria-label="Add another user to the report">
     <button id="addUserBtn" type="button">+ Add</button>
+    <label class="mergelbl" id="mergeLbl" style="display:none"><input type="checkbox" id="mergeChk"> Merge into one report</label>
   </div>
   <input type="file" id="file" accept=".xlsx" aria-hidden="true">
   <button id="copyBtn" disabled>Copy as email text</button>
@@ -244,6 +248,12 @@ function firstLine(v){
 let REPORTS = []; /* per-user report data, in display order */
 let MODELS = [];  /* per-user report models, reused by the PDF export */
 let SOURCE = null; /* "live" or "file" (last load; each report also carries info.source) */
+let MERGED = false; /* combine all loaded users into one report */
+try{ MERGED = localStorage.getItem("weeklyReportMerge") === "1"; }catch(e){}
+
+/* Owner tags — only present on rows of a merged multi-user report */
+const ownerTag = row => row && row.Owner ? ` <span class="ownertag">${esc(row.Owner)}</span>` : "";
+const ownerTxt = row => row && row.Owner ? " [" + row.Owner + "]" : "";
 
 /* ---------- live Firestore connection ---------- */
 const firebaseConfig = {
@@ -599,7 +609,7 @@ function buildUserReport(data){
     const est = toDate(p.End);
     const block = looksBlocked(p);
     h += `<tr>
-      <td><b>${esc(p.Name)}</b>${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
+      <td><b>${esc(p.Name)}</b>${ownerTag(p)}${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
       <td class="st ${cls}"><span>${code}</span>${stageLabel(p.Status)}</td>
       <td class="asgncol">${esc(p.Assigned||"N/A")}</td>
       <td class="datecol">${start ? esc(fmtShort(start)) : ""}</td>
@@ -633,10 +643,10 @@ function buildUserReport(data){
   h += `</tbody></table>`;
 
   if(rest.length){
-    h += `<p class="legend">Also active: ${rest.map(p=>esc(p.Name)).join("; ")}.</p>`;
+    h += `<p class="legend">Also active: ${rest.map(p=>esc(p.Name)+(p.Owner ? " ("+esc(p.Owner)+")" : "")).join("; ")}.</p>`;
   }
   if(future.length){
-    h += `<p class="legend">Up next (Future): ${future.map(p=>esc(p.Name)).join("; ")}.</p>`;
+    h += `<p class="legend">Up next (Future): ${future.map(p=>esc(p.Name)+(p.Owner ? " ("+esc(p.Owner)+")" : "")).join("; ")}.</p>`;
   }
   h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing, colored to match the Status of Projects key above.</p>`;
   if(top.some(p=>(p.MilestoneList||[]).length)){
@@ -648,7 +658,7 @@ function buildUserReport(data){
     <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Assigned To</th><th colspan="2">Reason</th></tr></thead><tbody>`;
     for(const p of onHold){
       const why = firstLine(p.Milestone) || firstLine(p.Notes) || "";
-      h += `<tr><td><b>${esc(p.Name)}</b></td><td class="st st-y"><span>Y</span>${stageLabel("On-Hold")}</td><td class="asgncol">${esc(p.Assigned||"N/A")}</td><td colspan="2">${esc(why)}</td></tr>`;
+      h += `<tr><td><b>${esc(p.Name)}</b>${ownerTag(p)}</td><td class="st st-y"><span>Y</span>${stageLabel("On-Hold")}</td><td class="asgncol">${esc(p.Assigned||"N/A")}</td><td colspan="2">${esc(why)}</td></tr>`;
     }
     h += `</tbody></table>`;
   }
@@ -658,7 +668,7 @@ function buildUserReport(data){
     <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
     for(const d of daily){
       const name = String(d.Name||"").split("@")[0].trim();
-      h += `<tr><td>${esc(name)}</td><td>${esc(firstLine(d.Goal))}</td></tr>`;
+      h += `<tr><td>${esc(name)}${ownerTag(d)}</td><td>${esc(firstLine(d.Goal))}</td></tr>`;
     }
     h += `</tbody></table>
     <p class="legend">Standing time off the top of every workday; the main variable behind the estimated dates above.</p>`;
@@ -669,7 +679,7 @@ function buildUserReport(data){
     <table class="tpl"><tbody>`;
     for(let i=0;i<maint.length;i+=2){
       const a = maint[i], b = maint[i+1];
-      h += `<tr><td>${esc(String(a.Name).replace(/:\s*$/,""))}</td><td>${b?esc(String(b.Name).replace(/:\s*$/,"")):""}</td></tr>`;
+      h += `<tr><td>${esc(String(a.Name).replace(/:\s*$/,""))}${ownerTag(a)}</td><td>${b?esc(String(b.Name).replace(/:\s*$/,""))+ownerTag(b):""}</td></tr>`;
     }
     h += `</tbody></table>`;
   }
@@ -682,10 +692,10 @@ function buildUserReport(data){
   } else {
     h += `<table class="tpl"><thead><tr><th>Item</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Date</th></tr></thead><tbody>`;
     for(const p of doneProjWk){
-      h += `<tr><td><b>${esc(p.Name)}</b> (project)</td><td class="st st-c"><span>C</span></td><td class="asgncol">${esc(p.Assigned||"N/A")}</td><td class="datecol">${esc(fmtShort(toDate(p.Updated)))}</td></tr>`;
+      h += `<tr><td><b>${esc(p.Name)}</b> (project)${ownerTag(p)}</td><td class="st st-c"><span>C</span></td><td class="asgncol">${esc(p.Assigned||"N/A")}</td><td class="datecol">${esc(fmtShort(toDate(p.Updated)))}</td></tr>`;
     }
     for(const t of doneTasksWk){
-      h += `<tr><td>${esc(t.Name)}</td><td class="st st-c"><span>C</span></td><td class="asgncol">${esc(t.Assigned||"N/A")}</td><td class="datecol">${esc(fmtShort(toDate(t.Updated)||toDate(t.End)))}</td></tr>`;
+      h += `<tr><td>${esc(t.Name)}${ownerTag(t)}</td><td class="st st-c"><span>C</span></td><td class="asgncol">${esc(t.Assigned||"N/A")}</td><td class="datecol">${esc(fmtShort(toDate(t.Updated)||toDate(t.End)))}</td></tr>`;
     }
     h += `</tbody></table>`;
   }
@@ -716,17 +726,45 @@ function buildUserReport(data){
   return { h, model };
 }
 
-/* Build every loaded user's report, in display order */
+/* Combine every loaded report into one dataset; each row keeps an Owner tag */
+function buildMergedData(){
+  const users = REPORTS.map(r=>r.info.user||"report");
+  let exported = null;
+  for(const r of REPORTS){
+    const d = r.info.exported instanceof Date ? r.info.exported : toDate(r.info.exported);
+    if(d && (!exported || d > exported)) exported = d;
+  }
+  const collect = key => REPORTS.flatMap(r =>
+    (r[key]||[]).map(row => Object.assign({}, row, {Owner: r.info.user || "report"})));
+  return {
+    info: {
+      user: "Team: " + users.join(", "),
+      exported: exported || new Date(),
+      source: REPORTS.every(r=>r.info.source==="live") ? "live" : "file"
+    },
+    daily: collect("daily"),
+    projects: collect("projects"),
+    tasks: collect("tasks")
+  };
+}
+
+/* Build the report: one merged report, or every loaded user in display order */
 function buildReport(){
   if(!REPORTS.length) return;
   MODELS = [];
   let html = "";
-  REPORTS.forEach((r, i)=>{
-    const out = buildUserReport(r);
-    if(i>0) html += '<hr class="user-sep">';
-    html += out.h;
+  if(MERGED && REPORTS.length > 1){
+    const out = buildUserReport(buildMergedData());
+    html = out.h;
     MODELS.push(out.model);
-  });
+  } else {
+    REPORTS.forEach((r, i)=>{
+      const out = buildUserReport(r);
+      if(i>0) html += '<hr class="user-sep">';
+      html += out.h;
+      MODELS.push(out.model);
+    });
+  }
   $("doc").innerHTML = html;
   /* Page title doubles as the suggested "Save as PDF" filename */
   const names = REPORTS.map(r=>r.info.user||"report").join("+");
@@ -760,6 +798,8 @@ function renderUserChips(){
     mk("&times;", "Remove from the report", false, ()=>removeUser(i));
     chips.appendChild(chip);
   });
+  $("mergeLbl").style.display = REPORTS.length > 1 ? "inline-flex" : "none";
+  $("mergeChk").checked = MERGED;
   $("usersWrap").style.display = REPORTS.length ? "flex" : "none";
 }
 
@@ -882,6 +922,11 @@ $("liveBtn").addEventListener("click", ()=> loadLive($("liveUser").value));
 $("liveUser").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadLive($("liveUser").value); } });
 $("addUserBtn").addEventListener("click", ()=> loadLive($("addUserInput").value, true));
 $("addUserInput").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadLive($("addUserInput").value, true); } });
+$("mergeChk").addEventListener("change", ()=>{
+  MERGED = $("mergeChk").checked;
+  try{ localStorage.setItem("weeklyReportMerge", MERGED ? "1" : "0"); }catch(e){}
+  buildReport();
+});
 
 const dz = $("dropzone");
 const df = $("dropfile");
@@ -1003,7 +1048,7 @@ function saveAsPdf(){
     const [cls, code] = statusCode(p);
     const start = toDate(p.Start), est = toDate(p.End);
     kpBody.push([
-      {content: p.Name + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold"}},
+      {content: p.Name + ownerTxt(p) + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold"}},
       stCell(cls, code + "\n" + (p.Status||"")),
       p.Assigned || "N/A",
       start ? fmtShort(start) : "",
@@ -1045,7 +1090,7 @@ function saveAsPdf(){
     table({
       head:[["Project","Status","Assigned To","Reason"]],
       body: m.onHold.map(p=>[
-        {content:p.Name, styles:{fontStyle:"bold"}},
+        {content:p.Name + ownerTxt(p), styles:{fontStyle:"bold"}},
         stCell("st-y","Y\nOn-Hold"),
         p.Assigned || "N/A",
         firstLine(p.Milestone) || firstLine(p.Notes) || ""
@@ -1059,7 +1104,7 @@ function saveAsPdf(){
     bar("Recurring Daily Workload");
     table({
       head:[["Daily check / report","Purpose"]],
-      body: m.daily.map(d=>[String(d.Name||"").split("@")[0].trim(), firstLine(d.Goal)])
+      body: m.daily.map(d=>[String(d.Name||"").split("@")[0].trim() + ownerTxt(d), firstLine(d.Goal)])
     });
     small("Standing time off the top of every workday; the main variable behind the estimated dates above.");
   }
@@ -1069,7 +1114,7 @@ function saveAsPdf(){
     bar("Systems in Maintenance (" + m.maint.length + ")");
     const mb = [];
     for(let i=0;i<m.maint.length;i+=2){
-      mb.push([String(m.maint[i].Name).replace(/:\s*$/,""), m.maint[i+1] ? String(m.maint[i+1].Name).replace(/:\s*$/,"") : ""]);
+      mb.push([String(m.maint[i].Name).replace(/:\s*$/,"") + ownerTxt(m.maint[i]), m.maint[i+1] ? String(m.maint[i+1].Name).replace(/:\s*$/,"") + ownerTxt(m.maint[i+1]) : ""]);
     }
     table({ body: mb });
   }
@@ -1083,8 +1128,8 @@ function saveAsPdf(){
       table({
         head:[["Item","Status","Assigned To","Date"]],
         body: [
-          ...m.doneProjWk.map(p=>[{content:p.Name + " (project)", styles:{fontStyle:"bold"}}, stCell("st-c","C"), p.Assigned || "N/A", fmtShort(toDate(p.Updated))]),
-          ...m.doneTasksWk.map(t=>[t.Name, stCell("st-c","C"), t.Assigned || "N/A", fmtShort(toDate(t.Updated)||toDate(t.End))])
+          ...m.doneProjWk.map(p=>[{content:p.Name + " (project)" + ownerTxt(p), styles:{fontStyle:"bold"}}, stCell("st-c","C"), p.Assigned || "N/A", fmtShort(toDate(p.Updated))]),
+          ...m.doneTasksWk.map(t=>[t.Name + ownerTxt(t), stCell("st-c","C"), t.Assigned || "N/A", fmtShort(toDate(t.Updated)||toDate(t.End))])
         ],
         columnStyles:{1:{cellWidth:50, halign:"center"}, 2:{cellWidth:70}, 3:{cellWidth:70}}
       });
@@ -1104,7 +1149,7 @@ function saveAsPdf(){
     renderModel(mm);
   });
 
-  const names = MODELS.map(mm=>mm.info.user||"report").join("+");
+  const names = REPORTS.map(r=>r.info.user||"report").join("+");
   pdf.save("WeeklyReport_" + names + "_" + new Date().toISOString().slice(0,10) + ".pdf");
 }
 

@@ -5,6 +5,13 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-09-09
+
+### Added
+- Weekly report: **"Merge into one report"** checkbox in the toolbar (appears when two or more users are loaded). Checked, it combines every loaded user into a single report — one overall completion %, one Status of Projects band, and one Key Projects table with the attention-first sort applied across the whole team; On Hold, Recurring Daily Workload, Maintenance, and Recently Completed merge the same way. Unchecked (default), each user still renders as their own section.
+- In merged view, every row carries a small **owner tag** with the User ID it came from (web tables and legends as a blue chip, PDF as `[userid]` after the name), so ownership stays clear even when a project's Assigned To is N/A or someone else.
+- The merged report header reads "Team: <user1>, <user2>…", uses the newest lastUpdated date across the team, and the merge choice is remembered between visits. Filters, PDF, web download, and copy-as-email-text all follow whichever view is active.
+
 ## [1.11.0] - 2026-09-09
 
 ### Added
