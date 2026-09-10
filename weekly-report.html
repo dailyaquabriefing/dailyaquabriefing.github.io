@@ -51,6 +51,8 @@
   .userbar input:focus-visible, .userbar button:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
   .mergelbl{display:inline-flex;align-items:center;gap:5px;color:#fff;font-weight:bold;cursor:pointer;padding:4px 8px;border:1px solid rgba(255,255,255,.5);border-radius:4px;background:rgba(255,255,255,.08);font-size:12.5px}
   .mergelbl input{accent-color:#fff;cursor:pointer}
+  .sectionbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px;flex-basis:100%;color:#fff;font-weight:bold}
+  .sectionbar .mergelbl{opacity:.95}
   hr.user-sep{border:0;border-top:4px double var(--border);margin:38px 0 30px}
   .ownertag{display:inline-block;background:#eef3f8;color:#215a8f;border:1px solid #9db8d2;border-radius:3px;font-size:10.5px;padding:0 5px;margin-left:6px;font-weight:bold;vertical-align:middle;white-space:nowrap}
   /* ---- Drop zone / connect card ---- */
@@ -192,6 +194,9 @@
     <button id="addUserBtn" type="button">+ Add</button>
     <label class="mergelbl" id="mergeLbl" style="display:none"><input type="checkbox" id="mergeChk"> Merge into one report</label>
   </div>
+  <div class="sectionbar" id="sectionWrap" style="display:none">
+    <span>Sections:</span>
+  </div>
   <input type="file" id="file" accept=".xlsx" aria-hidden="true">
   <button id="copyBtn" disabled>Copy as email text</button>
   <button id="webBtn" disabled>Download web report</button>
@@ -258,6 +263,23 @@ try{ MERGED = localStorage.getItem("weeklyReportMerge") === "1"; }catch(e){}
 /* Owner tags — only present on rows of a merged multi-user report */
 const ownerTag = row => row && row.Owner ? ` <span class="ownertag">${esc(row.Owner)}</span>` : "";
 const ownerTxt = row => row && row.Owner ? " [" + row.Owner + "]" : "";
+
+/* ---------- section visibility (web report and PDF both honor these) ---------- */
+const SECTION_DEFS = [
+  ["pct", "Completion %"],
+  ["status", "Status of Projects"],
+  ["key", "Key Projects"],
+  ["onhold", "On Hold"],
+  ["tasks", "Active Tasks"],
+  ["daily", "Daily Workload"],
+  ["maint", "Maintenance"],
+  ["done", "Recently Completed"]
+];
+const SECTIONS = {pct:true, status:true, key:true, onhold:true, tasks:true, daily:true, maint:true, done:true};
+try{
+  const saved = JSON.parse(localStorage.getItem("weeklyReportSections") || "{}");
+  for(const k in SECTIONS){ if(typeof saved[k] === "boolean") SECTIONS[k] = saved[k]; }
+}catch(e){}
 
 /* ---------- live Firestore connection ---------- */
 const firebaseConfig = {
@@ -650,15 +672,16 @@ function buildUserReport(data){
     h += `<div class="filterline"><b>Filtered view</b> \u2014 ${esc(bits.join(" \u00b7 "))} \u00b7 showing ${visible.length} of ${projects.length} projects</div>`;
   }
 
-  h += `<div class="bar center">Overall Project Completion %</div>
+  if(SECTIONS.pct) h += `<div class="bar center">Overall Project Completion %</div>
   <div class="pctbox">${pct}%
     <small>${allCompleted.length} of ${denom} tracked projects completed &middot; ${allMaint.length} in ongoing maintenance, ${allFuture.length} future (excluded)</small>
   </div>`;
 
-  h += `<div class="bar center">Status of Projects</div>
+  if(SECTIONS.status) h += `<div class="bar center">Status of Projects</div>
   <div class="statusgrid">${statusKeys.map(s=>statusChip(s, s + ": " + statusCounts[s], FILTERS.status)).join("")}</div>
   <p class="legend" style="text-align:center">Tap any status above to filter the report; tap it again (or Clear, in the toolbar) to show everything.</p>`;
 
+  if(SECTIONS.key){
   h += `<div class="bar">${anyFilter ? "Projects \u2014 filtered (" + top.length + ")" : "Key Projects"}</div>
   <table class="tpl">
   <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
@@ -711,12 +734,13 @@ function buildUserReport(data){
   if(future.length){
     h += `<p class="legend">Up next (Future): ${future.map(p=>esc(p.Name)+(p.Owner ? " ("+esc(p.Owner)+")" : "")).join("; ")}.</p>`;
   }
-  h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing, colored to match the Status of Projects key above.</p>`;
-  if(top.some(p=>(p.MilestoneList||[]).length)){
+  }
+  if(SECTIONS.key || (SECTIONS.tasks && openTasks.length)) h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing, colored to match the Status of Projects key above.</p>`;
+  if(SECTIONS.key && top.some(p=>(p.MilestoneList||[]).length)){
     h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or both dates entered) &middot; G = in progress &middot; Y = on hold (reason shown) or past its date &middot; N/S = not started &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
   }
 
-  if(onHold.length){
+  if(SECTIONS.onhold && onHold.length){
     h += `<div class="bar">On Hold</div>
     <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Assigned To</th><th colspan="2">Reason</th></tr></thead><tbody>`;
     for(const p of onHold){
@@ -726,7 +750,7 @@ function buildUserReport(data){
     h += `</tbody></table>`;
   }
 
-  if(openTasks.length){
+  if(SECTIONS.tasks && openTasks.length){
     h += `<div class="bar">Active Tasks (${openTasks.length})</div>
     <table class="tpl">
     <thead><tr><th>Task</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
@@ -747,7 +771,7 @@ function buildUserReport(data){
     h += `</tbody></table>`;
   }
 
-  if(!anyFilter){
+  if(SECTIONS.daily && !anyFilter){
     h += `<div class="bar">Recurring Daily Workload</div>
     <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
     for(const d of daily){
@@ -758,7 +782,7 @@ function buildUserReport(data){
     <p class="legend">Standing time off the top of every workday; the main variable behind the estimated dates above.</p>`;
   }
 
-  if(maint.length){
+  if(SECTIONS.maint && maint.length){
     h += `<div class="bar">Systems in Maintenance (${maint.length})</div>
     <table class="tpl"><tbody>`;
     for(let i=0;i<maint.length;i+=2){
@@ -769,7 +793,7 @@ function buildUserReport(data){
   }
 
   const doneTitle = FILTERS.doneDays ? "Recently Completed (last " + FILTERS.doneDays + " days)" : "Recently Completed (all time)";
-  if(!anyFilter || doneProjWk.length + doneTasksWk.length){
+  if(SECTIONS.done && (!anyFilter || doneProjWk.length + doneTasksWk.length)){
   h += `<div class="bar">${doneTitle}</div>`;
   if(doneProjWk.length + doneTasksWk.length === 0){
     h += `<table class="tpl"><tbody><tr><td>No items were closed in this window.</td></tr></tbody></table>`;
@@ -858,6 +882,7 @@ function buildReport(){
   $("copyBtn").disabled = false;
   $("webBtn").disabled = false;
   $("printBtn").disabled = false;
+  $("sectionWrap").style.display = "flex";
   renderUserChips();
 }
 
@@ -905,6 +930,7 @@ function removeUser(i){
     $("dropzone").style.display = "block";
     $("usersWrap").style.display = "none";
     $("filterWrap").style.display = "none";
+    $("sectionWrap").style.display = "none";
     $("copyBtn").disabled = true; $("webBtn").disabled = true; $("printBtn").disabled = true;
     document.title = "Weekly Report — Daily Aqua Briefing";
     return;
@@ -1018,6 +1044,24 @@ $("addUserSel").addEventListener("change", ()=>{
   if(v) loadLive(v, true);
 });
 
+/* Build the section show/hide toggles once */
+for(const def of SECTION_DEFS){
+  const key = def[0], label = def[1];
+  const l = document.createElement("label");
+  l.className = "mergelbl";
+  const c = document.createElement("input");
+  c.type = "checkbox";
+  c.checked = SECTIONS[key];
+  c.addEventListener("change", ()=>{
+    SECTIONS[key] = c.checked;
+    try{ localStorage.setItem("weeklyReportSections", JSON.stringify(SECTIONS)); }catch(e){}
+    buildReport();
+  });
+  l.appendChild(c);
+  l.appendChild(document.createTextNode(" " + label));
+  $("sectionWrap").appendChild(l);
+}
+
 const dz = $("dropzone");
 const df = $("dropfile");
 df.addEventListener("click", ()=> $("file").click());
@@ -1105,6 +1149,7 @@ function saveAsPdf(){
   if(m.filterLine) small("Filtered view \u2014 " + m.filterLine, [122,74,8]);
 
   /* overall completion */
+  if(SECTIONS.pct){
   bar("Overall Project Completion %", true);
   ensure(44);
   pdf.setFont("helvetica","bold"); pdf.setFontSize(20); pdf.setTextColor(26,26,26);
@@ -1113,7 +1158,10 @@ function saveAsPdf(){
   pdf.text(m.pctSmall, pageW/2, y+30, {align:"center"});
   y += 42;
 
+  }
+
   /* status key */
+  if(SECTIONS.status){
   bar("Status of Projects", true);
   pdf.setFontSize(9); pdf.setFont("helvetica","bold");
   let cx = M;
@@ -1131,7 +1179,10 @@ function saveAsPdf(){
   }
   y += 28;
 
+  }
+
   /* key projects */
+  if(SECTIONS.key){
   const kpBody = [];
   if(!m.top.length){
     kpBody.push([{content:"No active projects match the current filters.", colSpan:5}]);
@@ -1176,8 +1227,10 @@ function saveAsPdf(){
   });
   small("Status: C = Complete \u00b7 G = In progress, on track \u00b7 T = In testing \u00b7 Y = On hold / delayed / blocked \u00b7 N/S = Not started. The stage name in each status cell is the project's current stage in the Daily Aqua Briefing.");
 
+  }
+
   /* on hold */
-  if(m.onHold.length){
+  if(SECTIONS.onhold && m.onHold.length){
     bar("On Hold");
     table({
       head:[["Project","Status","Assigned To","Reason"]],
@@ -1192,7 +1245,7 @@ function saveAsPdf(){
   }
 
   /* active tasks */
-  if(m.activeTasks && m.activeTasks.length){
+  if(SECTIONS.tasks && m.activeTasks && m.activeTasks.length){
     bar("Active Tasks (" + m.activeTasks.length + ")");
     table({
       head:[["Task","Status","Assigned To","Start","Est/Act Complete"]],
@@ -1212,7 +1265,7 @@ function saveAsPdf(){
   }
 
   /* daily workload — unfiltered view only */
-  if(!m.anyFilter && m.daily.length){
+  if(SECTIONS.daily && !m.anyFilter && m.daily.length){
     bar("Recurring Daily Workload");
     table({
       head:[["Daily check / report","Purpose"]],
@@ -1222,7 +1275,7 @@ function saveAsPdf(){
   }
 
   /* maintenance */
-  if(m.maint.length){
+  if(SECTIONS.maint && m.maint.length){
     bar("Systems in Maintenance (" + m.maint.length + ")");
     const mb = [];
     for(let i=0;i<m.maint.length;i+=2){
@@ -1232,7 +1285,7 @@ function saveAsPdf(){
   }
 
   /* recently completed */
-  if(!m.anyFilter || m.doneProjWk.length + m.doneTasksWk.length){
+  if(SECTIONS.done && (!m.anyFilter || m.doneProjWk.length + m.doneTasksWk.length)){
     bar(m.doneTitle);
     if(m.doneProjWk.length + m.doneTasksWk.length === 0){
       table({ body:[["No items were closed in this window."]] });

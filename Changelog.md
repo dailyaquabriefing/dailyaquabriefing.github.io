@@ -5,6 +5,13 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-09-09
+
+### Added
+- Weekly report: **show/hide toggles for every section**. A new "Sections" row in the toolbar has a checkbox per section — Completion %, Status of Projects, Key Projects, On Hold, Active Tasks, Daily Workload, Maintenance, Recently Completed. Unchecking removes the section from the on-screen report, the PDF, the downloadable web report, and the copied email text alike; choices are saved and restored on the next visit.
+- Section toggles work per user section and in merged team view, and combine with the status/priority/focus filters (a hidden section stays hidden regardless of filters).
+- The shared status-code legend shows whenever Key Projects or Active Tasks is visible; the milestone legend follows Key Projects.
+
 ## [1.13.0] - 2026-09-09
 
 ### Fixed
