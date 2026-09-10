@@ -45,6 +45,8 @@
   .user-chip button:hover:not(:disabled){opacity:1}
   .user-chip button:disabled{opacity:.3;cursor:default}
   .userbar input{font-family:inherit;font-size:12.5px;padding:6px 8px;border-radius:4px;border:none;width:130px}
+  .userbar select{font-family:inherit;font-size:12.5px;padding:6px 8px;border-radius:4px;border:none;max-width:170px}
+  .userbar select:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
   .userbar > button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:4px;padding:6px 10px;font-size:12.5px;font-weight:bold;cursor:pointer;font-family:inherit}
   .userbar input:focus-visible, .userbar button:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
   .mergelbl{display:inline-flex;align-items:center;gap:5px;color:#fff;font-weight:bold;cursor:pointer;padding:4px 8px;border:1px solid rgba(255,255,255,.5);border-radius:4px;background:rgba(255,255,255,.08);font-size:12.5px}
@@ -185,6 +187,7 @@
   </div>
   <div class="userbar" id="usersWrap" style="display:none">
     <span id="userChips" style="display:contents"></span>
+    <select id="addUserSel" style="display:none" aria-label="Add another user to the report"></select>
     <input type="text" id="addUserInput" placeholder="Add user&hellip;" autocomplete="off" aria-label="Add another user to the report">
     <button id="addUserBtn" type="button">+ Add</button>
     <label class="mergelbl" id="mergeLbl" style="display:none"><input type="checkbox" id="mergeChk"> Merge into one report</label>
@@ -202,7 +205,8 @@
   <p>This page turns your Daily Aqua Briefing into a weekly status report for the steering committee.</p>
   <p>Enter one or more briefing <b>User IDs</b> (comma-separated) to pull the data directly — no Excel export needed.</p>
   <div id="connectRow">
-    <input type="text" id="liveUser" placeholder="User ID(s), e.g. jdoe, msmith" autocomplete="off">
+    <input type="text" id="liveUser" placeholder="User ID(s), e.g. jdoe, msmith" autocomplete="off" list="userOpts">
+    <datalist id="userOpts"></datalist>
     <button id="liveBtn">Connect</button>
   </div>
   <div id="dropfile" tabindex="0" role="button" aria-label="Load briefing export file">
@@ -363,6 +367,51 @@ function addOrReplaceReport(r){
 
 function rememberUsers(){
   try{ localStorage.setItem("weeklyReportUser", REPORTS.map(r=>r.info.user).join(",")); }catch(e){}
+}
+
+/* ---------- available-user directory (fills the Add dropdown) ---------- */
+let ALL_USERS = null; /* briefing report ids found in Firestore; null until loaded */
+
+function loadUserList(){
+  db.collection("briefings").get().then(snap=>{
+    const ids = [];
+    snap.forEach(doc=>{
+      if(!doc.id.endsWith("_outlook")) ids.push(doc.id);
+    });
+    ALL_USERS = ids.sort();
+    fillAddUserSel();
+  }).catch(()=>{ ALL_USERS = []; fillAddUserSel(); });
+}
+
+/* Dropdown shows users not already on the report; text input stays as a
+   fallback when the directory can't be read. Also feeds the connect box's
+   autocomplete suggestions. */
+function fillAddUserSel(){
+  const hasList = Array.isArray(ALL_USERS) && ALL_USERS.length > 0;
+  $("addUserSel").style.display = hasList ? "" : "none";
+  $("addUserInput").style.display = hasList ? "none" : "";
+  $("addUserBtn").style.display = hasList ? "none" : "";
+  if(!hasList) return;
+
+  const loaded = new Set(REPORTS.map(r=>String(r.info.user||"").toLowerCase()));
+  const sel = $("addUserSel");
+  sel.innerHTML = "";
+  const ph = document.createElement("option");
+  ph.value = ""; ph.textContent = "Add user…";
+  sel.appendChild(ph);
+  for(const id of ALL_USERS.filter(u=>!loaded.has(u))){
+    const o = document.createElement("option");
+    o.value = id; o.textContent = id;
+    sel.appendChild(o);
+  }
+
+  const dl = $("userOpts");
+  dl.innerHTML = "";
+  for(const id of ALL_USERS){
+    const o = document.createElement("option");
+    o.value = id;
+    dl.appendChild(o);
+  }
 }
 
 function loadLive(input, append){
@@ -801,6 +850,7 @@ function renderUserChips(){
   $("mergeLbl").style.display = REPORTS.length > 1 ? "inline-flex" : "none";
   $("mergeChk").checked = MERGED;
   $("usersWrap").style.display = REPORTS.length ? "flex" : "none";
+  fillAddUserSel();
 }
 
 function moveUser(i, dir){
@@ -927,6 +977,11 @@ $("mergeChk").addEventListener("change", ()=>{
   try{ localStorage.setItem("weeklyReportMerge", MERGED ? "1" : "0"); }catch(e){}
   buildReport();
 });
+$("addUserSel").addEventListener("change", ()=>{
+  const v = $("addUserSel").value;
+  $("addUserSel").value = "";
+  if(v) loadLive(v, true);
+});
 
 const dz = $("dropzone");
 const df = $("dropfile");
@@ -937,6 +992,8 @@ df.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventD
 dz.addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
 document.body.addEventListener("dragover", e=>e.preventDefault());
 document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(f) loadFile(f); });
+
+loadUserList();
 
 /* Auto-connect from ?report=<id> (or ?user=<id>); otherwise prefill the last-used ID */
 {
