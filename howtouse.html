@@ -115,6 +115,9 @@
             </ul>
 
             <h3>2. Projects & Active Tasks Tabs</h3>
+            <p style="background:#e6fffa; border-left:4px solid #20c997; padding:10px 12px; border-radius:4px;">
+                <strong>Minimal usage suggestion:</strong> at a minimum, keep your <strong>Active Projects</strong> up to date — they are what feeds the <strong>Weekly Status Report</strong> (Key Projects, On Hold, completion %). <strong>Daily Tasks</strong> and <strong>Active Tasks</strong> are optional.
+            </p>
             <p>These sections support rich data. When adding or editing an item:</p>
             <ul>
                 <li><strong>Rich Text Notes <span class="new-feature">NEW</span>:</strong> Use the editor to format your notes with bullet points, bold text, and headers.</li>
@@ -227,6 +230,7 @@
             <h3>📋 Weekly Status Report Builder <span class="new-feature">NEW</span></h3>
             <p><strong>URL:</strong> <code>weekly-report.html?report=YOUR_ID</code> (or click <strong>Status Report</strong> in the navigation bar)</p>
             <ul>
+                <li><strong>Minimum to get value:</strong> the report is built mainly from your <strong>Active Projects</strong>, so keep those current. Daily Tasks (shown as Recurring Daily Workload) and Active Tasks are optional — hide their sections with the toolbar toggles if you don't use them.</li>
                 <li>Builds a steering-committee style status report straight from your live briefing data: overall completion %, status chips, Key Projects with milestones and <strong>Assigned To</strong>, On Hold, <strong>Active Tasks</strong>, Recurring Daily Workload, and Recently Completed.</li>
                 <li><strong>Multiple users <span class="new-feature">NEW</span>:</strong> Enter several User IDs separated by commas (e.g. <code>jdoe, msmith</code>), or pick a name from the <strong>"Add user…"</strong> dropdown in the toolbar — it lists everyone with a briefing and adds them the moment you select. Each user's report appears as its own section; use the ▲/▼ buttons on the user chips to set the order (× removes one). The PDF starts each user on a new page. <code>weekly-report.html?report=jdoe,msmith</code> auto-connects the whole team.</li>
                 <li><strong>Merge into one report <span class="new-feature">NEW</span>:</strong> With two or more users loaded, check <strong>"Merge into one report"</strong> in the toolbar to combine everyone into a single report — one completion %, one status band, and one Key Projects table sorted across the whole team. Each row gets a small tag showing whose briefing it came from. Uncheck to go back to one section per user.</li>

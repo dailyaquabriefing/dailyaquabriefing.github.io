@@ -5,6 +5,12 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1] - 2026-09-09
+
+### Changed
+- Help page: added a "Minimal usage suggestion" callout — keep **Active Projects** up to date at a minimum, since they feed the Weekly Status Report; **Daily Tasks** and **Active Tasks** are optional. Same note added to the Status Report Builder section.
+- Users (IT) page: the copy-paste welcome email now confirms the new user's actual Aqua Network ID (derived from their email), adds the "Minimal Usage Suggestion: Use Active Projects for the Status Report" step, and ends with a "Here is what mine looks like" example link to the sending admin's live Status Report (falls back to ckonkol).
+
 ## [1.14.0] - 2026-09-09
 
 ### Added
