@@ -5,6 +5,14 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-09-10
+
+### Added
+- Admin dashboard Settings tab: **Change Password** section. Users enter their current password and the new one twice; the page re-authenticates against Firebase Auth and updates the password, with clear inline errors (wrong current password, too short, mismatch, too many attempts). Intended for replacing the default password from IT after first login — IT can still reset passwords from the Users page.
+
+### Changed
+- Help page: Settings Tab section documents Change Password; Step 1 recommends changing the default password right after first sign-in.
+
 ## [1.14.4] - 2026-09-10
 
 ### Changed

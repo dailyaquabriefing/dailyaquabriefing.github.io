@@ -424,6 +424,25 @@
                     <input type="text" id="settings-passcode" class="w-full" placeholder="e.g. 1234">
                 </div>
                 <button class="btn btn-primary" style="margin-top: 20px;" onclick="savePasscode()">Save Settings</button>
+
+                <h3 style="color: var(--primary); margin-top: 40px;">Change Password</h3>
+                <p style="color: #666; font-size: 0.9em;">
+                    Update the password you use to sign in to this dashboard (e.g. to replace the default password from IT).
+                </p>
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" id="pw-current" class="w-full" placeholder="Current password" autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                    <label>New Password (min 6 characters)</label>
+                    <input type="password" id="pw-new" class="w-full" placeholder="New password" autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="pw-confirm" class="w-full" placeholder="Repeat new password" autocomplete="new-password">
+                </div>
+                <p id="pw-msg" style="font-size: 0.9em; display: none;"></p>
+                <button class="btn btn-primary" id="pw-btn" onclick="changePassword()">Change Password</button>
             </div>
         </div>
     </div>
@@ -779,6 +798,45 @@
             localData.passcode = document.getElementById('settings-passcode').value.trim();
             pushData();
             alert("Settings Saved!");
+        }
+
+        // --- CHANGE PASSWORD (re-authenticate, then update via Firebase Auth) ---
+        function changePassword() {
+            const current = document.getElementById('pw-current').value;
+            const newPw = document.getElementById('pw-new').value;
+            const confirmPw = document.getElementById('pw-confirm').value;
+            const msg = document.getElementById('pw-msg');
+            const btn = document.getElementById('pw-btn');
+            const show = (text, ok) => {
+                msg.textContent = text;
+                msg.style.color = ok ? '#28a745' : '#dc3545';
+                msg.style.display = 'block';
+            };
+
+            if (!current || !newPw || !confirmPw) { show("Please fill in all three fields.", false); return; }
+            if (newPw.length < 6) { show("New password must be at least 6 characters.", false); return; }
+            if (newPw !== confirmPw) { show("New passwords do not match.", false); return; }
+            if (newPw === current) { show("New password must be different from the current one.", false); return; }
+            if (!currentUser || !currentUser.email) { show("Not signed in — please log in again.", false); return; }
+
+            btn.disabled = true; btn.textContent = "Changing…";
+            const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
+            currentUser.reauthenticateWithCredential(cred)
+                .then(() => currentUser.updatePassword(newPw))
+                .then(() => {
+                    show("✅ Password changed. Use the new password the next time you sign in.", true);
+                    document.getElementById('pw-current').value = "";
+                    document.getElementById('pw-new').value = "";
+                    document.getElementById('pw-confirm').value = "";
+                })
+                .catch(err => {
+                    let m = err.message || String(err);
+                    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') m = "Current password is incorrect.";
+                    else if (err.code === 'auth/weak-password') m = "New password is too weak (min 6 characters).";
+                    else if (err.code === 'auth/too-many-requests') m = "Too many attempts — wait a few minutes and try again.";
+                    show(m, false);
+                })
+                .finally(() => { btn.disabled = false; btn.textContent = "Change Password"; });
         }
 
         // --- RENDERING ---
