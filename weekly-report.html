@@ -38,6 +38,16 @@
   .filters select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none;max-width:180px}
   .filters button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:4px;padding:6px 12px;font-size:12.5px;font-weight:bold;cursor:pointer;font-family:inherit}
   .filters button:focus-visible, .filters select:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
+  /* ---- Loaded users bar (order controls) ---- */
+  .userbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;flex-basis:100%}
+  .user-chip{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:4px;padding:4px 6px;display:inline-flex;align-items:center;gap:3px;font-weight:bold}
+  .user-chip button{background:none;border:none;color:#fff;cursor:pointer;font-size:11px;padding:0 3px;opacity:.85;font-family:inherit}
+  .user-chip button:hover:not(:disabled){opacity:1}
+  .user-chip button:disabled{opacity:.3;cursor:default}
+  .userbar input{font-family:inherit;font-size:12.5px;padding:6px 8px;border-radius:4px;border:none;width:130px}
+  .userbar > button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:4px;padding:6px 10px;font-size:12.5px;font-weight:bold;cursor:pointer;font-family:inherit}
+  .userbar input:focus-visible, .userbar button:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
+  hr.user-sep{border:0;border-top:4px double var(--border);margin:38px 0 30px}
   /* ---- Drop zone / connect card ---- */
   #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--border);border-radius:8px;padding:40px 32px;text-align:center;transition:border-color .15s, background .15s}
   #dropzone.drag{border-color:var(--bar);background:#f4f8fc}
@@ -134,6 +144,7 @@
     .bar{break-after:avoid}
     table.tpl tr{break-inside:avoid}
     .bar, .st span, .st-chip, table.tpl tbody tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    hr.user-sep{break-after:page;visibility:hidden;margin:0;height:0}
   }
   @media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
@@ -169,6 +180,11 @@
     </select>
     <button id="fClear" type="button">Clear</button>
   </div>
+  <div class="userbar" id="usersWrap" style="display:none">
+    <span id="userChips" style="display:contents"></span>
+    <input type="text" id="addUserInput" placeholder="Add user&hellip;" autocomplete="off" aria-label="Add another user to the report">
+    <button id="addUserBtn" type="button">+ Add</button>
+  </div>
   <input type="file" id="file" accept=".xlsx" aria-hidden="true">
   <button id="copyBtn" disabled>Copy as email text</button>
   <button id="webBtn" disabled>Download web report</button>
@@ -180,9 +196,9 @@
 <div id="dropzone">
   <div class="big">Build your weekly report</div>
   <p>This page turns your Daily Aqua Briefing into a weekly status report for the steering committee.</p>
-  <p>Enter your briefing <b>User ID</b> to pull the data directly — no Excel export needed.</p>
+  <p>Enter one or more briefing <b>User IDs</b> (comma-separated) to pull the data directly — no Excel export needed.</p>
   <div id="connectRow">
-    <input type="text" id="liveUser" placeholder="User ID (e.g. jdoe)" autocomplete="off">
+    <input type="text" id="liveUser" placeholder="User ID(s), e.g. jdoe, msmith" autocomplete="off">
     <button id="liveBtn">Connect</button>
   </div>
   <div id="dropfile" tabindex="0" role="button" aria-label="Load briefing export file">
@@ -225,9 +241,9 @@ function firstLine(v){
 }
 
 /* ---------- parsing ---------- */
-let DATA = null;
-let MODEL = null; /* computed report model, reused by the PDF export */
-let SOURCE = null; /* "live" or "file" */
+let REPORTS = []; /* per-user report data, in display order */
+let MODELS = [];  /* per-user report models, reused by the PDF export */
+let SOURCE = null; /* "live" or "file" (last load; each report also carries info.source) */
 
 /* ---------- live Firestore connection ---------- */
 const firebaseConfig = {
@@ -309,36 +325,60 @@ function parseMilestonesCell(v){
   return out;
 }
 
-function loadLive(reportId){
-  const id = String(reportId||"").toLowerCase().trim();
-  if(!id){
-    $("err").textContent = "Please enter your briefing User ID (e.g. jdoe).";
-    $("err").style.display = "block";
-    return;
-  }
-  $("err").style.display = "none";
-  const btn = $("liveBtn");
-  btn.disabled = true; btn.textContent = "Connecting…";
-  db.collection("briefings").doc(id).get().then(doc=>{
+function parseIds(input){
+  return [...new Set(String(input||"").toLowerCase().split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean))];
+}
+
+function fetchReport(id){
+  return db.collection("briefings").doc(id).get().then(doc=>{
     if(!doc.exists) throw new Error("No briefing found for \""+id+"\". Check the User ID.");
     const d = doc.data();
     let updated = null;
     if(d.lastUpdated) updated = d.lastUpdated.toDate ? d.lastUpdated.toDate() : toDate(d.lastUpdated);
-    DATA = {
-      info: { user: d.reportId || id, exported: updated || new Date() },
+    return {
+      info: { user: d.reportId || id, exported: updated || new Date(), source: "live" },
       daily: (d.structuredDailyTasks || d.dailyTasks || []).map(itemToRow),
       projects: (d.structuredProjects || d.projects || []).map(itemToRow),
       tasks: (d.structuredActiveTasks || d.activeTasks || []).map(itemToRow)
     };
+  });
+}
+
+/* Insert or update a user's report; matching by user id keeps re-connects idempotent */
+function addOrReplaceReport(r){
+  const key = String(r.info.user||"").toLowerCase();
+  const i = REPORTS.findIndex(x=>String(x.info.user||"").toLowerCase()===key);
+  if(i>=0) REPORTS[i] = r; else REPORTS.push(r);
+}
+
+function rememberUsers(){
+  try{ localStorage.setItem("weeklyReportUser", REPORTS.map(r=>r.info.user).join(",")); }catch(e){}
+}
+
+function loadLive(input, append){
+  const ids = parseIds(input);
+  if(!ids.length){
+    $("err").textContent = "Please enter one or more briefing User IDs (e.g. jdoe or jdoe, msmith).";
+    $("err").style.display = "block";
+    return;
+  }
+  $("err").style.display = "none";
+  const btn = append ? $("addUserBtn") : $("liveBtn");
+  const btnText = btn.textContent;
+  btn.disabled = true; btn.textContent = "Connecting…";
+  Promise.all(ids.map(fetchReport)).then(list=>{
+    if(!append) REPORTS = [];
+    for(const r of list) addOrReplaceReport(r);
     SOURCE = "live";
-    localStorage.setItem("weeklyReportUser", id);
+    rememberUsers();
+    if(append) $("addUserInput").value = "";
     setupFilters();
     buildReport();
   }).catch(ex=>{
     $("err").textContent = "Could not load live data: " + ex.message;
     $("err").style.display = "block";
   }).finally(()=>{
-    btn.disabled = false; btn.textContent = "Connect";
+    btn.disabled = false; btn.textContent = btnText;
   });
 }
 
@@ -446,8 +486,8 @@ function hasAttentionMilestone(p){
 /* ---------- report ---------- */
 const PRI = {High:0, Medium:1, Low:2, "":3};
 
-function buildReport(){
-  const {info, daily, projects, tasks} = DATA;
+function buildUserReport(data){
+  const {info, daily, projects, tasks} = data;
 
   /* ---- meeting filters ---- */
   const now = new Date();
@@ -525,7 +565,7 @@ function buildReport(){
 
   h += `<div class="doc-title">
     <span><b>Weekly Status Report</b><br>${esc(info.user||"ckonkol")} &middot; Information Technology &middot; Aqua-Aerobic Systems, Inc.</span>
-    <span style="text-align:right">${esc(fmtDate(now))}<br>${info.exported ? (SOURCE==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}</span>
+    <span style="text-align:right">${esc(fmtDate(now))}<br>${info.exported ? (info.source==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}</span>
   </div>`;
 
   if(anyFilter){
@@ -652,15 +692,16 @@ function buildReport(){
   }
 
   h += `<div class="foot">
-    <span>Generated from the Daily Aqua Briefing ${SOURCE==="live" ? "live data" : "export"} &middot; ${esc(new Date().toLocaleDateString("en-US"))}</span>
+    <span>Generated from the Daily Aqua Briefing ${info.source==="live" ? "live data" : "export"} &middot; ${esc(new Date().toLocaleDateString("en-US"))}</span>
     <span>Aqua-Aerobic Systems, Inc. IT &middot; Protecting the World's Water</span>
   </div>`;
 
-  MODEL = {
+  const model = {
     info, top, onHold, maint, future, daily,
     statusKeys, statusCounts, anyFilter, doneTasksWk, doneProjWk, doneTitle, pct,
     pctSmall: allCompleted.length + " of " + denom + " tracked projects completed \u00b7 " + allMaint.length + " in ongoing maintenance, " + allFuture.length + " future (excluded)",
-    exportedLine: info.exported ? (SOURCE==="live" ? "Live data as of " : "Data exported ") + fmtDate(info.exported) : "",
+    exportedLine: info.exported ? (info.source==="live" ? "Live data as of " : "Data exported ") + fmtDate(info.exported) : "",
+    srcWord: info.source==="live" ? "live data" : "export",
     filterLine: ""
   };
   if(anyFilter){
@@ -669,17 +710,82 @@ function buildReport(){
     if(FILTERS.status) fb.push("Status: "+FILTERS.status);
     if(FILTERS.priority) fb.push("Priority: "+FILTERS.priority);
     if(FILTERS.focus) fb.push("Focus: "+fn[FILTERS.focus]);
-    MODEL.filterLine = fb.join(" \u00b7 ") + " \u00b7 showing " + visible.length + " of " + projects.length + " projects";
+    model.filterLine = fb.join(" \u00b7 ") + " \u00b7 showing " + visible.length + " of " + projects.length + " projects";
   }
 
-  $("doc").innerHTML = h;
+  return { h, model };
+}
+
+/* Build every loaded user's report, in display order */
+function buildReport(){
+  if(!REPORTS.length) return;
+  MODELS = [];
+  let html = "";
+  REPORTS.forEach((r, i)=>{
+    const out = buildUserReport(r);
+    if(i>0) html += '<hr class="user-sep">';
+    html += out.h;
+    MODELS.push(out.model);
+  });
+  $("doc").innerHTML = html;
   /* Page title doubles as the suggested "Save as PDF" filename */
-  document.title = "Weekly Report — " + (info.user || "report") + " - " + now.toISOString().slice(0,10);
+  const names = REPORTS.map(r=>r.info.user||"report").join("+");
+  document.title = "Weekly Report — " + names + " - " + new Date().toISOString().slice(0,10);
   $("report").style.display = "block";
   $("dropzone").style.display = "none";
   $("copyBtn").disabled = false;
   $("webBtn").disabled = false;
   $("printBtn").disabled = false;
+  renderUserChips();
+}
+
+/* ---------- loaded users bar (show / order / remove) ---------- */
+function renderUserChips(){
+  const chips = $("userChips");
+  chips.innerHTML = "";
+  REPORTS.forEach((r, i)=>{
+    const chip = document.createElement("span");
+    chip.className = "user-chip";
+    const name = document.createElement("span");
+    name.textContent = (i+1) + ". " + (r.info.user || "report");
+    chip.appendChild(name);
+    const mk = (label, title, disabled, fn)=>{
+      const b = document.createElement("button");
+      b.type = "button"; b.innerHTML = label; b.title = title; b.disabled = disabled;
+      b.onclick = fn;
+      chip.appendChild(b);
+    };
+    mk("&#9650;", "Move up in the report", i===0, ()=>moveUser(i,-1));
+    mk("&#9660;", "Move down in the report", i===REPORTS.length-1, ()=>moveUser(i,1));
+    mk("&times;", "Remove from the report", false, ()=>removeUser(i));
+    chips.appendChild(chip);
+  });
+  $("usersWrap").style.display = REPORTS.length ? "flex" : "none";
+}
+
+function moveUser(i, dir){
+  const j = i + dir;
+  if(j<0 || j>=REPORTS.length) return;
+  const moved = REPORTS.splice(i,1)[0];
+  REPORTS.splice(j,0,moved);
+  rememberUsers();
+  buildReport();
+}
+
+function removeUser(i){
+  REPORTS.splice(i,1);
+  rememberUsers();
+  if(!REPORTS.length){
+    $("report").style.display = "none";
+    $("dropzone").style.display = "block";
+    $("usersWrap").style.display = "none";
+    $("filterWrap").style.display = "none";
+    $("copyBtn").disabled = true; $("webBtn").disabled = true; $("printBtn").disabled = true;
+    document.title = "Weekly Report — Daily Aqua Briefing";
+    return;
+  }
+  setupFilters();
+  buildReport();
 }
 
 /* ---------- meeting filters ---------- */
@@ -691,7 +797,8 @@ function setupFilters(){
   const all = document.createElement("option");
   all.value = ""; all.textContent = "All statuses";
   sel.appendChild(all);
-  const present = new Set(DATA.projects.map(p=>p.Status).filter(Boolean));
+  const present = new Set();
+  REPORTS.forEach(r=>r.projects.forEach(p=>{ if(p.Status) present.add(p.Status); }));
   const list = [...STATUS_ORDER.filter(s=>present.has(s)), ...[...present].filter(s=>!STATUS_ORDER.includes(s))];
   for(const s of list){
     const o = document.createElement("option");
@@ -755,7 +862,10 @@ function loadFile(file){
   reader.onload = e => {
     try{
       const wb = XLSX.read(new Uint8Array(e.target.result), {type:"array", cellDates:true});
-      DATA = parseWorkbook(wb);
+      const data = parseWorkbook(wb);
+      data.info.source = "file";
+      if(!data.info.user) data.info.user = (file.name.match(/^Briefing_([^_]+)_/i)||[])[1] || "report";
+      addOrReplaceReport(data); /* drop several exports to build a combined report */
       SOURCE = "file";
       setupFilters();
       buildReport();
@@ -770,6 +880,8 @@ function loadFile(file){
 $("file").addEventListener("change", e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
 $("liveBtn").addEventListener("click", ()=> loadLive($("liveUser").value));
 $("liveUser").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadLive($("liveUser").value); } });
+$("addUserBtn").addEventListener("click", ()=> loadLive($("addUserInput").value, true));
+$("addUserInput").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadLive($("addUserInput").value, true); } });
 
 const dz = $("dropzone");
 const df = $("dropfile");
@@ -779,7 +891,7 @@ df.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventD
 ["dragleave","drop"].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.remove("drag");}));
 dz.addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
 document.body.addEventListener("dragover", e=>e.preventDefault());
-document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(f && DATA===null) loadFile(f); });
+document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(f) loadFile(f); });
 
 /* Auto-connect from ?report=<id> (or ?user=<id>); otherwise prefill the last-used ID */
 {
@@ -802,8 +914,7 @@ function hexToRgb(hx){
 }
 
 function saveAsPdf(){
-  if(!MODEL) return;
-  const m = MODEL;
+  if(!MODELS.length) return;
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({unit:"pt", format:"letter"});
   const pageW = pdf.internal.pageSize.getWidth();
@@ -842,6 +953,8 @@ function saveAsPdf(){
     y = pdf.lastAutoTable.finalY + 8;
   };
 
+  /* one full report per model; called once per loaded user */
+  const renderModel = m => {
   /* header */
   pdf.setTextColor(26,26,26); pdf.setFont("helvetica","bold"); pdf.setFontSize(15);
   pdf.text("Weekly Status Report", M, y+12);
@@ -981,10 +1094,18 @@ function saveAsPdf(){
   /* footer */
   ensure(20);
   pdf.setFont("helvetica","normal"); pdf.setFontSize(8); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
-  pdf.text("Generated from the Daily Aqua Briefing " + (SOURCE==="live" ? "live data" : "export") + " \u00b7 " + new Date().toLocaleDateString("en-US"), M, y+10);
+  pdf.text("Generated from the Daily Aqua Briefing " + m.srcWord + " \u00b7 " + new Date().toLocaleDateString("en-US"), M, y+10);
   pdf.text("Aqua-Aerobic Systems, Inc. IT \u00b7 Protecting the World's Water", pageW-M, y+10, {align:"right"});
 
-  pdf.save("WeeklyReport_" + (m.info.user||"report") + "_" + new Date().toISOString().slice(0,10) + ".pdf");
+  };
+
+  MODELS.forEach((mm, i)=>{
+    if(i>0){ pdf.addPage(); y = M; }
+    renderModel(mm);
+  });
+
+  const names = MODELS.map(mm=>mm.info.user||"report").join("+");
+  pdf.save("WeeklyReport_" + names + "_" + new Date().toISOString().slice(0,10) + ".pdf");
 }
 
 $("printBtn").addEventListener("click", ()=>{
@@ -998,7 +1119,7 @@ $("printBtn").addEventListener("click", ()=>{
 
 $("webBtn").addEventListener("click", ()=>{
   const css = document.querySelector("style").textContent;
-  const user = (DATA && DATA.info.user) || "report";
+  const user = REPORTS.length ? REPORTS.map(r=>r.info.user||"report").join("+") : "report";
   const wk = new Date().toISOString().slice(0,10);
   const title = "Weekly Status Report \u2014 " + user + " \u2014 " + wk;
   const page = "<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"UTF-8\">" +

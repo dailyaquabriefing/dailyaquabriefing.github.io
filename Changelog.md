@@ -5,6 +5,22 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-09-09
+
+### Added
+- Weekly report can now show **one or more user reports** on a single page, in a chosen order:
+  - The connect box accepts multiple comma/space-separated User IDs (e.g. `jdoe, msmith`), and `weekly-report.html?report=jdoe,msmith` auto-connects the whole list.
+  - New toolbar user bar: each loaded user shows as a numbered chip with ▲/▼ to reorder and × to remove, plus an **+ Add** input to pull in another user without losing the ones already loaded.
+  - Each user renders as a full report section (their own header, completion %, status chips, tables) separated by a divider; printing puts each user on a new page.
+  - "Save PDF" renders every loaded user, one per page set, with the filename joining the IDs (`WeeklyReport_jdoe+msmith_<date>.pdf`); the web download and "Copy as email text" also cover all loaded users.
+  - Status/priority/focus filters apply across all loaded users; the status filter dropdown offers the union of everyone's statuses.
+  - Dropping multiple `.xlsx` exports now combines them (matched by user ID) instead of replacing the loaded report, so a multi-user report can also be built fully offline.
+  - The user list is remembered (localStorage), so returning to the page reconnects the same team in the same order.
+
+### Changed
+- Internal refactor: single-user `DATA`/`MODEL` globals replaced by ordered `REPORTS`/`MODELS` arrays; each report tracks its own live/export source for the header and footer lines.
+- Help page: Weekly Status Report Builder section documents multi-user reports and ordering.
+
 ## [1.10.0] - 2026-09-09
 
 ### Added
