@@ -5,6 +5,14 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-09-09
+
+### Fixed
+- Weekly report: **Active Tasks now appear on the Status Report.** Previously the report loaded them but only showed tasks whose status was Completed (in Recently Completed) — in-flight tasks were never rendered.
+
+### Added
+- New **Active Tasks (N)** section between On Hold and Recurring Daily Workload, in both the web report and the PDF: Task | Status | Assigned To | Start | Est/Act Complete, with the same letter codes, stage labels, goal line, and roadblock notes as Key Projects. Sorted attention-first (Delayed/blocked, then priority, then nearest date). Status/priority/focus filters apply, and merged view shows owner tags per task.
+
 ## [1.12.1] - 2026-09-09
 
 ### Changed

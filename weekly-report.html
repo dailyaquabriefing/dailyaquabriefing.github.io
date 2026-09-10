@@ -610,6 +610,20 @@ function buildUserReport(data){
     return d ? (!doneCut || d>=doneCut) : !doneCut;
   });
 
+  /* Active (non-completed) tasks, filtered like projects, attention-first */
+  const openTasks = (anyFilter ? tasks.filter(matchesFilters) : tasks).filter(t=>t.Status!=="Completed");
+  openTasks.sort((a,b)=>{
+    const attnA = (a.Status==="Delayed" || looksBlocked(a)) ? 0 : 1;
+    const attnB = (b.Status==="Delayed" || looksBlocked(b)) ? 0 : 1;
+    if(attnA!==attnB) return attnA-attnB;
+    const pri = (PRI[a.Priority]??3)-(PRI[b.Priority]??3);
+    if(pri) return pri;
+    const endA = toDate(a.End), endB = toDate(b.End);
+    const eA = endA ? endA.getTime() : Infinity, eB = endB ? endB.getTime() : Infinity;
+    if(eA!==eB) return eA-eB;
+    return (toDate(b.Updated)||0)-(toDate(a.Updated)||0);
+  });
+
   // Overall portfolio completion — always the full portfolio, unaffected by filters:
   // completed / (completed + active + on-hold). Maintenance is ongoing by design and excluded.
   const allActive = projects.filter(p=>ACTIVE_STATUSES.includes(p.Status));
@@ -712,6 +726,27 @@ function buildUserReport(data){
     h += `</tbody></table>`;
   }
 
+  if(openTasks.length){
+    h += `<div class="bar">Active Tasks (${openTasks.length})</div>
+    <table class="tpl">
+    <thead><tr><th>Task</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
+    for(const t of openTasks){
+      const [tcls,tcode] = statusCode(t);
+      const tstart = toDate(t.Start);
+      const test = toDate(t.End);
+      const tblock = looksBlocked(t);
+      h += `<tr>
+        <td><b>${esc(t.Name)}</b>${ownerTag(t)}${t.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(t.Goal))}</span>`:""}</td>
+        <td class="st ${tcls}"><span>${tcode}</span>${stageLabel(t.Status)}</td>
+        <td class="asgncol">${esc(t.Assigned||"N/A")}</td>
+        <td class="datecol">${tstart ? esc(fmtShort(tstart)) : ""}</td>
+        <td class="datecol">${test ? esc(fmtShort(test)) : "TBD"}</td>
+      </tr>`;
+      if(tblock) h += `<tr class="note"><td colspan="5">${esc(tblock)}</td></tr>`;
+    }
+    h += `</tbody></table>`;
+  }
+
   if(!anyFilter){
     h += `<div class="bar">Recurring Daily Workload</div>
     <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
@@ -756,7 +791,7 @@ function buildUserReport(data){
   </div>`;
 
   const model = {
-    info, top, onHold, maint, future, daily,
+    info, top, onHold, maint, future, daily, activeTasks: openTasks,
     statusKeys, statusCounts, anyFilter, doneTasksWk, doneProjWk, doneTitle, pct,
     pctSmall: allCompleted.length + " of " + denom + " tracked projects completed \u00b7 " + allMaint.length + " in ongoing maintenance, " + allFuture.length + " future (excluded)",
     exportedLine: info.exported ? (info.source==="live" ? "Live data as of " : "Data exported ") + fmtDate(info.exported) : "",
@@ -1153,6 +1188,26 @@ function saveAsPdf(){
         firstLine(p.Milestone) || firstLine(p.Notes) || ""
       ]),
       columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}}
+    });
+  }
+
+  /* active tasks */
+  if(m.activeTasks && m.activeTasks.length){
+    bar("Active Tasks (" + m.activeTasks.length + ")");
+    table({
+      head:[["Task","Status","Assigned To","Start","Est/Act Complete"]],
+      body: m.activeTasks.map(t=>{
+        const [tcls, tcode] = statusCode(t);
+        const tstart = toDate(t.Start), test = toDate(t.End);
+        return [
+          {content: t.Name + ownerTxt(t) + (t.Goal ? "\n" + firstLine(t.Goal) : ""), styles:{fontStyle:"bold"}},
+          stCell(tcls, tcode + "\n" + (t.Status||"")),
+          t.Assigned || "N/A",
+          tstart ? fmtShort(tstart) : "",
+          test ? fmtShort(test) : "TBD"
+        ];
+      }),
+      columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}, 3:{cellWidth:58}, 4:{cellWidth:80}}
     });
   }
 
