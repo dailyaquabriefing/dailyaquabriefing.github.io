@@ -34,6 +34,11 @@
   .toolbar button:disabled{opacity:.45;cursor:default}
   .toolbar button:focus-visible, .toolbar label.btn:focus-within{outline:3px solid #ffd268;outline-offset:2px}
   .toolbar input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+  /* Collapsible options area (filters / users / sections) — collapsed by default */
+  .toolbar-controls{display:none;flex-basis:100%;flex-wrap:wrap;gap:12px;align-items:center}
+  .toolbar-controls.open{display:flex}
+  /* Full-width report mode */
+  #report.fullwidth{max-width:none;margin-left:18px;margin-right:18px}
   .filters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}
   .filters select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none;max-width:180px}
   .filters button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:4px;padding:6px 12px;font-size:12.5px;font-weight:bold;cursor:pointer;font-family:inherit}
@@ -166,6 +171,13 @@
   <h1>Weekly Report Builder
     <small>Daily Aqua Briefing &middot; Aqua-Aerobic Systems, Inc.</small>
   </h1>
+  <input type="file" id="file" accept=".xlsx" aria-hidden="true">
+  <button id="copyBtn" disabled>Copy as email text</button>
+  <button id="webBtn" disabled>Download web report</button>
+  <button id="printBtn" disabled>Save PDF</button>
+  <button id="fullBtn" type="button" title="Toggle full-width report">&#x26F6; Full width</button>
+  <button id="optsBtn" type="button" title="Show filters, users, and section toggles">&#9881; Options &#9660;</button>
+  <div class="toolbar-controls" id="toolbarControls">
   <div class="filters" id="filterWrap" style="display:none">
     <select id="fStatus" aria-label="Filter by status"></select>
     <select id="fPriority" aria-label="Filter by priority">
@@ -201,10 +213,7 @@
   <div class="sectionbar" id="sectionWrap" style="display:none">
     <span>Sections:</span>
   </div>
-  <input type="file" id="file" accept=".xlsx" aria-hidden="true">
-  <button id="copyBtn" disabled>Copy as email text</button>
-  <button id="webBtn" disabled>Download web report</button>
-  <button id="printBtn" disabled>Save PDF</button>
+  </div>
 </div>
 
 <div id="err"></div>
@@ -406,7 +415,7 @@ function isStorageId(id){
 }
 
 function loadUserList(){
-  db.collection("briefings").doc("_directory").get().then(doc=>{
+  return db.collection("briefings").doc("_directory").get().then(doc=>{
     const list = doc.exists ? (doc.data().users || []) : [];
     if(list.length){
       ALL_USERS = list.filter(u=>u && u.id && !isStorageId(u.id));
@@ -1173,6 +1182,26 @@ $("addUserSel").addEventListener("change", ()=>{
 });
 $("saveTeamBtn").addEventListener("click", saveTeam);
 
+/* Options area (filters / users / sections) — collapsed by default */
+$("optsBtn").addEventListener("click", ()=>{
+  const open = $("toolbarControls").classList.toggle("open");
+  $("optsBtn").innerHTML = open ? "&#9881; Options &#9650;" : "&#9881; Options &#9660;";
+});
+
+/* Full-width report toggle (remembered) */
+let FULLW = false;
+try{ FULLW = localStorage.getItem("weeklyReportFull") === "1"; }catch(e){}
+function applyFullWidth(){
+  $("report").classList.toggle("fullwidth", FULLW);
+  $("fullBtn").innerHTML = FULLW ? "&#x26F6; Normal width" : "&#x26F6; Full width";
+}
+$("fullBtn").addEventListener("click", ()=>{
+  FULLW = !FULLW;
+  try{ localStorage.setItem("weeklyReportFull", FULLW ? "1" : "0"); }catch(e){}
+  applyFullWidth();
+});
+applyFullWidth();
+
 /* Build the section show/hide toggles once */
 for(const def of SECTION_DEFS){
   const key = def[0], label = def[1];
@@ -1201,22 +1230,30 @@ dz.addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile
 document.body.addEventListener("dragover", e=>e.preventDefault());
 document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(f) loadFile(f); });
 
-loadUserList();
 loadTeams();
 
 /* Auto-connect from ?report=<id>, ?user=<id>, or ?team=<name>;
-   otherwise prefill the last-used ID */
+   with no parameters, load EVERYONE from the directory by default. */
 {
   const params = new URLSearchParams(location.search);
   const urlUser = params.get("report") || params.get("user");
   const urlTeam = params.get("team");
   if(urlTeam){
+    loadUserList();
     loadTeamByName(urlTeam);
   } else if(urlUser){
+    loadUserList();
     $("liveUser").value = urlUser;
     loadLive(urlUser);
   } else {
-    $("liveUser").value = localStorage.getItem("weeklyReportUser") || "";
+    loadUserList().then(()=>{
+      const ids = (ALL_USERS || []).map(u=>u.id);
+      if(ids.length){
+        loadLive(ids.join(","));
+      } else {
+        $("liveUser").value = localStorage.getItem("weeklyReportUser") || "";
+      }
+    });
   }
 }
 

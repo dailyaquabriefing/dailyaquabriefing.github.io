@@ -5,6 +5,15 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-09-11
+
+### Added
+- Status Report: **⚙ Options toggle** — filters, user chips (with Add user / Merge / Save team), and section checkboxes are now in a collapsible area that starts collapsed, leaving a single tidy top row: title, Copy as email text, Download web report, Save PDF, Full width, Options.
+- Status Report: **⛶ Full width toggle** — stretches the report across the whole screen instead of the centered 860px column; choice is remembered between visits.
+
+### Changed
+- Status Report now loads **all users by default**: opening `weekly-report.html` with no `?report=`/`?team=` parameter pulls everyone from the user directory. Personal links from the nav bar (`?report=<id>`) and team links (`?team=<name>`) still load just that user or team.
+
 ## [1.17.2] - 2026-09-11
 
 ### Added
