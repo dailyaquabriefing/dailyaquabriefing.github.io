@@ -5,6 +5,17 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.2] - 2026-09-11
+
+### Added
+- Status Report: **⤢ Full screen** button — presents the report itself full screen (browser Fullscreen API; Esc exits, scrolling works). Enabled once a report is loaded.
+
+### Changed
+- Merged team header now reads "Team: Chuck Konkol, Carmen Shields · Information Technology" — the department name(s) replace the "· Aqua-Aerobic Systems, Inc." suffix on that row (single-user headers keep the company name). Web and PDF.
+
+### Removed
+- The "Included in this report (N): …" banner from 1.18.1 (web and PDF) — redundant now that the Team row lists everyone.
+
 ## [1.18.1] - 2026-09-11
 
 ### Added

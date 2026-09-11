@@ -39,6 +39,8 @@
   .toolbar-controls.open{display:flex}
   /* Full-width report mode */
   #report.fullwidth{max-width:none;margin-left:18px;margin-right:18px}
+  /* Full-screen (presentation) mode */
+  #report:fullscreen{max-width:none;overflow:auto;background:var(--wash);padding:24px;margin:0}
   .filters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}
   .filters select{font-family:inherit;font-size:13px;padding:7px 8px;border-radius:4px;border:none;max-width:180px}
   .filters button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:4px;padding:6px 12px;font-size:12.5px;font-weight:bold;cursor:pointer;font-family:inherit}
@@ -82,7 +84,6 @@
   .doc-title{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;font-size:13px;color:var(--muted)}
   .doc-title b{color:var(--ink);font-size:16px}
   .doc-logo{height:34px;width:auto;display:block;margin-bottom:6px}
-  .cover-line{background:#eef3f8;border:1px solid var(--border);border-radius:4px;padding:10px 14px;font-size:13px;color:var(--ink);margin-bottom:18px}
   .filterline{background:#fff6e5;border:1px solid #e0a02f;border-radius:4px;padding:8px 12px;font-size:12.5px;color:#7a4a08;margin-bottom:14px}
   .bar{background:var(--bar);color:#fff;font-weight:bold;font-size:15px;padding:8px 14px;border:1px solid var(--bar-dark);margin-top:22px}
   .bar.center{text-align:center}
@@ -177,6 +178,7 @@
   <button id="webBtn" disabled>Download web report</button>
   <button id="printBtn" disabled>Save PDF</button>
   <button id="fullBtn" type="button" title="Toggle full-width report">&#x26F6; Full width</button>
+  <button id="fsBtn" type="button" disabled title="Show the report full screen (press Esc to exit)">&#x2922; Full screen</button>
   <button id="optsBtn" type="button" title="Show filters, users, and section toggles">&#9881; Options &#9660;</button>
   <div class="toolbar-controls" id="toolbarControls">
   <div class="filters" id="filterWrap" style="display:none">
@@ -779,7 +781,7 @@ function buildUserReport(data){
   let h = "";
 
   h += `<div class="doc-title">
-    <span><img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems" class="doc-logo"><b>Weekly Status Report</b><br>${esc(info.displayName || info.user || "report")}${info.department ? " &middot; " + esc(info.department) : ""} &middot; Aqua-Aerobic Systems, Inc.</span>
+    <span><img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems" class="doc-logo"><b>Weekly Status Report</b><br>${esc(info.displayName || info.user || "report")}${info.department ? " &middot; " + esc(info.department) : ""}${info.merged ? "" : " &middot; Aqua-Aerobic Systems, Inc."}</span>
     <span style="text-align:right">${esc(fmtDate(now))}<br>${info.exported ? (info.source==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}${staleNote}</span>
   </div>`;
 
@@ -984,6 +986,8 @@ function buildMergedData(){
   return {
     info: {
       user: "Team: " + users.join(", "),
+      merged: true,
+      department: [...new Set(REPORTS.map(r=>r.info.department).filter(Boolean))].join(", "),
       deptLine: deptLine,
       exported: exported || new Date(),
       source: REPORTS.every(r=>r.info.source==="live") ? "live" : "file"
@@ -1011,14 +1015,6 @@ function buildReport(){
       MODELS.push(out.model);
     });
   }
-  /* With several users loaded, lead with who is included */
-  if(REPORTS.length > 1){
-    const included = REPORTS.map(r=>{
-      const n = r.info.displayName || r.info.user || "report";
-      return esc(n) + (r.info.department ? " (" + esc(r.info.department) + ")" : "");
-    }).join(" &middot; ");
-    html = '<div class="cover-line"><b>Included in this report (' + REPORTS.length + '):</b> ' + included + '</div>' + html;
-  }
   $("doc").innerHTML = html;
   /* Page title doubles as the suggested "Save as PDF" filename */
   const names = REPORTS.map(r=>r.info.user||"report").join("+");
@@ -1028,6 +1024,7 @@ function buildReport(){
   $("copyBtn").disabled = false;
   $("webBtn").disabled = false;
   $("printBtn").disabled = false;
+  $("fsBtn").disabled = false;
   $("sectionWrap").style.display = "flex";
   renderUserChips();
 }
@@ -1077,7 +1074,7 @@ function removeUser(i){
     $("usersWrap").style.display = "none";
     $("filterWrap").style.display = "none";
     $("sectionWrap").style.display = "none";
-    $("copyBtn").disabled = true; $("webBtn").disabled = true; $("printBtn").disabled = true;
+    $("copyBtn").disabled = true; $("webBtn").disabled = true; $("printBtn").disabled = true; $("fsBtn").disabled = true;
     document.title = "Weekly Report — Daily Aqua Briefing";
     return;
   }
@@ -1211,6 +1208,13 @@ $("fullBtn").addEventListener("click", ()=>{
 });
 applyFullWidth();
 
+/* Full-screen presentation mode (Esc exits, per the browser default) */
+$("fsBtn").addEventListener("click", ()=>{
+  if(document.fullscreenElement){ document.exitFullscreen(); return; }
+  const el = $("report");
+  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+});
+
 /* Build the section show/hide toggles once */
 for(const def of SECTION_DEFS){
   const key = def[0], label = def[1];
@@ -1342,7 +1346,7 @@ function saveAsPdf(){
   pdf.setFont("helvetica","normal"); pdf.setFontSize(9); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
   pdf.text(fmtDate(new Date()), pageW-M, y+12, {align:"right"});
   y += 20;
-  pdf.text((m.info.displayName || m.info.user || "report") + (m.info.department ? " \u00b7 " + m.info.department : "") + " \u00b7 Aqua-Aerobic Systems, Inc.", M, y+9);
+  pdf.text((m.info.displayName || m.info.user || "report") + (m.info.department ? " \u00b7 " + m.info.department : "") + (m.info.merged ? "" : " \u00b7 Aqua-Aerobic Systems, Inc."), M, y+9);
   if(m.exportedLine) pdf.text(m.exportedLine, pageW-M, y+9, {align:"right"});
   y += 24;
   pdf.setDrawColor(BAR[0],BAR[1],BAR[2]); pdf.setLineWidth(1.5);
@@ -1509,17 +1513,6 @@ function saveAsPdf(){
   }
 
   };
-
-  /* With several users loaded, lead page 1 with who is included */
-  if(REPORTS.length > 1){
-    pdf.setFont("helvetica","normal"); pdf.setFontSize(9);
-    pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
-    const included = "Included in this report (" + REPORTS.length + "): " +
-      REPORTS.map(r=>r.info.displayName || r.info.user || "report").join(" · ");
-    const incLines = pdf.splitTextToSize(included, W);
-    pdf.text(incLines, M, y+10);
-    y += incLines.length*11 + 10;
-  }
 
   MODELS.forEach((mm, i)=>{
     if(i>0){ pdf.addPage(); y = M; }
