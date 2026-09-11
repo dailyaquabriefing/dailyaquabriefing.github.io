@@ -346,6 +346,9 @@
                     ? '<span class="badge badge-active">Lead</span>'
                     : '<span class="muted">—</span>';
                 let actions = '<button class="btn-small" onclick="resetPassword(\'' + u.uid + '\')">Reset&nbsp;Password</button>';
+                if (isAdmin) {
+                    actions += '<button class="btn-small" onclick="editProfile(\'' + u.uid + '\')">Edit&nbsp;Profile</button>';
+                }
                 if (isAdmin && !isSelf) {
                     actions += '<button class="btn-small" onclick="toggleLead(\'' + u.uid + '\')">' + (u.role === 'lead' ? 'Remove&nbsp;Lead' : 'Make&nbsp;Lead') + '</button>';
                     actions += '<button class="btn-small" onclick="toggleDisabled(\'' + u.uid + '\')">' + (u.disabled ? 'Enable' : 'Disable') + '</button>';
@@ -364,6 +367,24 @@
                     '<td>' + actions + '</td>' +
                     '</tr>';
             }).join('');
+        }
+
+        // Admin sets a user's display name + department on their behalf.
+        // Updates user_prefs, their briefing doc, and the shared directory.
+        async function editProfile(uid) {
+            const u = usersByUid[uid] || {};
+            const email = u.email || uid;
+            const name = prompt('Display name for ' + email + ':', u.displayName || '');
+            if (name === null) return;
+            const dept = prompt('Department for ' + email + ':', u.department || '');
+            if (dept === null) return;
+            try {
+                const resp = await api({ action: 'setProfile', uid: uid, displayName: name.trim(), department: dept.trim() });
+                showMsg('Profile updated for ' + email + (resp.reportId ? '.' : ' (saved; their report header will use it once they link a Network ID).'), false);
+                loadUsers();
+            } catch (e) {
+                showMsg('Profile update failed: ' + e.message, true);
+            }
         }
 
         // Department leads can list, create, and reset passwords; only admins

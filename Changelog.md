@@ -5,6 +5,15 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1] - 2026-09-11
+
+### Added
+- Users (IT) page: **Edit Profile** button (admin only) — set any user's Display Name and Department on their behalf. The new admin-only `setProfile` function action (deployed) updates their `user_prefs`, their briefing document (report header), and the shared directory in one call; if the user hasn't linked a Network ID yet, the values are saved to their account and applied once they link.
+- The users list now returns each user's display name so the Edit Profile prompts prefill with current values.
+
+### Changed
+- Dashboard Settings save now writes the display name to `user_prefs` as well as the briefing doc, keeping the Users page prefill complete.
+
 ## [1.17.0] - 2026-09-11
 
 ### Added

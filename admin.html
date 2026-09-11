@@ -855,7 +855,7 @@
             // Department also goes on user_prefs so the Users (IT) page can show it.
             if (currentUser) {
                 db.collection('user_prefs').doc(currentUser.uid)
-                  .set({ department: localData.department }, { merge: true })
+                  .set({ department: localData.department, displayName: localData.displayName }, { merge: true })
                   .catch(e => console.warn("user_prefs update failed", e));
             }
             syncDirectoryEntry();
