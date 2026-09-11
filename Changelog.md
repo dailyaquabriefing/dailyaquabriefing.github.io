@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.2] - 2026-09-11
+
+### Added
+- Home page welcome box now shows **saved-team chips** ("Or open a team status report: 👥 IT (3) …") read from the shared `briefings/_teams` doc. Each chip opens `weekly-report.html?team=<name>` — same teams saved from the Status Report toolbar. The row hides itself when no teams exist.
+
 ## [1.17.1] - 2026-09-11
 
 ### Added

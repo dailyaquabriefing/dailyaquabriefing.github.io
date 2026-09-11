@@ -458,6 +458,22 @@
     color: white;
     border-color: var(--primary);
 }
+
+/* Saved-team chips on the welcome box */
+.team-chip {
+    display: inline-block;
+    background: #fff;
+    color: var(--primary);
+    border: 1px solid #cfd8e3;
+    border-radius: 16px;
+    padding: 7px 14px;
+    margin: 4px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+.team-chip:hover { background: #eef7ff; border-color: var(--primary); }
     </style>
 <script src="nav.js" defer></script>
 </head>
@@ -505,6 +521,11 @@
         <div style="margin: 25px 0;">
             <input type="text" id="userid-input" class="userid-input" placeholder="e.g. jdoe" autofocus>
             <button onclick="viewReport()" class="action-btn btn-primary">View Briefing</button>
+        </div>
+        <div id="team-row" class="hidden">
+            <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 25px auto; width: 60%;">
+            <p style="margin-bottom: 8px; font-weight: 600; color: #555;">Or open a team status report:</p>
+            <div id="team-chips"></div>
         </div>
         <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 30px auto; width: 60%;">
         <div style="margin-top: 20px;">
@@ -626,6 +647,24 @@
             if (targetNode) {
                 observer.observe(targetNode, { childList: true, subtree: true });
             }
+
+            // Saved-team chips (shared, from briefings/_teams; maintained on the
+            // Status Report page via "Save team"). Each opens the team report.
+            try {
+                db.collection('briefings').doc('_teams').get().then(doc => {
+                    const teams = doc.exists ? (doc.data().teams || []) : [];
+                    if (!teams.length) return;
+                    const wrap = document.getElementById('team-chips');
+                    teams.forEach(t => {
+                        const a = document.createElement('a');
+                        a.className = 'team-chip';
+                        a.href = 'weekly-report.html?team=' + encodeURIComponent(t.name || '');
+                        a.textContent = '👥 ' + (t.name || 'team') + ' (' + ((t.ids || []).length) + ')';
+                        wrap.appendChild(a);
+                    });
+                    document.getElementById('team-row').classList.remove('hidden');
+                }).catch(() => {});
+            } catch (e) { /* teams are optional on this page */ }
         });
     </script>
 </body>
