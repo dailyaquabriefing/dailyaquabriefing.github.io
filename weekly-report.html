@@ -487,6 +487,30 @@ function fillAddUserSel(){
 
 /* ---------- saved teams (shared, stored in briefings/_teams) ---------- */
 let TEAMS = [];
+let CURRENT_TEAM = ""; /* name of the team currently open (prefills Save team) */
+
+/* Open a saved team: apply its members, merge setting, and section toggles */
+function applyTeam(t){
+  CURRENT_TEAM = t.name || "";
+  if(typeof t.merged === "boolean"){
+    MERGED = t.merged;
+    try{ localStorage.setItem("weeklyReportMerge", MERGED ? "1" : "0"); }catch(e){}
+  }
+  if(t.sections && typeof t.sections === "object"){
+    for(const k in SECTIONS){
+      if(typeof t.sections[k] === "boolean") SECTIONS[k] = t.sections[k];
+    }
+    try{ localStorage.setItem("weeklyReportSections", JSON.stringify(SECTIONS)); }catch(e){}
+    syncSectionChecks();
+  }
+  loadLive((t.ids||[]).join(","));
+}
+
+function syncSectionChecks(){
+  $("sectionWrap").querySelectorAll("input[type=checkbox]").forEach(c=>{
+    if(c.dataset.key) c.checked = !!SECTIONS[c.dataset.key];
+  });
+}
 
 function loadTeams(){
   return db.collection("briefings").doc("_teams").get().then(doc=>{
@@ -509,7 +533,7 @@ function renderTeamChips(){
     b.type = "button";
     b.className = "team-chip";
     b.textContent = "👥 " + (t.name || "team") + " (" + (t.ids||[]).length + ")";
-    b.onclick = ()=> loadLive((t.ids||[]).join(","));
+    b.onclick = ()=> applyTeam(t);
     row.appendChild(b);
   }
   row.style.display = "block";
@@ -517,12 +541,15 @@ function renderTeamChips(){
 
 function saveTeam(){
   if(!REPORTS.length) return;
-  const name = (prompt("Team name (e.g. IT, Engineering):") || "").trim();
+  /* Prefill with the open team's name so re-saving updates it in place.
+     Also snapshot the merge setting and section toggles with the team. */
+  const name = (prompt("Team name (e.g. IT, Engineering):", CURRENT_TEAM || "") || "").trim();
   if(!name) return;
   const ids = REPORTS.map(r=>r.info.user||"").filter(Boolean);
   TEAMS = TEAMS.filter(t=>(t.name||"").toLowerCase() !== name.toLowerCase());
-  TEAMS.push({name: name, ids: ids});
+  TEAMS.push({name: name, ids: ids, merged: MERGED, sections: Object.assign({}, SECTIONS)});
   TEAMS.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  CURRENT_TEAM = name;
   db.collection("briefings").doc("_teams").update({teams: TEAMS}).then(()=>{
     renderTeamChips();
     const t = $("toast");
@@ -539,7 +566,7 @@ function loadTeamByName(name){
   loadTeams().then(list=>{
     const t = list.find(x=>(x.name||"").toLowerCase() === String(name).toLowerCase());
     if(t && (t.ids||[]).length){
-      loadLive(t.ids.join(","));
+      applyTeam(t);
     } else {
       $("err").textContent = "No saved team named \"" + name + "\".";
       $("err").style.display = "block";
@@ -1172,8 +1199,8 @@ function loadFile(file){
 }
 
 $("file").addEventListener("change", e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
-$("liveBtn").addEventListener("click", ()=> loadLive($("liveUser").value));
-$("liveUser").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadLive($("liveUser").value); } });
+$("liveBtn").addEventListener("click", ()=>{ CURRENT_TEAM = ""; loadLive($("liveUser").value); });
+$("liveUser").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); CURRENT_TEAM = ""; loadLive($("liveUser").value); } });
 $("addUserBtn").addEventListener("click", ()=> loadLive($("addUserInput").value, true));
 $("addUserInput").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); loadLive($("addUserInput").value, true); } });
 $("mergeChk").addEventListener("change", ()=>{
@@ -1222,6 +1249,7 @@ for(const def of SECTION_DEFS){
   l.className = "mergelbl";
   const c = document.createElement("input");
   c.type = "checkbox";
+  c.dataset.key = key;
   c.checked = SECTIONS[key];
   c.addEventListener("change", ()=>{
     SECTIONS[key] = c.checked;

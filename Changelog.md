@@ -5,6 +5,13 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-09-11
+
+### Added
+- Saved teams now store the **"Merge into one report" setting and the section checkboxes** along with the member list. Opening a team (chip or `?team=` link) restores all three, so a team like "Steering Committee" always opens merged with the same sections.
+- With a team open, **💾 Save team prefills the team's name**, so tweaking members or sections and re-saving updates the team in place instead of creating a duplicate. Connecting fresh from the connect box clears the prefill.
+- Teams saved before this release still work — they just don't carry merge/section settings until re-saved.
+
 ## [1.18.3] - 2026-09-11
 
 ### Removed
