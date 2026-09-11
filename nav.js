@@ -34,7 +34,8 @@
         '#dab-nav{background:#005a9e;max-width:1100px;margin:0 auto 20px auto;padding:8px 14px;' +
         'border-radius:8px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;box-sizing:border-box;' +
         "font-family:'Segoe UI',system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.12);}" +
-        '#dab-nav .dab-brand{color:#fff;font-weight:700;font-size:0.95rem;text-decoration:none;margin-right:auto;padding:6px 8px;}' +
+        '#dab-nav .dab-brand{color:#fff;font-weight:700;font-size:0.95rem;text-decoration:none;margin-right:auto;padding:6px 8px;display:inline-flex;align-items:center;gap:8px;}' +
+        '#dab-nav .dab-logo{height:24px;width:auto;background:#fff;border-radius:4px;padding:2px 5px;box-sizing:content-box;}' +
         '#dab-nav a.dab-link{color:rgba(255,255,255,0.92);text-decoration:none;font-size:0.88rem;padding:6px 10px;border-radius:4px;white-space:nowrap;}' +
         '#dab-nav a.dab-link:hover{background:rgba(255,255,255,0.18);}' +
         '#dab-nav a.dab-link.dab-active{background:#fff;color:#005a9e;font-weight:600;}' +
@@ -49,7 +50,12 @@
     var brand = document.createElement('a');
     brand.className = 'dab-brand';
     brand.href = 'index.html';
-    brand.textContent = 'Aqua Daily Briefing';
+    var logo = document.createElement('img');
+    logo.src = 'aqua-aerobics-logo.png';
+    logo.alt = 'Aqua-Aerobic Systems';
+    logo.className = 'dab-logo';
+    brand.appendChild(logo);
+    brand.appendChild(document.createTextNode('Aqua Daily Briefing'));
     nav.appendChild(brand);
 
     links.forEach(function (l) {

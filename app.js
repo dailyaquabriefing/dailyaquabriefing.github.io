@@ -479,7 +479,7 @@ if (safeNotes) {
 
         // Render Item
         if (typeof item === 'object') {
-            let color = { 'On Track': 'green', 'Testing': '#ff9f43', 'Delayed': 'red', 'Completed': '#800080' }[status] || 'grey';
+            let color = { 'On Track': 'green', 'In Progress': '#2e8b57', 'Planning': '#5b9bd5', 'Review': '#b8860b', 'Testing': '#ff9f43', 'Delayed': 'red', 'Completed': '#800080' }[status] || 'grey';
             let pColor = priority === 'High' ? '#d9534f' : (priority === 'Medium' ? '#f0ad4e' : '#5cb85c');
 
             const priorityBadge = priority ? `<span style="font-size:0.8em; color:${pColor}; border:1px solid ${pColor}; padding:0 4px; border-radius:4px; margin-left:5px;">${priority}</span>` : '';
@@ -548,7 +548,9 @@ function renderReport(data, isDailyMode) {
     document.getElementById('loading-overlay').classList.add('hidden');
     document.getElementById('nav-links').classList.remove('hidden');
     document.getElementById('report-body').classList.remove('hidden');
-    document.getElementById('report-subtitle').textContent = "Report: " + data.reportId;
+    document.getElementById('report-subtitle').textContent = "Report: " +
+        (data.displayName ? data.displayName + " (" + data.reportId + ")" : data.reportId) +
+        (data.department ? " · " + data.department : "");
     
     currentReportData = data;
     
@@ -673,16 +675,19 @@ function renderPublicAnalytics() {
 
     // Status order matches admin.html STATUS_ORDER
     const STATUS_ORDER_KEYS = [
-        'Delayed', 'Requirement Gathering', 'On Track', 'Development',
-        'Testing', 'Training', 'Follow-Up', 'Future',
+        'Delayed', 'Requirement Gathering', 'Planning', 'On Track', 'In Progress', 'Development',
+        'Testing', 'Review', 'Training', 'Follow-Up', 'Future',
         'On-Hold', 'Completed', 'Maintenance', 'Other'
     ];
     const STATUS_COLORS = [
         '#dc3545', // Delayed
         '#17a2b8', // Requirement Gathering
+        '#5b9bd5', // Planning
         '#28a745', // On Track
+        '#2e8b57', // In Progress
         '#6610f2', // Development
         '#ff9f43', // Testing
+        '#b8860b', // Review
         '#20c997', // Training
         '#fd7e14', // Follow-Up
         '#adb5bd', // Future
@@ -1017,6 +1022,9 @@ const applyGlobalStyles = (ws) => {
     // Status Color Map (RGB Hex for Excel) — matches admin.html STATUS_ORDER
     const statusColors = {
         'Future':                'F3F4F6',
+        'Planning':              'DBEAFE',
+        'In Progress':           'C6EFCE',
+        'Review':                'FFF2CC',
         'Requirement Gathering': 'DBEAFE',
         'On Track':              'C6EFCE',
         'Development':           'E0E7FF',
@@ -1117,8 +1125,8 @@ const applyGlobalStyles = (ws) => {
         const daily    = currentReportData.structuredDailyTasks || currentReportData.dailyTasks || [];
 
         const statusOrder = [
-            'Delayed', 'Requirement Gathering', 'On Track', 'Development',
-            'Testing', 'Training', 'Follow-Up', 'Future',
+            'Delayed', 'Requirement Gathering', 'Planning', 'On Track', 'In Progress', 'Development',
+            'Testing', 'Review', 'Training', 'Follow-Up', 'Future',
             'On-Hold', 'Completed', 'Maintenance'
         ];
 

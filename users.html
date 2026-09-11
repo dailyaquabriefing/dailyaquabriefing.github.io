@@ -222,6 +222,8 @@
                         <tr>
                             <th>Email</th>
                             <th>Network ID</th>
+                            <th>Department</th>
+                            <th>Role</th>
                             <th class="hide-mobile">Created</th>
                             <th class="hide-mobile">Last Sign-In</th>
                             <th>Status</th>
@@ -229,7 +231,7 @@
                         </tr>
                     </thead>
                     <tbody id="users-body">
-                        <tr><td colspan="6" class="muted">Loading…</td></tr>
+                        <tr><td colspan="8" class="muted">Loading…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -252,6 +254,7 @@
         const FUNCTION_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/manageUsers";
         let currentUser = null;
         let usersByUid = {};
+        let callerRole = ""; // "admin" or "lead", from the list response
 
         // --- Auth ---
         auth.onAuthStateChanged(user => {
@@ -314,12 +317,13 @@
         // --- Users list ---
         async function loadUsers() {
             const body = document.getElementById('users-body');
-            body.innerHTML = '<tr><td colspan="6" class="muted">Loading…</td></tr>';
+            body.innerHTML = '<tr><td colspan="8" class="muted">Loading…</td></tr>';
             try {
                 const data = await api({ action: 'list' });
+                callerRole = data.callerRole || "";
                 renderUsers(data.users || []);
             } catch (e) {
-                body.innerHTML = '<tr><td colspan="6" style="color:var(--danger);">' + esc(e.message) + '</td></tr>';
+                body.innerHTML = '<tr><td colspan="8" style="color:var(--danger);">' + esc(e.message) + '</td></tr>';
             }
         }
 
@@ -329,30 +333,53 @@
             users.forEach(u => { usersByUid[u.uid] = u; });
             const body = document.getElementById('users-body');
             if (!users.length) {
-                body.innerHTML = '<tr><td colspan="6" class="muted">No users found.</td></tr>';
+                body.innerHTML = '<tr><td colspan="8" class="muted">No users found.</td></tr>';
                 return;
             }
+            const isAdmin = callerRole === 'admin';
             body.innerHTML = users.map(u => {
                 const isSelf = currentUser && u.uid === currentUser.uid;
                 const status = u.disabled
                     ? '<span class="badge badge-disabled">Disabled</span>'
                     : '<span class="badge badge-active">Active</span>';
+                const roleBadge = u.role === 'lead'
+                    ? '<span class="badge badge-active">Lead</span>'
+                    : '<span class="muted">—</span>';
                 let actions = '<button class="btn-small" onclick="resetPassword(\'' + u.uid + '\')">Reset&nbsp;Password</button>';
-                if (!isSelf) {
+                if (isAdmin && !isSelf) {
+                    actions += '<button class="btn-small" onclick="toggleLead(\'' + u.uid + '\')">' + (u.role === 'lead' ? 'Remove&nbsp;Lead' : 'Make&nbsp;Lead') + '</button>';
                     actions += '<button class="btn-small" onclick="toggleDisabled(\'' + u.uid + '\')">' + (u.disabled ? 'Enable' : 'Disable') + '</button>';
                     actions += '<button class="btn-small btn-danger-outline" onclick="deleteUser(\'' + u.uid + '\')">Delete</button>';
-                } else {
+                } else if (isSelf) {
                     actions += ' <span class="muted">(you)</span>';
                 }
                 return '<tr class="' + (u.disabled ? 'disabled-row' : '') + '">' +
                     '<td>' + esc(u.email) + '</td>' +
                     '<td>' + (u.reportId ? esc(u.reportId) : '<span class="muted">not linked</span>') + '</td>' +
+                    '<td>' + (u.department ? esc(u.department) : '<span class="muted">—</span>') + '</td>' +
+                    '<td>' + roleBadge + '</td>' +
                     '<td class="hide-mobile">' + fmtDate(u.created) + '</td>' +
                     '<td class="hide-mobile">' + (u.lastSignIn ? fmtDate(u.lastSignIn) : '<span class="muted">never</span>') + '</td>' +
                     '<td>' + status + '</td>' +
                     '<td>' + actions + '</td>' +
                     '</tr>';
             }).join('');
+        }
+
+        // Department leads can list, create, and reset passwords; only admins
+        // may disable, delete, or grant the lead role.
+        async function toggleLead(uid) {
+            const u = usersByUid[uid] || {};
+            const makeLead = u.role !== 'lead';
+            const email = u.email || uid;
+            if (!confirm((makeLead ? 'Make ' : 'Remove ') + email + (makeLead ? ' a department lead? They can create users and reset passwords.' : ' as department lead?'))) return;
+            try {
+                await api({ action: 'setRole', uid: uid, role: makeLead ? 'lead' : '' });
+                showMsg(email + (makeLead ? ' is now a department lead.' : ' is no longer a lead.'), false);
+                loadUsers();
+            } catch (e) {
+                showMsg('Role update failed: ' + e.message, true);
+            }
         }
 
         // --- Actions ---

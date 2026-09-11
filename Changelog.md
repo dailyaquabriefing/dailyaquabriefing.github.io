@@ -5,6 +5,26 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-09-11
+
+### Added
+- **Profile (Display Name + Department)** on the Dashboard Settings tab. The Status Report header (web and PDF) now shows "Chuck Konkol · Information Technology · Aqua-Aerobic Systems, Inc." from these fields instead of the hardcoded IT wording and user-ID fallbacks. The viewer subtitle shows them too.
+- **Company branding:** the Aqua-Aerobic logo now appears in the shared nav bar, the Status Report web header, and the PDF header.
+- **Department-neutral statuses:** Planning, In Progress, and Review added everywhere (admin dropdown/badges/sorting, viewer, analytics, Excel export colors, Status Report letter codes: Planning→N/S, In Progress→G, Review→T).
+- **Staleness warnings:** report sections (and PDF) show a red "Last updated N days ago" notice when a briefing is more than 7 days old.
+- **Saved teams:** load a group of users, click "💾 Save team", and it becomes a one-click chip on the connect screen (shared with everyone). `weekly-report.html?team=<name>` opens a team directly. Stored in the `briefings/_teams` doc.
+- **User directory (`briefings/_directory`):** maintained by the Dashboard on login/settings-save and cleaned up on user deletion. The Status Report's "Add user…" dropdown now reads it (fast), is **grouped by department**, and shows display names; falls back to a collection scan if empty.
+- **Department rollup in merged reports:** with two or more departments loaded, the Completion % box adds a per-department line (e.g. "Engineering 55% (5/9) · IT 67% (24/36)"), web and PDF.
+- **Delegated admin roles:** admins can mark a user as **department lead** on the Users page. Leads can list users, create accounts, and reset passwords; only admins can disable, delete, or change roles. Users page shows Department and Role columns and hides admin-only buttons from leads.
+- **Unsaved-changes guard:** the Dashboard edit modal warns before discarding edits on Cancel.
+
+### Changed
+- Empty sections now auto-hide on the Status Report (Completion %/Status band when a user has no projects; Daily Workload when there are no daily tasks) — new users' sections look intentional in team reports.
+- Help page documents all of the above.
+
+### Removed
+- **`updateBriefing` Cloud Function deleted** — it was an unauthenticated endpoint left over from the retired desktop agent that could overwrite any briefing. All writes now go through the authenticated app or the admin-gated `manageUsers` function. (Its structured-restore capability was used one last time to seed the `_teams`/`_directory` storage docs.)
+
 ## [1.16.2] - 2026-09-10
 
 ### Fixed

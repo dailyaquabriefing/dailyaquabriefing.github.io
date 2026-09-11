@@ -198,6 +198,9 @@
         /* Status Badges */
         .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white; display: inline-block;}
         .st-requirement-gathering { background-color: #17a2b8; }
+        .st-planning             { background-color: #5b9bd5; }
+        .st-in-progress          { background-color: #2e8b57; }
+        .st-review               { background-color: #b8860b; }
         .st-training            { background-color: #20c997; }
         .st-development         { background-color: #6610f2; }
         .st-testing             { background-color: #ff9f43; }
@@ -415,6 +418,20 @@
                     <label>Current Network User ID (Read-only)</label>
                     <input type="text" id="settings-report-id-display" class="w-full" readonly style="background:#f0f0f0;">
                 </div>
+
+                <h3 style="color: var(--primary); margin-top: 30px;">Profile</h3>
+                <p style="color: #666; font-size: 0.9em;">
+                    Shown on your Weekly Status Report header instead of your user ID.
+                </p>
+                <div class="form-group">
+                    <label>Display Name</label>
+                    <input type="text" id="settings-displayname" class="w-full" placeholder="e.g. Chuck Konkol">
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" id="settings-department" class="w-full" placeholder="e.g. Information Technology">
+                </div>
+
                 <h3 style="color: var(--primary); margin-top: 30px;">Viewer Security</h3>
                 <p style="color: #666; font-size: 0.9em;">
                     Set a passcode for your <b>Daily Briefing</b> page. Leave empty for public access.
@@ -479,10 +496,13 @@
                 <div class="form-group">
                     <label>Status</label>
 <select id="m-status" class="w-full">
+    <option value="Planning">Planning</option>
     <option value="Requirement Gathering">Requirement Gathering</option>
     <option value="Training">Training</option>
+    <option value="In Progress">In Progress</option>
     <option value="Development">Development</option>
     <option value="Testing">Testing</option>
+    <option value="Review">Review</option>
     <option value="Delayed">Delayed</option>
     <option value="Future">Future</option>
     <option value="On-Hold">On-Hold</option>
@@ -646,7 +666,9 @@
             dailyTasks: [],
             projects: [],
             activeTasks: [],
-            passcode: ""
+            passcode: "",
+            displayName: "",
+            department: ""
         };
         
         // --- EDITOR INSTANCES ---
@@ -728,7 +750,7 @@
                 db.collection('user_prefs').doc(currentUser.uid).set({
                     reportId: val,
                     email: currentUser.email
-                }).then(() => {
+                }, { merge: true }).then(() => {
                     managedReportId = val;
                     document.getElementById('setup-modal').style.display = 'none';
                     initializeDashboard();
@@ -784,9 +806,13 @@
                     localData.projects = data.structuredProjects || [];
                     localData.activeTasks = data.structuredActiveTasks || [];
                     localData.passcode = data.passcode || "";
+                    localData.displayName = data.displayName || "";
+                    localData.department = data.department || "";
                     document.getElementById('settings-passcode').value = localData.passcode;
+                    document.getElementById('settings-displayname').value = localData.displayName;
+                    document.getElementById('settings-department').value = localData.department;
                 } else {
-                    localData = { dailyTasks: [], projects: [], activeTasks: [], passcode: "" };
+                    localData = { dailyTasks: [], projects: [], activeTasks: [], passcode: "", displayName: "", department: "" };
                     // New user, no briefing doc yet: create an empty one right away so
                     // "View My Briefing" and the Status Report work before any items exist.
                     if (!briefingDocCreated) {
@@ -795,8 +821,13 @@
                     }
                 }
                 renderAll();
+                if (!directorySynced) {
+                    directorySynced = true;
+                    syncDirectoryEntry();
+                }
             });
         }
+        let directorySynced = false;
 
         function pushData() {
             if (!managedReportId) return;
@@ -806,6 +837,8 @@
                 structuredProjects: localData.projects,
                 structuredActiveTasks: localData.activeTasks,
                 passcode: localData.passcode,
+                displayName: localData.displayName || "",
+                department: localData.department || "",
                 lastUpdated: new Date().toISOString(), // Updates Global Report Time
                 reportId: managedReportId,
                 tasks_count: localData.dailyTasks.length,
@@ -816,8 +849,35 @@
 
         function savePasscode() {
             localData.passcode = document.getElementById('settings-passcode').value.trim();
+            localData.displayName = document.getElementById('settings-displayname').value.trim();
+            localData.department = document.getElementById('settings-department').value.trim();
             pushData();
+            // Department also goes on user_prefs so the Users (IT) page can show it.
+            if (currentUser) {
+                db.collection('user_prefs').doc(currentUser.uid)
+                  .set({ department: localData.department }, { merge: true })
+                  .catch(e => console.warn("user_prefs update failed", e));
+            }
+            syncDirectoryEntry();
             alert("Settings Saved!");
+        }
+
+        // Keep this user's entry in the shared directory doc up to date
+        // (feeds the Status Report's Add-user dropdown, grouped by department).
+        function syncDirectoryEntry() {
+            if (!managedReportId) return;
+            const ref = db.collection('briefings').doc('_directory');
+            ref.get().then(doc => {
+                if (!doc.exists) return; // storage doc not seeded
+                const users = (doc.data().users || []).filter(u => (u.id || '') !== managedReportId);
+                users.push({
+                    id: managedReportId,
+                    displayName: localData.displayName || "",
+                    department: localData.department || ""
+                });
+                users.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+                return ref.update({ users: users });
+            }).catch(e => console.warn('directory sync failed', e));
         }
 
         // --- CHANGE PASSWORD (re-authenticate, then update via Firebase Auth) ---
@@ -1214,9 +1274,39 @@
             } else {
                 document.getElementById('m-comments-wrapper').style.display = 'none';
             }
+
+            modalSnapshot = modalState();
         }
 
-        function closeModal() { document.getElementById('edit-modal').style.display = 'none'; }
+        // Snapshot of the modal's fields, taken when it opens; used to warn
+        // about unsaved changes on Cancel.
+        let modalSnapshot = "";
+        function modalState() {
+            return JSON.stringify({
+                name: document.getElementById('m-name').value,
+                status: document.getElementById('m-status').value,
+                priority: document.getElementById('m-priority').value,
+                assigned: getAssignedValue(),
+                goal: document.getElementById('m-goal').value,
+                tester: document.getElementById('m-tester').value,
+                collab: document.getElementById('m-collaborators').value,
+                start: document.getElementById('m-start-date').value,
+                end: document.getElementById('m-end-date').value,
+                notes: quillNotes ? quillNotes.root.innerHTML : '',
+                it: quillIT ? quillIT.root.innerHTML : '',
+                ms: tempMilestones,
+                atts: tempAttachments,
+                checks: tempDailyChecks
+            });
+        }
+
+        function closeModal(force) {
+            if (!force && modalSnapshot && modalState() !== modalSnapshot) {
+                if (!confirm("You have unsaved changes. Discard them?")) return;
+            }
+            modalSnapshot = "";
+            document.getElementById('edit-modal').style.display = 'none';
+        }
 
         function saveModalItem() {
             const type = document.getElementById('modal-type').value;
@@ -1284,7 +1374,7 @@
                 list.sort((a, b) => (STATUS_ORDER[a.status] || 99) - (STATUS_ORDER[b.status] || 99));
             }
 
-            closeModal();
+            closeModal(true);
             pushData();
         }
 
@@ -1588,9 +1678,12 @@
 const STATUS_ORDER = {
     "Delayed":               1,
     "Requirement Gathering": 2,
+    "Planning":              2,
     "On Track":              3,
+    "In Progress":           3,
     "Development":           4,
     "Testing":               5,
+    "Review":                5,
     "Training":              6,
     "Follow-Up":             7,
     "Future":                8,

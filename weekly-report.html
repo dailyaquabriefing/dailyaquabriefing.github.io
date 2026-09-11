@@ -65,6 +65,8 @@
   #connectRow button{background:var(--bar);color:#fff;border:none;border-radius:4px;padding:10px 22px;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit}
   #connectRow button:disabled{opacity:.55;cursor:default}
   #connectRow button:focus-visible, #connectRow input:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
+  #teamRow .team-chip{background:#fff;color:var(--bar-dark);border:1px solid var(--border);border-radius:16px;padding:7px 14px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit;margin:3px}
+  #teamRow .team-chip:hover{border-color:var(--bar);background:#f4f8fc}
   #dropfile{margin:22px auto 0;max-width:420px;border:1px dashed var(--border);border-radius:6px;padding:14px 18px;color:var(--muted);font-size:13px;cursor:pointer;background:#fafcfe}
   #dropfile:hover{border-color:var(--bar)}
   #dropfile:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
@@ -74,6 +76,7 @@
   .doc{padding:30px 34px 40px}
   .doc-title{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;font-size:13px;color:var(--muted)}
   .doc-title b{color:var(--ink);font-size:16px}
+  .doc-logo{height:34px;width:auto;display:block;margin-bottom:6px}
   .filterline{background:#fff6e5;border:1px solid #e0a02f;border-radius:4px;padding:8px 12px;font-size:12.5px;color:#7a4a08;margin-bottom:14px}
   .bar{background:var(--bar);color:#fff;font-weight:bold;font-size:15px;padding:8px 14px;border:1px solid var(--bar-dark);margin-top:22px}
   .bar.center{text-align:center}
@@ -193,6 +196,7 @@
     <input type="text" id="addUserInput" placeholder="Add user&hellip;" autocomplete="off" aria-label="Add another user to the report">
     <button id="addUserBtn" type="button">+ Add</button>
     <label class="mergelbl" id="mergeLbl" style="display:none"><input type="checkbox" id="mergeChk"> Merge into one report</label>
+    <button id="saveTeamBtn" type="button" title="Save the current users as a named team">&#128190; Save team</button>
   </div>
   <div class="sectionbar" id="sectionWrap" style="display:none">
     <span>Sections:</span>
@@ -214,6 +218,7 @@
     <datalist id="userOpts"></datalist>
     <button id="liveBtn">Connect</button>
   </div>
+  <div id="teamRow" style="display:none;margin:14px auto 0;max-width:560px"></div>
   <div id="dropfile" tabindex="0" role="button" aria-label="Load briefing export file">
     Or drop a <b>Briefing_&hellip;.xlsx</b> export here / click to browse (offline fallback)
   </div>
@@ -372,7 +377,7 @@ function fetchReport(id){
     let updated = null;
     if(d.lastUpdated) updated = d.lastUpdated.toDate ? d.lastUpdated.toDate() : toDate(d.lastUpdated);
     return {
-      info: { user: d.reportId || id, exported: updated || new Date(), source: "live" },
+      info: { user: d.reportId || id, displayName: d.displayName || "", department: d.department || "", exported: updated || new Date(), source: "live" },
       daily: (d.structuredDailyTasks || d.dailyTasks || []).map(itemToRow),
       projects: (d.structuredProjects || d.projects || []).map(itemToRow),
       tasks: (d.structuredActiveTasks || d.activeTasks || []).map(itemToRow)
@@ -392,22 +397,41 @@ function rememberUsers(){
 }
 
 /* ---------- available-user directory (fills the Add dropdown) ---------- */
-let ALL_USERS = null; /* briefing report ids found in Firestore; null until loaded */
+/* Entries: {id, displayName, department}. Prefers the shared _directory doc
+   (fast, maintained by the app); falls back to scanning the collection. */
+let ALL_USERS = null;
+
+function isStorageId(id){
+  return id.startsWith("_") || id.endsWith("_outlook");
+}
 
 function loadUserList(){
-  db.collection("briefings").get().then(snap=>{
-    const ids = [];
+  db.collection("briefings").doc("_directory").get().then(doc=>{
+    const list = doc.exists ? (doc.data().users || []) : [];
+    if(list.length){
+      ALL_USERS = list.filter(u=>u && u.id && !isStorageId(u.id));
+      fillAddUserSel();
+      return;
+    }
+    return scanUserList();
+  }).catch(scanUserList);
+}
+
+function scanUserList(){
+  return db.collection("briefings").get().then(snap=>{
+    const users = [];
     snap.forEach(doc=>{
-      if(!doc.id.endsWith("_outlook")) ids.push(doc.id);
+      if(isStorageId(doc.id)) return;
+      const d = doc.data() || {};
+      users.push({id: doc.id, displayName: d.displayName || "", department: d.department || ""});
     });
-    ALL_USERS = ids.sort();
+    ALL_USERS = users.sort((a,b)=>a.id.localeCompare(b.id));
     fillAddUserSel();
   }).catch(()=>{ ALL_USERS = []; fillAddUserSel(); });
 }
 
-/* Dropdown shows users not already on the report; text input stays as a
-   fallback when the directory can't be read. Also feeds the connect box's
-   autocomplete suggestions. */
+/* Dropdown shows users not already on the report, grouped by department;
+   the text input stays as a fallback when the directory can't be read. */
 function fillAddUserSel(){
   const hasList = Array.isArray(ALL_USERS) && ALL_USERS.length > 0;
   $("addUserSel").style.display = hasList ? "" : "none";
@@ -421,19 +445,94 @@ function fillAddUserSel(){
   const ph = document.createElement("option");
   ph.value = ""; ph.textContent = "Add user…";
   sel.appendChild(ph);
-  for(const id of ALL_USERS.filter(u=>!loaded.has(u))){
-    const o = document.createElement("option");
-    o.value = id; o.textContent = id;
-    sel.appendChild(o);
+
+  const avail = ALL_USERS.filter(u=>!loaded.has(u.id));
+  const groups = {};
+  for(const u of avail){
+    const g = u.department || "Other";
+    (groups[g] = groups[g] || []).push(u);
+  }
+  for(const g of Object.keys(groups).sort()){
+    const og = document.createElement("optgroup");
+    og.label = g;
+    for(const u of groups[g]){
+      const o = document.createElement("option");
+      o.value = u.id;
+      o.textContent = u.displayName ? u.displayName + " (" + u.id + ")" : u.id;
+      og.appendChild(o);
+    }
+    sel.appendChild(og);
   }
 
   const dl = $("userOpts");
   dl.innerHTML = "";
-  for(const id of ALL_USERS){
+  for(const u of ALL_USERS){
     const o = document.createElement("option");
-    o.value = id;
+    o.value = u.id;
     dl.appendChild(o);
   }
+}
+
+/* ---------- saved teams (shared, stored in briefings/_teams) ---------- */
+let TEAMS = [];
+
+function loadTeams(){
+  return db.collection("briefings").doc("_teams").get().then(doc=>{
+    TEAMS = doc.exists ? (doc.data().teams || []) : [];
+    renderTeamChips();
+    return TEAMS;
+  }).catch(()=>{ TEAMS = []; return TEAMS; });
+}
+
+function renderTeamChips(){
+  const row = $("teamRow");
+  row.innerHTML = "";
+  if(!TEAMS.length){ row.style.display = "none"; return; }
+  const lbl = document.createElement("div");
+  lbl.style.cssText = "font-size:12.5px;color:var(--muted);margin-bottom:4px;font-weight:bold";
+  lbl.textContent = "Or open a saved team:";
+  row.appendChild(lbl);
+  for(const t of TEAMS){
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "team-chip";
+    b.textContent = "👥 " + (t.name || "team") + " (" + (t.ids||[]).length + ")";
+    b.onclick = ()=> loadLive((t.ids||[]).join(","));
+    row.appendChild(b);
+  }
+  row.style.display = "block";
+}
+
+function saveTeam(){
+  if(!REPORTS.length) return;
+  const name = (prompt("Team name (e.g. IT, Engineering):") || "").trim();
+  if(!name) return;
+  const ids = REPORTS.map(r=>r.info.user||"").filter(Boolean);
+  TEAMS = TEAMS.filter(t=>(t.name||"").toLowerCase() !== name.toLowerCase());
+  TEAMS.push({name: name, ids: ids});
+  TEAMS.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
+  db.collection("briefings").doc("_teams").update({teams: TEAMS}).then(()=>{
+    renderTeamChips();
+    const t = $("toast");
+    t.textContent = "Team \"" + name + "\" saved";
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"), 1600);
+  }).catch(ex=>{
+    $("err").textContent = "Could not save team: " + ex.message;
+    $("err").style.display = "block";
+  });
+}
+
+function loadTeamByName(name){
+  loadTeams().then(list=>{
+    const t = list.find(x=>(x.name||"").toLowerCase() === String(name).toLowerCase());
+    if(t && (t.ids||[]).length){
+      loadLive(t.ids.join(","));
+    } else {
+      $("err").textContent = "No saved team named \"" + name + "\".";
+      $("err").style.display = "block";
+    }
+  });
 }
 
 function loadLive(input, append){
@@ -492,10 +591,13 @@ function parseWorkbook(wb){
 }
 
 /* ---------- status display (uses the briefing's real project statuses) ---------- */
-const STATUS_ORDER = ["Delayed","Requirement Gathering","On Track","Development","Testing","Training","Follow-Up","Future","On-Hold","Completed","Maintenance"];
+const STATUS_ORDER = ["Delayed","Requirement Gathering","Planning","On Track","In Progress","Development","Testing","Review","Training","Follow-Up","Future","On-Hold","Completed","Maintenance"];
 const STATUS_COLORS = {
   "Future": "#adb5bd",
   "Requirement Gathering": "#17a2b8",
+  "Planning": "#5b9bd5",
+  "In Progress": "#2e8b57",
+  "Review": "#b8860b",
   "On Track": "#28a745",
   "Development": "#6610f2",
   "Testing": "#ff9f43",
@@ -522,7 +624,7 @@ function stageLabel(status){
 }
 
 /* In-flight statuses shown in the Key Projects table */
-const ACTIVE_STATUSES = ["On Track","Development","Testing","Training","Requirement Gathering","Follow-Up","Delayed"];
+const ACTIVE_STATUSES = ["On Track","In Progress","Development","Testing","Review","Training","Requirement Gathering","Planning","Follow-Up","Delayed"];
 
 /* Steering-committee letter codes:
    C = Complete, G = In progress / on track, T = In testing, Y = On hold / delayed / blocked, N/S = Not started */
@@ -530,12 +632,15 @@ function statusCode(p){
   const blocked = looksBlocked(p);
   switch(p.Status){
     case "Completed": return ["st-c","C"];
-    case "Testing": return blocked ? ["st-y","Y"] : ["st-g","T"];
+    case "Testing":
+    case "Review": return blocked ? ["st-y","Y"] : ["st-g","T"];
     case "Delayed":
     case "On-Hold": return ["st-y","Y"];
     case "Future":
+    case "Planning":
     case "Requirement Gathering": return ["st-ns","N/S"];
     case "On Track":
+    case "In Progress":
     case "Development":
     case "Training":
     case "Follow-Up":
@@ -656,11 +761,16 @@ function buildUserReport(data){
   const denom = allCompleted.length + allActive.length + allOnHold.length;
   const pct = denom ? Math.round(allCompleted.length/denom*100) : 0;
 
+  const expDate = info.exported instanceof Date ? info.exported : toDate(info.exported);
+  const staleDays = expDate ? Math.floor((now - expDate) / 86400000) : null;
+  const staleNote = (staleDays !== null && staleDays > 7)
+    ? `<br><span style="color:#b02a2a;font-weight:bold">&#9888; Last updated ${staleDays} days ago</span>` : "";
+
   let h = "";
 
   h += `<div class="doc-title">
-    <span><b>Weekly Status Report</b><br>${esc(info.user||"ckonkol")} &middot; Information Technology &middot; Aqua-Aerobic Systems, Inc.</span>
-    <span style="text-align:right">${esc(fmtDate(now))}<br>${info.exported ? (info.source==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}</span>
+    <span><img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems" class="doc-logo"><b>Weekly Status Report</b><br>${esc(info.displayName || info.user || "report")}${info.department ? " &middot; " + esc(info.department) : ""} &middot; Aqua-Aerobic Systems, Inc.</span>
+    <span style="text-align:right">${esc(fmtDate(now))}<br>${info.exported ? (info.source==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}${staleNote}</span>
   </div>`;
 
   if(anyFilter){
@@ -672,12 +782,12 @@ function buildUserReport(data){
     h += `<div class="filterline"><b>Filtered view</b> \u2014 ${esc(bits.join(" \u00b7 "))} \u00b7 showing ${visible.length} of ${projects.length} projects</div>`;
   }
 
-  if(SECTIONS.pct) h += `<div class="bar center">Overall Project Completion %</div>
+  if(SECTIONS.pct && projects.length) h += `<div class="bar center">Overall Project Completion %</div>
   <div class="pctbox">${pct}%
-    <small>${allCompleted.length} of ${denom} tracked projects completed &middot; ${allMaint.length} in ongoing maintenance, ${allFuture.length} future (excluded)</small>
+    <small>${allCompleted.length} of ${denom} tracked projects completed &middot; ${allMaint.length} in ongoing maintenance, ${allFuture.length} future (excluded)${info.deptLine ? `<br><b>${esc(info.deptLine)}</b>` : ""}</small>
   </div>`;
 
-  if(SECTIONS.status) h += `<div class="bar center">Status of Projects</div>
+  if(SECTIONS.status && statusKeys.length) h += `<div class="bar center">Status of Projects</div>
   <div class="statusgrid">${statusKeys.map(s=>statusChip(s, s + ": " + statusCounts[s], FILTERS.status)).join("")}</div>
   <p class="legend" style="text-align:center">Tap any status above to filter the report; tap it again (or Clear, in the toolbar) to show everything.</p>`;
 
@@ -771,7 +881,7 @@ function buildUserReport(data){
     h += `</tbody></table>`;
   }
 
-  if(SECTIONS.daily && !anyFilter){
+  if(SECTIONS.daily && !anyFilter && daily.length){
     h += `<div class="bar">Recurring Daily Workload</div>
     <table class="tpl"><thead><tr><th>Daily check / report</th><th>Purpose</th></tr></thead><tbody>`;
     for(const d of daily){
@@ -816,6 +926,7 @@ function buildUserReport(data){
 
   const model = {
     info, top, onHold, maint, future, daily, activeTasks: openTasks,
+    hasProjects: projects.length > 0, staleDays: staleDays, deptLine: info.deptLine || "",
     statusKeys, statusCounts, anyFilter, doneTasksWk, doneProjWk, doneTitle, pct,
     pctSmall: allCompleted.length + " of " + denom + " tracked projects completed \u00b7 " + allMaint.length + " in ongoing maintenance, " + allFuture.length + " future (excluded)",
     exportedLine: info.exported ? (info.source==="live" ? "Live data as of " : "Data exported ") + fmtDate(info.exported) : "",
@@ -844,9 +955,26 @@ function buildMergedData(){
   }
   const collect = key => REPORTS.flatMap(r =>
     (r[key]||[]).map(row => Object.assign({}, row, {Owner: r.info.user || "report"})));
+  // Per-department completion rollup (shown when 2+ departments are present)
+  const deptMap = {};
+  for(const r of REPORTS){
+    const dept = r.info.department || "Other";
+    const s = deptMap[dept] || (deptMap[dept] = {done:0, denom:0});
+    for(const p of (r.projects||[])){
+      if(p.Status === "Completed"){ s.done++; s.denom++; }
+      else if(ACTIVE_STATUSES.includes(p.Status) || p.Status === "On-Hold") s.denom++;
+    }
+  }
+  const deptNames = Object.keys(deptMap);
+  const deptLine = deptNames.length > 1 ? deptNames.sort().map(dn=>{
+    const s = deptMap[dn];
+    const pc = s.denom ? Math.round(s.done/s.denom*100) : 0;
+    return dn + " " + pc + "% (" + s.done + "/" + s.denom + ")";
+  }).join(" · ") : "";
   return {
     info: {
       user: "Team: " + users.join(", "),
+      deptLine: deptLine,
       exported: exported || new Date(),
       source: REPORTS.every(r=>r.info.source==="live") ? "live" : "file"
     },
@@ -1043,6 +1171,7 @@ $("addUserSel").addEventListener("change", ()=>{
   $("addUserSel").value = "";
   if(v) loadLive(v, true);
 });
+$("saveTeamBtn").addEventListener("click", saveTeam);
 
 /* Build the section show/hide toggles once */
 for(const def of SECTION_DEFS){
@@ -1073,12 +1202,17 @@ document.body.addEventListener("dragover", e=>e.preventDefault());
 document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(f) loadFile(f); });
 
 loadUserList();
+loadTeams();
 
-/* Auto-connect from ?report=<id> (or ?user=<id>); otherwise prefill the last-used ID */
+/* Auto-connect from ?report=<id>, ?user=<id>, or ?team=<name>;
+   otherwise prefill the last-used ID */
 {
   const params = new URLSearchParams(location.search);
   const urlUser = params.get("report") || params.get("user");
-  if(urlUser){
+  const urlTeam = params.get("team");
+  if(urlTeam){
+    loadTeamByName(urlTeam);
+  } else if(urlUser){
     $("liveUser").value = urlUser;
     loadLive(urlUser);
   } else {
@@ -1087,6 +1221,21 @@ loadUserList();
 }
 
 /* ---------- PDF export (jsPDF + AutoTable) ---------- */
+/* Preload the company logo as a data URL for the PDF header */
+let LOGO = null;
+{
+  const li = new Image();
+  li.onload = ()=>{
+    try{
+      const c = document.createElement("canvas");
+      c.width = li.naturalWidth; c.height = li.naturalHeight;
+      c.getContext("2d").drawImage(li, 0, 0);
+      LOGO = {data: c.toDataURL("image/png"), w: li.naturalWidth, h: li.naturalHeight};
+    }catch(e){ /* logo optional */ }
+  };
+  li.src = "aqua-aerobics-logo.png";
+}
+
 function hexToRgb(hx){
   const m = /^#?([0-9a-f]{6})$/i.exec(hx||"");
   if(!m) return [108,117,125];
@@ -1137,12 +1286,17 @@ function saveAsPdf(){
   /* one full report per model; called once per loaded user */
   const renderModel = m => {
   /* header */
+  if(LOGO){
+    const lh = 26, lw = LOGO.w * (lh / LOGO.h);
+    pdf.addImage(LOGO.data, "PNG", M, y, lw, lh);
+    y += 34;
+  }
   pdf.setTextColor(26,26,26); pdf.setFont("helvetica","bold"); pdf.setFontSize(15);
   pdf.text("Weekly Status Report", M, y+12);
   pdf.setFont("helvetica","normal"); pdf.setFontSize(9); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
   pdf.text(fmtDate(new Date()), pageW-M, y+12, {align:"right"});
   y += 20;
-  pdf.text((m.info.user||"ckonkol") + " \u00b7 Information Technology \u00b7 Aqua-Aerobic Systems, Inc.", M, y+9);
+  pdf.text((m.info.displayName || m.info.user || "report") + (m.info.department ? " \u00b7 " + m.info.department : "") + " \u00b7 Aqua-Aerobic Systems, Inc.", M, y+9);
   if(m.exportedLine) pdf.text(m.exportedLine, pageW-M, y+9, {align:"right"});
   y += 24;
   pdf.setDrawColor(BAR[0],BAR[1],BAR[2]); pdf.setLineWidth(1.5);
@@ -1152,9 +1306,10 @@ function saveAsPdf(){
   if(m.filterLine) small("Filtered view \u2014 " + m.filterLine, [122,74,8]);
   const hiddenSecs = SECTION_DEFS.filter(d=>!SECTIONS[d[0]]).map(d=>d[1]);
   if(hiddenSecs.length) small("Sections hidden from this report: " + hiddenSecs.join(", "), [122,74,8]);
+  if(m.staleDays !== null && m.staleDays > 7) small("Warning: this briefing was last updated " + m.staleDays + " days ago.", [176,42,42]);
 
   /* overall completion */
-  if(SECTIONS.pct){
+  if(SECTIONS.pct && m.hasProjects){
   bar("Overall Project Completion %", true);
   ensure(44);
   pdf.setFont("helvetica","bold"); pdf.setFontSize(20); pdf.setTextColor(26,26,26);
@@ -1162,11 +1317,12 @@ function saveAsPdf(){
   pdf.setFont("helvetica","normal"); pdf.setFontSize(8.5); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
   pdf.text(m.pctSmall, pageW/2, y+30, {align:"center"});
   y += 42;
+  if(m.deptLine) small("By department: " + m.deptLine);
 
   }
 
   /* status key */
-  if(SECTIONS.status){
+  if(SECTIONS.status && m.statusKeys.length){
   bar("Status of Projects", true);
   pdf.setFontSize(9); pdf.setFont("helvetica","bold");
   let cx = M;
