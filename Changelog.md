@@ -5,6 +5,14 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.1] - 2026-09-11
+
+### Added
+- Status Report: with two or more users loaded, the report now opens with an **"Included in this report (N): Chuck Konkol (Information Technology) · Carmen Shields (…)"** banner listing every selected user with their department — on the web report, the downloadable web page, the copied email text, and page 1 of the PDF.
+
+### Changed
+- Merged team view's header now uses display names ("Team: Chuck Konkol, Carmen Shields") instead of user IDs.
+
 ## [1.18.0] - 2026-09-11
 
 ### Added
