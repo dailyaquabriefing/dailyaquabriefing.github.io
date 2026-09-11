@@ -1243,30 +1243,22 @@ dz.addEventListener("drop", e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile
 document.body.addEventListener("dragover", e=>e.preventDefault());
 document.body.addEventListener("drop", e=>{ e.preventDefault(); const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(f) loadFile(f); });
 
+loadUserList();
 loadTeams();
 
 /* Auto-connect from ?report=<id>, ?user=<id>, or ?team=<name>;
-   with no parameters, load EVERYONE from the directory by default. */
+   otherwise show the connect screen with the last-used ID prefilled */
 {
   const params = new URLSearchParams(location.search);
   const urlUser = params.get("report") || params.get("user");
   const urlTeam = params.get("team");
   if(urlTeam){
-    loadUserList();
     loadTeamByName(urlTeam);
   } else if(urlUser){
-    loadUserList();
     $("liveUser").value = urlUser;
     loadLive(urlUser);
   } else {
-    loadUserList().then(()=>{
-      const ids = (ALL_USERS || []).map(u=>u.id);
-      if(ids.length){
-        loadLive(ids.join(","));
-      } else {
-        $("liveUser").value = localStorage.getItem("weeklyReportUser") || "";
-      }
-    });
+    $("liveUser").value = localStorage.getItem("weeklyReportUser") || "";
   }
 }
 

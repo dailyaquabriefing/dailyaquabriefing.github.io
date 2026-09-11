@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.3] - 2026-09-11
+
+### Removed
+- Reverted 1.18.0's "load all users by default": opening `weekly-report.html` with no parameters shows the connect screen again (last-used ID prefilled). Personal links (`?report=<id>`), team links (`?team=<name>`), the Add-user dropdown, and the saved-team chips are unchanged.
+
 ## [1.18.2] - 2026-09-11
 
 ### Added
