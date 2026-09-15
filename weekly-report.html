@@ -85,6 +85,8 @@
   .doc-title b{color:var(--ink);font-size:16px}
   .doc-logo{height:34px;width:auto;display:block;margin-bottom:6px}
   .filterline{background:#fff6e5;border:1px solid #e0a02f;border-radius:4px;padding:8px 12px;font-size:12.5px;color:#7a4a08;margin-bottom:14px}
+  .filterline-clear{float:right;background:#fff;color:#7a4a08;border:1px solid #e0a02f;border-radius:4px;padding:2px 10px;font-size:12px;font-weight:bold;cursor:pointer;font-family:inherit;margin-left:10px}
+  .filterline-clear:hover{background:#e0a02f;color:#fff}
   .bar{background:var(--bar);color:#fff;font-weight:bold;font-size:15px;padding:8px 14px;border:1px solid var(--bar-dark);margin-top:22px}
   .bar.center{text-align:center}
   .bar:first-of-type{margin-top:0}
@@ -162,6 +164,7 @@
     table.tpl tr{break-inside:avoid}
     .bar, .st span, .st-chip, table.tpl tbody tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     hr.user-sep{break-after:page;visibility:hidden;margin:0;height:0}
+    .filterline-clear{display:none !important}
   }
   @media (prefers-reduced-motion: reduce){*{transition:none !important}}
 </style>
@@ -827,7 +830,7 @@ function buildUserReport(data){
     if(FILTERS.status) bits.push("Status: "+FILTERS.status);
     if(FILTERS.priority) bits.push("Priority: "+FILTERS.priority);
     if(FILTERS.focus) bits.push("Focus: "+focusNames[FILTERS.focus]);
-    h += `<div class="filterline"><b>Filtered view</b> \u2014 ${esc(bits.join(" \u00b7 "))} \u00b7 showing ${visible.length} of ${projects.length} projects</div>`;
+    h += `<div class="filterline"><button type="button" class="filterline-clear" onclick="clearFilters()">Clear &times;</button><b>Filtered view</b> \u2014 ${esc(bits.join(" \u00b7 "))} \u00b7 showing ${visible.length} of ${projects.length} projects</div>`;
   }
 
   if(SECTIONS.pct && projects.length) h += `<div class="bar center">Overall Project Completion %</div>
@@ -1148,10 +1151,12 @@ function applyFilters(){
   buildReport();
 }
 ["fStatus","fPriority","fFocus","fDone"].forEach(id=>$(id).addEventListener("change", applyFilters));
-$("fClear").addEventListener("click", ()=>{
+/* Shared by the toolbar Clear button and the one on the "Filtered view" banner */
+function clearFilters(){
   $("fStatus").value = ""; $("fPriority").value = ""; $("fFocus").value = ""; $("fDone").value = "7";
   applyFilters();
-});
+}
+$("fClear").addEventListener("click", clearFilters);
 /* Tap a status chip in the key to toggle that status filter */
 $("doc").addEventListener("click", e=>{
   const chip = e.target.closest && e.target.closest(".statusgrid .st-chip[data-status]");
@@ -1175,7 +1180,8 @@ function reportText(){
     for(const n of el.childNodes){
       if(n.nodeType===3){ out.push(n.textContent); }
       else if(n.nodeType===1){
-        if(n.matches(".bar")) out.push("\n\n"+n.textContent.toUpperCase()+"\n");
+        if(n.matches("button")){ /* skip UI buttons in copied text */ }
+        else if(n.matches(".bar")) out.push("\n\n"+n.textContent.toUpperCase()+"\n");
         else if(n.matches("tr,.pctbox")) { out.push("\n"); walk(n,out); out.push(""); }
         else walk(n,out);
       }
@@ -1582,7 +1588,7 @@ $("webBtn").addEventListener("click", ()=>{
   const page = "<!DOCTYPE html>\n<html lang=\"en\"><head><meta charset=\"UTF-8\">" +
     "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
     "<title>" + esc(title) + "</title><style>" + css +
-    "\n#report{display:block !important;margin-top:26px}</style></head><body>" +
+    "\n#report{display:block !important;margin-top:26px}\n.filterline-clear{display:none}</style></head><body>" +
     "<div id=\"report\"><div class=\"doc\">" + $("doc").innerHTML + "</div></div>" +
     "</body></html>";
   const blob = new Blob([page], {type:"text/html"});
