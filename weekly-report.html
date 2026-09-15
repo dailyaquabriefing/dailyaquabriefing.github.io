@@ -358,7 +358,7 @@ function parseMilestonesCell(v){
   const lines = String(v).replace(/_x000d_/gi,"\n").replace(/\r/g,"\n").split("\n").map(t=>t.trim()).filter(Boolean);
   const out = [];
   for(const line of lines){
-    const m = line.match(/^\[(Done|Open|On-Hold|In Progress|Not Started)\]\s*(.*)$/i);
+    const m = line.match(/^\[(Done|Open|On-Hold|In Progress|Not Started|Roadblock)\]\s*(.*)$/i);
     if(!m) continue;
     const state = m[1].toLowerCase();
     let name = m[2], baseDate = "", estActDate = "", holdReason = "";
@@ -375,7 +375,9 @@ function parseMilestonesCell(v){
       name: name, baseDate: baseDate, estActDate: estActDate, holdReason: holdReason,
       done: state === "done",
       onHold: state === "on-hold",
-      inProgress: state === "in progress"
+      inProgress: state === "in progress",
+      roadblock: state === "roadblock",
+      blockReason: state === "roadblock" ? holdReason : ""
     });
   }
   return out;
@@ -692,6 +694,9 @@ function statusCode(p){
 }
 
 function looksBlocked(p){
+  /* Explicit roadblock milestones win over the keyword heuristic below */
+  const rb = (p.MilestoneList||[]).find(ms=>ms.roadblock && !ms.done);
+  if(rb) return (rb.name || "Milestone") + (rb.blockReason ? ": " + rb.blockReason : "");
   const t = ((p.Milestone||"")+" "+(p.Notes||"")).toLowerCase();
   return ["pending","on hold","waiting","gated","until"].some(h=>t.includes(h))
     ? (firstLine(p.Milestone) || firstLine(p.Notes)) : "";
@@ -703,8 +708,9 @@ function hasAttentionMilestone(p){
   const nowT = new Date();
   return (p.MilestoneList||[]).some(ms=>{
     const b = toDate(ms.baseDate), e = toDate(ms.estActDate);
-    const complete = ms.done || (b && e && !ms.inProgress && !ms.onHold);
+    const complete = ms.done || (b && e && !ms.inProgress && !ms.onHold && !ms.roadblock);
     if(complete) return false;
+    if(ms.roadblock) return true;
     if(ms.onHold) return true;
     const due = e || b;
     return !!(due && due < nowT);
@@ -868,18 +874,19 @@ function buildUserReport(data){
       /* C when marked done, or both dates entered without an explicit In Progress / On-Hold flag.
          Y when on hold (reason shown) or past its date. G when flagged In Progress.
          N/S when neither flag is checked. */
-      const complete = ms.done || (b && e && !ms.inProgress && !ms.onHold);
+      const complete = ms.done || (b && e && !ms.inProgress && !ms.onHold && !ms.roadblock);
       const due = e || b;
       const late = !complete && !ms.onHold && due && due < new Date();
       let mcls, mcode;
       if(complete) { mcls="st-c"; mcode="C"; }
-      else if(ms.onHold) { mcls="st-y"; mcode="Y"; }
+      else if(ms.onHold || ms.roadblock) { mcls="st-y"; mcode="Y"; }
       else if(late) { mcls="st-y"; mcode="Y"; }
       else if(ms.inProgress) { mcls="st-g"; mcode="G"; }
       else { mcls="st-ns"; mcode="N/S"; }
       const holdNote = ms.onHold && ms.holdReason ? ` — <i>On hold: ${esc(ms.holdReason)}</i>` : (ms.onHold ? " — <i>On hold</i>" : "");
+      const blockNote = ms.roadblock ? ` — <i style="color:#b02a2a;font-weight:bold">🚧 Roadblock${ms.blockReason ? ": " + esc(ms.blockReason) : ""}</i>` : "";
       h += `<tr class="msrow">
-        <td>${complete ? "✔" : "◦"} ${esc(ms.name)}${holdNote}</td>
+        <td>${complete ? "✔" : "◦"} ${esc(ms.name)}${holdNote}${blockNote}</td>
         <td class="st ${mcls}"><span>${mcode}</span></td>
         <td></td>
         <td class="datecol${late && !e ? " late" : ""}">${b ? "Base " + esc(fmtShort(b)) : ""}</td>
@@ -898,7 +905,7 @@ function buildUserReport(data){
   }
   if(SECTIONS.key || (SECTIONS.tasks && openTasks.length)) h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing, colored to match the Status of Projects key above.</p>`;
   if(SECTIONS.key && top.some(p=>(p.MilestoneList||[]).length)){
-    h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or both dates entered) &middot; G = in progress &middot; Y = on hold (reason shown) or past its date &middot; N/S = not started &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
+    h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or both dates entered) &middot; G = in progress &middot; Y = roadblock or on hold (reason shown) or past its date &middot; N/S = not started &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
   }
 
   if(SECTIONS.onhold && onHold.length){
@@ -1447,17 +1454,18 @@ function saveAsPdf(){
     if(block) kpBody.push([{content:"Roadblock: " + block, colSpan:5, styles:{textColor:[122,74,8], fontSize:8}}]);
     for(const ms of (p.MilestoneList||[])){
       const b2 = toDate(ms.baseDate), e2 = toDate(ms.estActDate);
-      const complete = ms.done || (b2 && e2 && !ms.inProgress && !ms.onHold);
+      const complete = ms.done || (b2 && e2 && !ms.inProgress && !ms.onHold && !ms.roadblock);
+      const blockNote = ms.roadblock ? " — Roadblock" + (ms.blockReason ? ": " + ms.blockReason : "") : "";
       const due = e2 || b2;
       const late = !complete && !ms.onHold && due && due < new Date();
       let mcls, mcode;
       if(complete){ mcls="st-c"; mcode="C"; }
-      else if(ms.onHold || late){ mcls="st-y"; mcode="Y"; }
+      else if(ms.onHold || ms.roadblock || late){ mcls="st-y"; mcode="Y"; }
       else if(ms.inProgress){ mcls="st-g"; mcode="G"; }
       else { mcls="st-ns"; mcode="N/S"; }
       const holdNote = ms.onHold ? (ms.holdReason ? " \u2014 On hold: " + ms.holdReason : " \u2014 On hold") : "";
       kpBody.push([
-        {content:"    " + "\u2022 " + ms.name + holdNote, styles:{fontSize:8, textColor:MUTED}},
+        {content:"    " + "\u2022 " + ms.name + holdNote + blockNote, styles:{fontSize:8, textColor:MUTED}},
         stCell(mcls, mcode, 8),
         "",
         {content: b2 ? "Base " + fmtShort(b2) : "", styles:{fontSize:8, textColor: (late && !e2) ? [176,42,42] : MUTED}},

@@ -1494,7 +1494,7 @@
                 progChk.title = 'Milestone is being worked on';
                 progChk.onchange = () => {
                     tempMilestones[idx].inProgress = progChk.checked;
-                    if (progChk.checked) tempMilestones[idx].onHold = false;
+                    if (progChk.checked) { tempMilestones[idx].onHold = false; tempMilestones[idx].roadblock = false; }
                     renderMilestonesList();
                 };
                 progField.appendChild(progChk);
@@ -1509,11 +1509,27 @@
                 holdChk.title = 'Milestone is on hold';
                 holdChk.onchange = () => {
                     tempMilestones[idx].onHold = holdChk.checked;
-                    if (holdChk.checked) tempMilestones[idx].inProgress = false;
+                    if (holdChk.checked) { tempMilestones[idx].inProgress = false; tempMilestones[idx].roadblock = false; }
                     renderMilestonesList();
                 };
                 holdField.appendChild(holdChk);
                 row.appendChild(holdField);
+
+                // Roadblock: explicit flag so reports don't rely on keyword guessing
+                const rbField = document.createElement('div');
+                rbField.className = 'ms-field ms-check-field';
+                rbField.innerHTML = '<label>🚧 Roadblock</label>';
+                const rbChk = document.createElement('input');
+                rbChk.type = 'checkbox';
+                rbChk.checked = !!ms.roadblock;
+                rbChk.title = 'Milestone is blocked by a roadblock';
+                rbChk.onchange = () => {
+                    tempMilestones[idx].roadblock = rbChk.checked;
+                    if (rbChk.checked) { tempMilestones[idx].inProgress = false; tempMilestones[idx].onHold = false; }
+                    renderMilestonesList();
+                };
+                rbField.appendChild(rbChk);
+                row.appendChild(rbField);
 
                 const up = document.createElement('button');
                 up.className = 'btn-ms-move';
@@ -1551,12 +1567,25 @@
                     row.appendChild(reasonField);
                 }
 
+                if (ms.roadblock) {
+                    const rbReasonField = document.createElement('div');
+                    rbReasonField.className = 'ms-field ms-reason-field';
+                    rbReasonField.innerHTML = '<label>🚧 Roadblock Reason (shows on the Status Report)</label>';
+                    const rbReasonInput = document.createElement('input');
+                    rbReasonInput.type = 'text';
+                    rbReasonInput.placeholder = 'e.g. Blocked by vendor firmware bug';
+                    rbReasonInput.value = ms.blockReason || '';
+                    rbReasonInput.onchange = () => { tempMilestones[idx].blockReason = rbReasonInput.value; };
+                    rbReasonField.appendChild(rbReasonInput);
+                    row.appendChild(rbReasonField);
+                }
+
                 container.appendChild(row);
             });
         }
 
         function addMilestone() {
-            tempMilestones.push({ name: '', baseDate: '', estActDate: '', done: false, inProgress: false, onHold: false, holdReason: '' });
+            tempMilestones.push({ name: '', baseDate: '', estActDate: '', done: false, inProgress: false, onHold: false, holdReason: '', roadblock: false, blockReason: '' });
             renderMilestonesList();
             const inputs = document.querySelectorAll('#m-milestones-list .ms-name-input');
             if (inputs.length) inputs[inputs.length - 1].focus();

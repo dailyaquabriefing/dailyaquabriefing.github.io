@@ -5,6 +5,15 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2026-09-11
+
+### Added
+- **Explicit 🚧 Roadblock flag on milestones.** Each milestone row in the admin edit modal now has a Roadblock checkbox with a reason field (mutually exclusive with In Progress / On-Hold). No more relying on magic keywords ("waiting", "pending"…) in notes to get a roadblock onto the report.
+- Everywhere it flows: the Status Report's "Roadblock:" note row and attention-first sorting now use flagged milestones first (keyword detection remains as fallback); milestone rows show a red "🚧 Roadblock: reason" and a Y code (web and PDF); the viewer shows a 🚧 icon with the reason; the Excel export writes a `[Roadblock]` state with its reason, and the report's `.xlsx` fallback parses it back.
+
+### Changed
+- Milestone legend now reads "Y = roadblock or on hold (reason shown) or past its date".
+
 ## [1.19.3] - 2026-09-11
 
 ### Changed
