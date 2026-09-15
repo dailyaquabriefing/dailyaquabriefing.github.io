@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.1] - 2026-09-11
+
+### Added
+- Projects panel: each row now shows the project's **Priority** as a colored chip (High red, Medium amber, Low green) next to the owner/status — easier to decide what to show and how to order for the committee.
+
 ## [1.22.0] - 2026-09-11
 
 ### Added

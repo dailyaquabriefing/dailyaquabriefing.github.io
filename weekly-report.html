@@ -87,6 +87,10 @@
   .pp-row button{background:#fff;border:1px solid var(--border);border-radius:3px;cursor:pointer;font-size:11px;padding:1px 6px;color:var(--bar-dark)}
   .pp-row button:disabled{opacity:.3;cursor:default}
   .pp-row .pp-owner{color:var(--muted);font-size:11.5px}
+  .pp-row .pp-pri{font-size:10.5px;font-weight:bold;border-radius:3px;padding:1px 7px;color:#fff;white-space:nowrap}
+  .pp-pri-high{background:#d9534f}
+  .pp-pri-medium{background:#e0a02f}
+  .pp-pri-low{background:#57b45c}
   .pp-row.pp-hidden .pp-name{text-decoration:line-through;color:var(--muted)}
   /* ---- Report document, template style ---- */
   #report{max-width:860px;margin:26px auto 60px;background:var(--paper);box-shadow:0 1px 8px rgba(30,50,70,.12);display:none}
@@ -634,7 +638,7 @@ function renderProjPanel(){
   const entries = [];
   for(const r of REPORTS){
     for(const p of (r.projects||[])){
-      entries.push({key: (r.info.user||"") + "||" + (p.Name||""), name: p.Name||"", owner: r.info.user||"", status: p.Status||""});
+      entries.push({key: (r.info.user||"") + "||" + (p.Name||""), name: p.Name||"", owner: r.info.user||"", status: p.Status||"", priority: p.Priority||""});
     }
   }
   if(!entries.length){
@@ -672,6 +676,12 @@ function renderProjPanel(){
     owner.textContent = "(" + e.owner + (e.status ? " · " + e.status : "") + ")";
     row.appendChild(up); row.appendChild(down); row.appendChild(chk);
     row.appendChild(name); row.appendChild(owner);
+    if(e.priority){
+      const pri = document.createElement("span");
+      pri.className = "pp-pri pp-pri-" + e.priority.toLowerCase();
+      pri.textContent = e.priority;
+      row.appendChild(pri);
+    }
     list.appendChild(row);
   });
 }
