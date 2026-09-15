@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.3] - 2026-09-11
+
+### Changed
+- `commit.txt` workflow notes corrected: this repo pushes to **GitHub** (was mislabeled "Gitea", which is used by other internal projects).
+
 ## [1.19.2] - 2026-09-11
 
 ### Added
