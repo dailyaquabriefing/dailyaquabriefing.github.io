@@ -5,6 +5,16 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-09-11
+
+### Added
+- Status Report: priority filter gains a **"High + Medium"** option, so steering-committee views can show both without re-entering projects at a different priority.
+- Status Report: new **Order** dropdown — "Needs attention first" (the existing attention/priority/date sort) or **"My dashboard order"**, which renders Key Projects, On Hold, and Active Tasks in the exact order arranged with the Up/Down buttons on the Dashboard. The choice is remembered between visits.
+
+### Changed
+- Dashboard no longer auto-sorts projects/active tasks by status every time an item is saved — manual Up/Down ordering now sticks (this is what makes "My dashboard order" usable). The "↕ Sort by Status" button still sorts on demand.
+- The "Filtered view" banner shows combined priorities as "Priority: High + Medium".
+
 ## [1.20.0] - 2026-09-11
 
 ### Added

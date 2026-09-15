@@ -1369,10 +1369,9 @@
                 list[editIndex] = existingItem;
             }
 
-            // Auto-sort by status for projects and active tasks after every save
-            if (type === 'project' || type === 'active') {
-                list.sort((a, b) => (STATUS_ORDER[a.status] || 99) - (STATUS_ORDER[b.status] || 99));
-            }
+            // No auto-sort on save: the list keeps the order set with Up/Down,
+            // which the Status Report can use via "Order: My dashboard order".
+            // The "↕ Sort by Status" button still sorts on demand.
 
             closeModal(true);
             pushData();

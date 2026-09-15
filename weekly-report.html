@@ -189,8 +189,13 @@
     <select id="fPriority" aria-label="Filter by priority">
       <option value="">All priorities</option>
       <option value="High">High priority</option>
+      <option value="High,Medium">High + Medium</option>
       <option value="Medium">Medium priority</option>
       <option value="Low">Low priority</option>
+    </select>
+    <select id="fSort" aria-label="Project order">
+      <option value="attention">Order: Needs attention first</option>
+      <option value="manual">Order: My dashboard order</option>
     </select>
     <select id="fFocus" aria-label="Focus view">
       <option value="">No focus</option>
@@ -728,7 +733,7 @@ function buildUserReport(data){
   const in30 = new Date(now.getTime() + 30*86400000);
   const matchesFilters = p => {
     if(FILTERS.status && p.Status !== FILTERS.status) return false;
-    if(FILTERS.priority && (p.Priority||"") !== FILTERS.priority) return false;
+    if(FILTERS.priority && !FILTERS.priority.split(",").includes(p.Priority||"")) return false;
     if(FILTERS.focus){
       const end = toDate(p.End);
       const done = p.Status === "Completed";
@@ -746,8 +751,9 @@ function buildUserReport(data){
 
   const active = visible.filter(p=>ACTIVE_STATUSES.includes(p.Status));
   /* Attention-first sort: Delayed/roadblocked projects first, then priority,
-     then nearest Est/Act complete date, then most recently updated. */
-  active.sort((a,b)=>{
+     then nearest Est/Act complete date, then most recently updated.
+     "My dashboard order" keeps the order set with Up/Down in the Dashboard. */
+  if(FILTERS.sort !== "manual") active.sort((a,b)=>{
     const attnA = (a.Status==="Delayed" || looksBlocked(a)) ? 0 : 1;
     const attnB = (b.Status==="Delayed" || looksBlocked(b)) ? 0 : 1;
     if(attnA!==attnB) return attnA-attnB;
@@ -762,7 +768,8 @@ function buildUserReport(data){
   const top = anyFilter ? active : active.slice(0,10);
   const rest = anyFilter ? [] : active.slice(10);
 
-  const onHold = visible.filter(p=>p.Status==="On-Hold").sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
+  const onHold = visible.filter(p=>p.Status==="On-Hold");
+  if(FILTERS.sort !== "manual") onHold.sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
   const maint = visible.filter(p=>p.Status==="Maintenance");
   const completed = visible.filter(p=>p.Status==="Completed");
   const future = visible.filter(p=>p.Status==="Future");
@@ -785,7 +792,7 @@ function buildUserReport(data){
   const doneTasksWk = tasks.filter(t=>{
     if(t.Status!=="Completed") return false;
     if(FILTERS.status && FILTERS.status!=="Completed") return false;
-    if(FILTERS.priority && (t.Priority||"")!==FILTERS.priority) return false;
+    if(FILTERS.priority && !FILTERS.priority.split(",").includes(t.Priority||"")) return false;
     const d = toDate(t.Updated) || toDate(t.End);
     return d ? (!doneCut || d>=doneCut) : !doneCut;
   });
@@ -796,7 +803,7 @@ function buildUserReport(data){
 
   /* Active (non-completed) tasks, filtered like projects, attention-first */
   const openTasks = (anyFilter ? tasks.filter(matchesFilters) : tasks).filter(t=>t.Status!=="Completed");
-  openTasks.sort((a,b)=>{
+  if(FILTERS.sort !== "manual") openTasks.sort((a,b)=>{
     const attnA = (a.Status==="Delayed" || looksBlocked(a)) ? 0 : 1;
     const attnB = (b.Status==="Delayed" || looksBlocked(b)) ? 0 : 1;
     if(attnA!==attnB) return attnA-attnB;
@@ -834,7 +841,7 @@ function buildUserReport(data){
     const focusNames = {attention:"Needs attention", due30:"Due within 30 days", overdue:"Overdue (past est. date)", nodate:"No est. date (TBD)"};
     const bits = [];
     if(FILTERS.status) bits.push("Status: "+FILTERS.status);
-    if(FILTERS.priority) bits.push("Priority: "+FILTERS.priority);
+    if(FILTERS.priority) bits.push("Priority: "+FILTERS.priority.split(",").join(" + "));
     if(FILTERS.focus) bits.push("Focus: "+focusNames[FILTERS.focus]);
     h += `<div class="filterline"><button type="button" class="filterline-clear" onclick="clearFilters()">Clear &times;</button><b>Filtered view</b> \u2014 ${esc(bits.join(" \u00b7 "))} \u00b7 showing ${visible.length} of ${projects.length} projects</div>`;
   }
@@ -995,7 +1002,7 @@ function buildUserReport(data){
     const fn = {attention:"Needs attention", due30:"Due within 30 days", overdue:"Overdue (past est. date)", nodate:"No est. date (TBD)"};
     const fb = [];
     if(FILTERS.status) fb.push("Status: "+FILTERS.status);
-    if(FILTERS.priority) fb.push("Priority: "+FILTERS.priority);
+    if(FILTERS.priority) fb.push("Priority: "+FILTERS.priority.split(",").join(" + "));
     if(FILTERS.focus) fb.push("Focus: "+fn[FILTERS.focus]);
     model.filterLine = fb.join(" \u00b7 ") + " \u00b7 showing " + visible.length + " of " + projects.length + " projects";
   }
@@ -1129,7 +1136,8 @@ function removeUser(i){
 }
 
 /* ---------- meeting filters ---------- */
-const FILTERS = { status:"", priority:"", focus:"", doneDays:7 };
+const FILTERS = { status:"", priority:"", focus:"", doneDays:7, sort:"attention" };
+try{ if(localStorage.getItem("weeklyReportSort") === "manual") FILTERS.sort = "manual"; }catch(e){}
 
 function setupFilters(){
   const sel = $("fStatus");
@@ -1155,9 +1163,12 @@ function applyFilters(){
   FILTERS.priority = $("fPriority").value;
   FILTERS.focus = $("fFocus").value;
   FILTERS.doneDays = +$("fDone").value || 0;
+  FILTERS.sort = $("fSort").value;
+  try{ localStorage.setItem("weeklyReportSort", FILTERS.sort); }catch(e){}
   buildReport();
 }
-["fStatus","fPriority","fFocus","fDone"].forEach(id=>$(id).addEventListener("change", applyFilters));
+["fStatus","fPriority","fFocus","fDone","fSort"].forEach(id=>$(id).addEventListener("change", applyFilters));
+$("fSort").value = FILTERS.sort;
 /* Shared by the toolbar Clear button and the one on the "Filtered view" banner */
 function clearFilters(){
   $("fStatus").value = ""; $("fPriority").value = ""; $("fFocus").value = ""; $("fDone").value = "7";
