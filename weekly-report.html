@@ -78,6 +78,16 @@
   #dropfile:hover{border-color:var(--bar)}
   #dropfile:focus-visible{outline:3px solid #ffd268;outline-offset:2px}
   #err{max-width:860px;margin:14px auto;background:#fbe9e9;border:1px solid #d99;border-radius:6px;padding:12px 16px;color:#7a1f1f;display:none}
+  /* ---- Projects show/hide & order panel ---- */
+  #projPanel{max-width:860px;margin:10px auto;background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 14px;box-shadow:0 1px 6px rgba(30,50,70,.15)}
+  #projPanel .pp-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:14px}
+  #projPanel .pp-head button{background:var(--bar);color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:12.5px;font-weight:bold;cursor:pointer;font-family:inherit}
+  #projList{max-height:320px;overflow-y:auto}
+  .pp-row{display:flex;align-items:center;gap:8px;padding:4px 2px;border-bottom:1px dotted #e4ebf2;font-size:13px}
+  .pp-row button{background:#fff;border:1px solid var(--border);border-radius:3px;cursor:pointer;font-size:11px;padding:1px 6px;color:var(--bar-dark)}
+  .pp-row button:disabled{opacity:.3;cursor:default}
+  .pp-row .pp-owner{color:var(--muted);font-size:11.5px}
+  .pp-row.pp-hidden .pp-name{text-decoration:line-through;color:var(--muted)}
   /* ---- Report document, template style ---- */
   #report{max-width:860px;margin:26px auto 60px;background:var(--paper);box-shadow:0 1px 8px rgba(30,50,70,.12);display:none}
   .doc{padding:30px 34px 40px}
@@ -196,6 +206,7 @@
     <select id="fSort" aria-label="Project order">
       <option value="attention">Order: Needs attention first</option>
       <option value="manual">Order: My dashboard order</option>
+      <option value="custom">Order: Custom (Projects panel)</option>
     </select>
     <select id="fFocus" aria-label="Focus view">
       <option value="">No focus</option>
@@ -220,11 +231,21 @@
     <button id="addUserBtn" type="button">+ Add</button>
     <label class="mergelbl" id="mergeLbl" style="display:none"><input type="checkbox" id="mergeChk"> Merge into one report</label>
     <button id="saveTeamBtn" type="button" title="Save the current users as a named team">&#128190; Save team</button>
+    <button id="projBtn" type="button" title="Choose which projects appear and set a custom order">&#128194; Projects&hellip;</button>
   </div>
   <div class="sectionbar" id="sectionWrap" style="display:none">
     <span>Sections:</span>
   </div>
   </div>
+</div>
+
+<div id="projPanel" style="display:none">
+  <div class="pp-head"><b>Choose &amp; order projects</b>
+    <span style="flex:1"></span>
+    <button id="projAllBtn" type="button">Show all</button>
+    <button id="projCloseBtn" type="button">Done</button>
+  </div>
+  <div id="projList"></div>
 </div>
 
 <div id="err"></div>
@@ -305,6 +326,23 @@ try{
   const saved = JSON.parse(localStorage.getItem("weeklyReportSections") || "{}");
   for(const k in SECTIONS){ if(typeof saved[k] === "boolean") SECTIONS[k] = saved[k]; }
 }catch(e){}
+
+/* ---------- per-project show/hide and custom order (Projects panel) ---------- */
+/* Keys are "<owner>||<project name>" so the same selections work in
+   per-user and merged views. Saved locally and inside saved teams. */
+let PROJSEL = { order: [], hidden: [] };
+try{
+  const sp = JSON.parse(localStorage.getItem("weeklyReportProjSel") || "null");
+  if(sp && typeof sp === "object"){
+    PROJSEL = {
+      order: Array.isArray(sp.order) ? sp.order : [],
+      hidden: Array.isArray(sp.hidden) ? sp.hidden : []
+    };
+  }
+}catch(e){}
+function saveProjSel(){
+  try{ localStorage.setItem("weeklyReportProjSel", JSON.stringify(PROJSEL)); }catch(e){}
+}
 
 /* ---------- live Firestore connection ---------- */
 const firebaseConfig = {
@@ -513,6 +551,18 @@ function applyTeam(t){
     try{ localStorage.setItem("weeklyReportSections", JSON.stringify(SECTIONS)); }catch(e){}
     syncSectionChecks();
   }
+  if(t.sort){
+    FILTERS.sort = t.sort;
+    $("fSort").value = t.sort;
+    try{ localStorage.setItem("weeklyReportSort", t.sort); }catch(e){}
+  }
+  if(t.projSel && typeof t.projSel === "object"){
+    PROJSEL = {
+      order: Array.isArray(t.projSel.order) ? t.projSel.order.slice() : [],
+      hidden: Array.isArray(t.projSel.hidden) ? t.projSel.hidden.slice() : []
+    };
+    saveProjSel();
+  }
   loadLive((t.ids||[]).join(","));
 }
 
@@ -557,7 +607,12 @@ function saveTeam(){
   if(!name) return;
   const ids = REPORTS.map(r=>r.info.user||"").filter(Boolean);
   TEAMS = TEAMS.filter(t=>(t.name||"").toLowerCase() !== name.toLowerCase());
-  TEAMS.push({name: name, ids: ids, merged: MERGED, sections: Object.assign({}, SECTIONS)});
+  TEAMS.push({
+    name: name, ids: ids, merged: MERGED,
+    sections: Object.assign({}, SECTIONS),
+    sort: FILTERS.sort,
+    projSel: { order: (PROJSEL.order||[]).slice(), hidden: (PROJSEL.hidden||[]).slice() }
+  });
   TEAMS.sort((a,b)=>(a.name||"").localeCompare(b.name||""));
   CURRENT_TEAM = name;
   db.collection("briefings").doc("_teams").update({teams: TEAMS}).then(()=>{
@@ -570,6 +625,73 @@ function saveTeam(){
     $("err").textContent = "Could not save team: " + ex.message;
     $("err").style.display = "block";
   });
+}
+
+/* ---------- Projects panel (show/hide + custom order) ---------- */
+function renderProjPanel(){
+  const list = $("projList");
+  list.innerHTML = "";
+  const entries = [];
+  for(const r of REPORTS){
+    for(const p of (r.projects||[])){
+      entries.push({key: (r.info.user||"") + "||" + (p.Name||""), name: p.Name||"", owner: r.info.user||"", status: p.Status||""});
+    }
+  }
+  if(!entries.length){
+    list.innerHTML = '<div style="color:var(--muted);padding:8px">No projects loaded.</div>';
+    return;
+  }
+  /* Keep the saved order, appending any new projects at the end */
+  const idx = new Map((PROJSEL.order||[]).map((k,i)=>[k,i]));
+  entries.sort((a,b)=>(idx.has(a.key)?idx.get(a.key):99999)-(idx.has(b.key)?idx.get(b.key):99999));
+  PROJSEL.order = entries.map(e=>e.key);
+  saveProjSel();
+
+  const hiddenSet = new Set(PROJSEL.hidden||[]);
+  entries.forEach((e, i)=>{
+    const row = document.createElement("div");
+    row.className = "pp-row" + (hiddenSet.has(e.key) ? " pp-hidden" : "");
+    const up = document.createElement("button");
+    up.type = "button"; up.textContent = "▲"; up.title = "Move up";
+    up.disabled = i === 0;
+    up.onclick = ()=> moveProj(i, -1);
+    const down = document.createElement("button");
+    down.type = "button"; down.textContent = "▼"; down.title = "Move down";
+    down.disabled = i === entries.length - 1;
+    down.onclick = ()=> moveProj(i, 1);
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.checked = !hiddenSet.has(e.key);
+    chk.title = "Show on the report";
+    chk.onchange = ()=> toggleProjHidden(e.key, chk.checked);
+    const name = document.createElement("span");
+    name.className = "pp-name";
+    name.textContent = e.name;
+    const owner = document.createElement("span");
+    owner.className = "pp-owner";
+    owner.textContent = "(" + e.owner + (e.status ? " · " + e.status : "") + ")";
+    row.appendChild(up); row.appendChild(down); row.appendChild(chk);
+    row.appendChild(name); row.appendChild(owner);
+    list.appendChild(row);
+  });
+}
+
+function moveProj(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= PROJSEL.order.length) return;
+  const moved = PROJSEL.order.splice(i, 1)[0];
+  PROJSEL.order.splice(j, 0, moved);
+  saveProjSel();
+  renderProjPanel();
+  if(FILTERS.sort === "custom") buildReport();
+}
+
+function toggleProjHidden(key, shown){
+  PROJSEL.hidden = (PROJSEL.hidden||[]).filter(k=>k !== key);
+  if(!shown) PROJSEL.hidden.push(key);
+  saveProjSel();
+  renderProjPanel();
+  buildReport();
 }
 
 function loadTeamByName(name){
@@ -747,13 +869,19 @@ function buildUserReport(data){
     return true;
   };
   const anyFilter = !!(FILTERS.status || FILTERS.priority || FILTERS.focus);
-  const visible = anyFilter ? projects.filter(matchesFilters) : projects;
+  let visible = anyFilter ? projects.filter(matchesFilters) : projects;
+
+  /* Projects panel: report-only show/hide and custom order */
+  const keyOf = p => (p.Owner || info.user || "") + "||" + (p.Name || "");
+  const hiddenSet = new Set(PROJSEL.hidden || []);
+  const hiddenCount = hiddenSet.size ? projects.filter(p=>hiddenSet.has(keyOf(p))).length : 0;
+  if(hiddenCount) visible = visible.filter(p=>!hiddenSet.has(keyOf(p)));
 
   const active = visible.filter(p=>ACTIVE_STATUSES.includes(p.Status));
   /* Attention-first sort: Delayed/roadblocked projects first, then priority,
      then nearest Est/Act complete date, then most recently updated.
      "My dashboard order" keeps the order set with Up/Down in the Dashboard. */
-  if(FILTERS.sort !== "manual") active.sort((a,b)=>{
+  if(FILTERS.sort === "attention") active.sort((a,b)=>{
     const attnA = (a.Status==="Delayed" || looksBlocked(a)) ? 0 : 1;
     const attnB = (b.Status==="Delayed" || looksBlocked(b)) ? 0 : 1;
     if(attnA!==attnB) return attnA-attnB;
@@ -770,7 +898,17 @@ function buildUserReport(data){
   const rest = [];
 
   const onHold = visible.filter(p=>p.Status==="On-Hold");
-  if(FILTERS.sort !== "manual") onHold.sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
+  if(FILTERS.sort === "attention") onHold.sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
+
+  /* Custom order from the Projects panel */
+  if(FILTERS.sort === "custom"){
+    const orderIdx = new Map((PROJSEL.order||[]).map((k,i)=>[k,i]));
+    const byCustom = (a,b)=>
+      (orderIdx.has(keyOf(a)) ? orderIdx.get(keyOf(a)) : 99999) -
+      (orderIdx.has(keyOf(b)) ? orderIdx.get(keyOf(b)) : 99999);
+    active.sort(byCustom);
+    onHold.sort(byCustom);
+  }
   const maint = visible.filter(p=>p.Status==="Maintenance");
   const completed = visible.filter(p=>p.Status==="Completed");
   const future = visible.filter(p=>p.Status==="Future");
@@ -804,7 +942,7 @@ function buildUserReport(data){
 
   /* Active (non-completed) tasks, filtered like projects, attention-first */
   const openTasks = (anyFilter ? tasks.filter(matchesFilters) : tasks).filter(t=>t.Status!=="Completed");
-  if(FILTERS.sort !== "manual") openTasks.sort((a,b)=>{
+  if(FILTERS.sort === "attention") openTasks.sort((a,b)=>{
     const attnA = (a.Status==="Delayed" || looksBlocked(a)) ? 0 : 1;
     const attnB = (b.Status==="Delayed" || looksBlocked(b)) ? 0 : 1;
     if(attnA!==attnB) return attnA-attnB;
@@ -911,6 +1049,7 @@ function buildUserReport(data){
     h += `<p class="legend">Up next (Future): ${future.map(p=>esc(p.Name)+(p.Owner ? " ("+esc(p.Owner)+")" : "")).join("; ")}.</p>`;
   }
   }
+  if(SECTIONS.key && hiddenCount) h += `<p class="legend">${hiddenCount} project(s) hidden via the Projects panel.</p>`;
   if(SECTIONS.key || (SECTIONS.tasks && openTasks.length)) h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing, colored to match the Status of Projects key above.</p>`;
   if(SECTIONS.key && top.some(p=>(p.MilestoneList||[]).length)){
     h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or both dates entered) &middot; G = in progress &middot; Y = roadblock or on hold (reason shown) or past its date &middot; N/S = not started &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
@@ -1081,6 +1220,7 @@ function buildReport(){
   $("fsBtn").disabled = false;
   $("sectionWrap").style.display = "flex";
   renderUserChips();
+  renderProjPanel();
 }
 
 /* ---------- loaded users bar (show / order / remove) ---------- */
@@ -1128,6 +1268,7 @@ function removeUser(i){
     $("usersWrap").style.display = "none";
     $("filterWrap").style.display = "none";
     $("sectionWrap").style.display = "none";
+    $("projPanel").style.display = "none";
     $("copyBtn").disabled = true; $("webBtn").disabled = true; $("printBtn").disabled = true; $("fsBtn").disabled = true;
     document.title = "Weekly Report — Daily Aqua Briefing";
     return;
@@ -1248,6 +1389,18 @@ $("addUserSel").addEventListener("change", ()=>{
   if(v) loadLive(v, true);
 });
 $("saveTeamBtn").addEventListener("click", saveTeam);
+$("projBtn").addEventListener("click", ()=>{
+  const p = $("projPanel");
+  p.style.display = p.style.display === "none" ? "block" : "none";
+  if(p.style.display === "block") renderProjPanel();
+});
+$("projCloseBtn").addEventListener("click", ()=>{ $("projPanel").style.display = "none"; });
+$("projAllBtn").addEventListener("click", ()=>{
+  PROJSEL.hidden = [];
+  saveProjSel();
+  renderProjPanel();
+  buildReport();
+});
 
 /* Options area (filters / users / sections) — collapsed by default */
 $("optsBtn").addEventListener("click", ()=>{

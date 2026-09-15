@@ -5,6 +5,13 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0] - 2026-09-11
+
+### Added
+- Status Report: **📂 Projects… panel** — lists every loaded project (with owner and status). Untick to hide a project from the report; ▲/▼ set a custom order. A legend notes how many projects are hidden. Works per-user and merged (selections are keyed by owner + project name).
+- New **"Order: Custom (Projects panel)"** option in the Order dropdown — Key Projects and On Hold follow the panel's arrangement.
+- **Saving:** panel selections and the order choice persist locally, and **💾 Save team now stores them with the team** (alongside members, merge setting, and sections) — opening the team restores the fully curated view. Older teams keep working; they just don't carry these until re-saved.
+
 ## [1.21.1] - 2026-09-11
 
 ### Fixed
