@@ -638,11 +638,15 @@ function renderProjPanel(){
   const entries = [];
   for(const r of REPORTS){
     for(const p of (r.projects||[])){
-      entries.push({key: (r.info.user||"") + "||" + (p.Name||""), name: p.Name||"", owner: r.info.user||"", status: p.Status||"", priority: p.Priority||""});
+      /* Only in-flight work: active statuses and On-Hold. Completed,
+         Maintenance, and Future projects stay out of the picker. */
+      const st = p.Status || "";
+      if(!(ACTIVE_STATUSES.includes(st) || st === "On-Hold")) continue;
+      entries.push({key: (r.info.user||"") + "||" + (p.Name||""), name: p.Name||"", owner: r.info.user||"", status: st, priority: p.Priority||""});
     }
   }
   if(!entries.length){
-    list.innerHTML = '<div style="color:var(--muted);padding:8px">No projects loaded.</div>';
+    list.innerHTML = '<div style="color:var(--muted);padding:8px">No active projects loaded.</div>';
     return;
   }
   /* Keep the saved order, appending any new projects at the end */
