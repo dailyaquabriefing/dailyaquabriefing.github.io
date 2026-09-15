@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.1] - 2026-09-11
+
+### Fixed
+- Status Report: **all active projects now get full rows** — the old top-10 "Key Projects" cut is removed. In merged multi-user view the cut was hiding most of the team's projects, relegating them to a names-only "Also active" line. The Key Projects section title now shows the count (e.g. "Key Projects (14)"), web and PDF.
+
 ## [1.21.0] - 2026-09-11
 
 ### Added

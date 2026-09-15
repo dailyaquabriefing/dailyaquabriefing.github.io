@@ -764,9 +764,10 @@ function buildUserReport(data){
     if(eA!==eB) return eA-eB;
     return (toDate(b.Updated)||0)-(toDate(a.Updated)||0);
   });
-  /* Filtered views show every match; the default view keeps the top-10 focus */
-  const top = anyFilter ? active : active.slice(0,10);
-  const rest = anyFilter ? [] : active.slice(10);
+  /* Every active project gets a full row — no top-10 cut (it hid projects
+     when merging multiple users; "Also active" only listed the overflow). */
+  const top = active;
+  const rest = [];
 
   const onHold = visible.filter(p=>p.Status==="On-Hold");
   if(FILTERS.sort !== "manual") onHold.sort((a,b)=>(PRI[a.Priority]??3)-(PRI[b.Priority]??3));
@@ -856,7 +857,7 @@ function buildUserReport(data){
   <p class="legend" style="text-align:center">Tap any status above to filter the report; tap it again (or Clear, in the toolbar) to show everything.</p>`;
 
   if(SECTIONS.key){
-  h += `<div class="bar">${anyFilter ? "Projects \u2014 filtered (" + top.length + ")" : "Key Projects"}</div>
+  h += `<div class="bar">${anyFilter ? "Projects \u2014 filtered (" + top.length + ")" : "Key Projects (" + top.length + ")"}</div>
   <table class="tpl">
   <thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
 
@@ -1484,7 +1485,7 @@ function saveAsPdf(){
       ]);
     }
   }
-  bar(m.anyFilter ? "Projects \u2014 filtered (" + m.top.length + ")" : "Key Projects");
+  bar(m.anyFilter ? "Projects \u2014 filtered (" + m.top.length + ")" : "Key Projects (" + m.top.length + ")");
   table({
     head:[["Project","Status","Assigned To","Start","Est/Act Complete"]],
     body: kpBody,
