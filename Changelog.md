@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.4] - 2026-09-16
+
+### Changed
+- Status Report: **project rows now pop out as blue bands** so management can scan projects at a glance — steel-blue background, blue rule above each project, larger bold project name in brand blue, bold Assigned To. Milestone sub-rows stay light so the hierarchy reads instantly. Applied to Key Projects and On Hold on the web report and in the Save PDF output (roadblock note rows get a soft amber fill in the PDF too).
+
 ## [1.22.3] - 2026-09-11
 
 ### Fixed

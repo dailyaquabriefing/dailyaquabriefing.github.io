@@ -122,6 +122,9 @@
   .statusgrid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;border:1px solid var(--ink);border-top:none;padding:14px 12px;background:#fff}
   .statusgrid .st-chip{cursor:pointer}
   .statusgrid .st-chip.active{outline:3px solid var(--ink);outline-offset:1px}
+  /* Project rows pop out as blue bands, separated from milestone sub-rows */
+  table.tpl tbody tr.projrow td{background:#dce9f7;border-top:3px solid var(--bar);padding-top:11px;padding-bottom:11px}
+  table.tpl tbody tr.projrow td:first-child b{font-size:15.5px;color:var(--bar-dark)}
   td.datecol{white-space:nowrap;width:110px}
   td.asgncol{white-space:nowrap;width:130px}
   tr.note td{font-size:12.5px;color:#7a4a08;padding-top:0}
@@ -176,7 +179,7 @@
     .doc{padding:0}
     .bar{break-after:avoid}
     table.tpl tr{break-inside:avoid}
-    .bar, .st span, .st-chip, table.tpl tbody tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .bar, .st span, .st-chip, table.tpl tbody tr, table.tpl tbody tr.projrow td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     hr.user-sep{break-after:page;visibility:hidden;margin:0;height:0}
     .filterline-clear{display:none !important}
   }
@@ -1029,7 +1032,7 @@ function buildUserReport(data){
     const start = toDate(p.Start);
     const est = toDate(p.End);
     const block = looksBlocked(p);
-    h += `<tr>
+    h += `<tr class="projrow">
       <td><b>${esc(p.Name)}</b>${ownerTag(p)}${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
       <td class="st ${cls}"><span>${code}</span>${stageLabel(p.Status)}</td>
       <td class="asgncol">${esc(p.Assigned||"N/A")}</td>
@@ -1082,7 +1085,7 @@ function buildUserReport(data){
     <table class="tpl"><thead><tr><th>Project</th><th style="text-align:center">Status</th><th>Assigned To</th><th colspan="2">Reason</th></tr></thead><tbody>`;
     for(const p of onHold){
       const why = firstLine(p.Milestone) || firstLine(p.Notes) || "";
-      h += `<tr><td><b>${esc(p.Name)}</b>${ownerTag(p)}</td><td class="st st-y"><span>Y</span>${stageLabel("On-Hold")}</td><td class="asgncol">${esc(p.Assigned||"N/A")}</td><td colspan="2">${esc(why)}</td></tr>`;
+      h += `<tr class="projrow"><td><b>${esc(p.Name)}</b>${ownerTag(p)}</td><td class="st st-y"><span>Y</span>${stageLabel("On-Hold")}</td><td class="asgncol">${esc(p.Assigned||"N/A")}</td><td colspan="2">${esc(why)}</td></tr>`;
     }
     h += `</tbody></table>`;
   }
@@ -1532,6 +1535,7 @@ function saveAsPdf(){
   const BAR = [46,117,182];
   const MUTED = [90,106,122];
   const stFill = {"st-c":"#41a0d6","st-g":"#57b45c","st-y":"#e0a02f"};
+  const PROJ_FILL = [220,233,247]; /* project rows pop out as blue bands */
   let y = M;
   const ensure = need => { if(y + need > pageH - M){ pdf.addPage(); y = M; } };
   const bar = (text, center) => {
@@ -1631,14 +1635,14 @@ function saveAsPdf(){
     const [cls, code] = statusCode(p);
     const start = toDate(p.Start), est = toDate(p.End);
     kpBody.push([
-      {content: p.Name + ownerTxt(p) + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold"}},
+      {content: p.Name + ownerTxt(p) + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold", fontSize:10, textColor:[33,90,143], fillColor:PROJ_FILL}},
       stCell(cls, code + "\n" + (p.Status||"")),
-      p.Assigned || "N/A",
-      start ? fmtShort(start) : "",
-      est ? fmtShort(est) : "TBD"
+      {content: p.Assigned || "N/A", styles:{fontStyle:"bold", fillColor:PROJ_FILL}},
+      {content: start ? fmtShort(start) : "", styles:{fillColor:PROJ_FILL}},
+      {content: est ? fmtShort(est) : "TBD", styles:{fillColor:PROJ_FILL}}
     ]);
     const block = looksBlocked(p);
-    if(block) kpBody.push([{content:"Roadblock: " + block, colSpan:5, styles:{textColor:[122,74,8], fontSize:8}}]);
+    if(block) kpBody.push([{content:"Roadblock: " + block, colSpan:5, styles:{textColor:[122,74,8], fontSize:8, fillColor:[255,246,229]}}]);
     for(const ms of (p.MilestoneList||[])){
       const b2 = toDate(ms.baseDate), e2 = toDate(ms.estActDate);
       const complete = ms.done || (b2 && e2 && !ms.inProgress && !ms.onHold && !ms.roadblock);
@@ -1676,10 +1680,10 @@ function saveAsPdf(){
     table({
       head:[["Project","Status","Assigned To","Reason"]],
       body: m.onHold.map(p=>[
-        {content:p.Name + ownerTxt(p), styles:{fontStyle:"bold"}},
+        {content:p.Name + ownerTxt(p), styles:{fontStyle:"bold", fontSize:10, textColor:[33,90,143], fillColor:PROJ_FILL}},
         stCell("st-y","Y\nOn-Hold"),
-        p.Assigned || "N/A",
-        firstLine(p.Milestone) || firstLine(p.Notes) || ""
+        {content: p.Assigned || "N/A", styles:{fontStyle:"bold", fillColor:PROJ_FILL}},
+        {content: firstLine(p.Milestone) || firstLine(p.Notes) || "", styles:{fillColor:PROJ_FILL}}
       ]),
       columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}}
     });
