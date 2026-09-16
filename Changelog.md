@@ -5,6 +5,12 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.7] - 2026-09-16
+
+### Changed
+- Save PDF: **projects no longer split across pages.** Each project (band + roadblock note + milestone rows) renders as its own block with page-break avoidance — if it doesn't fit in the space left on a page, the whole project moves to the next page. (A project taller than a full page still flows, as it must.)
+- PDF tables also gained a proper bottom margin so rows can no longer run into the page footer, and single rows never split mid-row anywhere in the document.
+
 ## [1.22.6] - 2026-09-16
 
 ### Removed
