@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.6] - 2026-09-16
+
+### Removed
+- Save PDF: the "Sections hidden from this report: …" line at the top of the report — hidden sections are simply absent now, with no callout. (The on-screen report never showed this line; the "Filtered view" and staleness notices are unchanged.)
+
 ## [1.22.5] - 2026-09-16
 
 ### Changed

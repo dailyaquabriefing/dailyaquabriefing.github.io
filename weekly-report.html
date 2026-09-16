@@ -1592,8 +1592,6 @@ function saveAsPdf(){
   y += 12;
 
   if(m.filterLine) small("Filtered view \u2014 " + m.filterLine, [122,74,8]);
-  const hiddenSecs = SECTION_DEFS.filter(d=>!SECTIONS[d[0]]).map(d=>d[1]);
-  if(hiddenSecs.length) small("Sections hidden from this report: " + hiddenSecs.join(", "), [122,74,8]);
   if(m.staleDays !== null && m.staleDays > 7) small("Warning: this briefing was last updated " + m.staleDays + " days ago.", [176,42,42]);
 
   /* overall completion */
