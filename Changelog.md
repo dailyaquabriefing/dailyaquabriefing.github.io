@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.8] - 2026-09-16
+
+### Changed
+- Status of Projects chips now count only the projects **actually in view** — after status/priority/focus filters and Projects-panel hiding — instead of the full portfolio. Combined with the existing section-checkbox gating, the band now exactly mirrors the report below it (web and PDF).
+
 ## [1.22.7] - 2026-09-16
 
 ### Changed
