@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.3] - 2026-09-11
+
+### Fixed
+- Projects panel ordering appeared to do nothing unless the Order dropdown was manually set to "Custom (Projects panel)". Using ▲/▼ in the panel now **switches to Custom order automatically** and rebuilds the report immediately, and the panel header explains it.
+
 ## [1.22.2] - 2026-09-11
 
 ### Changed
