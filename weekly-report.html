@@ -642,10 +642,10 @@ function renderProjPanel(){
   const entries = [];
   for(const r of REPORTS){
     for(const p of (r.projects||[])){
-      /* Only in-flight work: active statuses and On-Hold. Completed,
-         Maintenance, and Future projects stay out of the picker. */
+      /* In-flight work plus the pipeline: active statuses, On-Hold, and
+         Future. Completed and Maintenance stay out of the picker. */
       const st = p.Status || "";
-      if(!(ACTIVE_STATUSES.includes(st) || st === "On-Hold")) continue;
+      if(!(ACTIVE_STATUSES.includes(st) || st === "On-Hold" || st === "Future")) continue;
       entries.push({key: (r.info.user||"") + "||" + (p.Name||""), name: p.Name||"", owner: r.info.user||"", status: st, priority: p.Priority||""});
     }
   }
