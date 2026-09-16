@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.10] - 2026-09-16
+
+### Fixed
+- **Future projects now render as full rows in Key Projects** (grey N/S code with the "Future" stage label, dates, Assigned To, milestones). Previously they only appeared in the small "Up next (Future)" text line, so tapping the Future chip filtered to an empty table. The "Up next" line is removed as redundant. Future projects also honor the Projects panel's ▲/▼ custom ordering now. Completion % still excludes Future from its denominator.
+
 ## [1.22.9] - 2026-09-16
 
 ### Changed

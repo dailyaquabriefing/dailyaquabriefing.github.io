@@ -902,7 +902,8 @@ function buildUserReport(data){
   const hiddenCount = hiddenSet.size ? projects.filter(p=>hiddenSet.has(keyOf(p))).length : 0;
   if(hiddenCount) visible = visible.filter(p=>!hiddenSet.has(keyOf(p)));
 
-  const active = visible.filter(p=>ACTIVE_STATUSES.includes(p.Status));
+  /* Future projects get full rows too (grey N/S code, "Future" stage label) */
+  const active = visible.filter(p=>ACTIVE_STATUSES.includes(p.Status) || p.Status === "Future");
   /* Attention-first sort: Delayed/roadblocked projects first, then priority,
      then nearest Est/Act complete date, then most recently updated.
      "My dashboard order" keeps the order set with Up/Down in the Dashboard. */
@@ -1070,9 +1071,6 @@ function buildUserReport(data){
 
   if(rest.length){
     h += `<p class="legend">Also active: ${rest.map(p=>esc(p.Name)+(p.Owner ? " ("+esc(p.Owner)+")" : "")).join("; ")}.</p>`;
-  }
-  if(future.length){
-    h += `<p class="legend">Up next (Future): ${future.map(p=>esc(p.Name)+(p.Owner ? " ("+esc(p.Owner)+")" : "")).join("; ")}.</p>`;
   }
   }
   if(SECTIONS.key && hiddenCount) h += `<p class="legend">${hiddenCount} project(s) hidden via the Projects panel.</p>`;
