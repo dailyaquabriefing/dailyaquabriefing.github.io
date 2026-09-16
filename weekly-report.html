@@ -1556,12 +1556,17 @@ function saveAsPdf(){
   const stCell = (cls, text, fs) => cls === "st-ns"
     ? {content:text, styles:{halign:"center", fontSize:fs||9}}
     : {content:text, styles:{fillColor:hexToRgb(stFill[cls]), textColor:255, halign:"center", fontStyle:"bold", fontSize:fs||9}};
+  /* Milestone status: colored letter only (no cell fill), so the status
+     column doesn't become a solid stripe that drowns out project rows */
+  const msCell = (cls, text) => cls === "st-ns"
+    ? {content:text, styles:{halign:"center", fontSize:8, textColor:MUTED}}
+    : {content:text, styles:{halign:"center", fontSize:8.5, fontStyle:"bold", textColor:hexToRgb(stFill[cls])}};
   const table = opts => {
     pdf.autoTable(Object.assign({
       startY: y, margin:{left:M, right:M}, theme:"striped",
       styles:{font:"helvetica", fontSize:9, cellPadding:4, textColor:[26,26,26], overflow:"linebreak"},
       headStyles:{fillColor:[238,243,248], textColor:[26,26,26], fontStyle:"bold"},
-      alternateRowStyles:{fillColor:[219,231,242]}
+      alternateRowStyles:{fillColor:[245,249,252]}
     }, opts));
     y = pdf.lastAutoTable.finalY + 8;
   };
@@ -1628,18 +1633,22 @@ function saveAsPdf(){
   /* key projects */
   if(SECTIONS.key){
   const kpBody = [];
+  const kpProjRows = new Set(); /* body row indexes of project rows */
   if(!m.top.length){
     kpBody.push([{content:"No active projects match the current filters.", colSpan:5}]);
   }
   for(const p of m.top){
     const [cls, code] = statusCode(p);
     const start = toDate(p.Start), est = toDate(p.End);
+    const projSt = stCell(cls, code + "\n" + (p.Status||""));
+    projSt.styles.cellPadding = 6;
+    kpProjRows.add(kpBody.length);
     kpBody.push([
-      {content: p.Name + ownerTxt(p) + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold", fontSize:10, textColor:[33,90,143], fillColor:PROJ_FILL}},
-      stCell(cls, code + "\n" + (p.Status||"")),
-      {content: p.Assigned || "N/A", styles:{fontStyle:"bold", fillColor:PROJ_FILL}},
-      {content: start ? fmtShort(start) : "", styles:{fillColor:PROJ_FILL}},
-      {content: est ? fmtShort(est) : "TBD", styles:{fillColor:PROJ_FILL}}
+      {content: p.Name + ownerTxt(p) + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold", fontSize:10.5, textColor:[33,90,143], fillColor:PROJ_FILL, cellPadding:6}},
+      projSt,
+      {content: p.Assigned || "N/A", styles:{fontStyle:"bold", fillColor:PROJ_FILL, cellPadding:6}},
+      {content: start ? fmtShort(start) : "", styles:{fillColor:PROJ_FILL, cellPadding:6}},
+      {content: est ? fmtShort(est) : "TBD", styles:{fillColor:PROJ_FILL, cellPadding:6}}
     ]);
     const block = looksBlocked(p);
     if(block) kpBody.push([{content:"Roadblock: " + block, colSpan:5, styles:{textColor:[122,74,8], fontSize:8, fillColor:[255,246,229]}}]);
@@ -1657,7 +1666,7 @@ function saveAsPdf(){
       const holdNote = ms.onHold ? (ms.holdReason ? " \u2014 On hold: " + ms.holdReason : " \u2014 On hold") : "";
       kpBody.push([
         {content:"    " + "\u2022 " + ms.name + holdNote + blockNote, styles:{fontSize:8, textColor:MUTED}},
-        stCell(mcls, mcode, 8),
+        msCell(mcls, mcode),
         "",
         {content: b2 ? "Base " + fmtShort(b2) : "", styles:{fontSize:8, textColor: (late && !e2) ? [176,42,42] : MUTED}},
         {content: e2 ? (complete ? "Act " : "Est ") + fmtShort(e2) : "", styles:{fontSize:8, textColor: (late && e2) ? [176,42,42] : MUTED}}
@@ -1668,7 +1677,14 @@ function saveAsPdf(){
   table({
     head:[["Project","Status","Assigned To","Start","Est/Act Complete"]],
     body: kpBody,
-    columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}, 3:{cellWidth:58}, 4:{cellWidth:80}}
+    columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}, 3:{cellWidth:58}, 4:{cellWidth:80}},
+    /* Blue rule across the top of every project row */
+    didDrawCell: d => {
+      if(d.section === "body" && d.column.index === 0 && kpProjRows.has(d.row.index)){
+        pdf.setDrawColor(BAR[0],BAR[1],BAR[2]); pdf.setLineWidth(1.4);
+        pdf.line(M, d.cell.y, pageW - M, d.cell.y);
+      }
+    }
   });
   small("Status: C = Complete \u00b7 G = In progress, on track \u00b7 T = In testing \u00b7 Y = On hold / delayed / blocked \u00b7 N/S = Not started. The stage name in each status cell is the project's current stage in the Daily Aqua Briefing.");
 
@@ -1685,7 +1701,13 @@ function saveAsPdf(){
         {content: p.Assigned || "N/A", styles:{fontStyle:"bold", fillColor:PROJ_FILL}},
         {content: firstLine(p.Milestone) || firstLine(p.Notes) || "", styles:{fillColor:PROJ_FILL}}
       ]),
-      columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}}
+      columnStyles:{1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}},
+      didDrawCell: d => {
+        if(d.section === "body" && d.column.index === 0){
+          pdf.setDrawColor(BAR[0],BAR[1],BAR[2]); pdf.setLineWidth(1.4);
+          pdf.line(M, d.cell.y, pageW - M, d.cell.y);
+        }
+      }
     });
   }
 
