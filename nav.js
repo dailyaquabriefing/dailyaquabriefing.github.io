@@ -25,7 +25,7 @@
         { href: 'admin.html', label: 'Dashboard', match: 'admin.html' },
         { href: 'weekly-report.html' + q, label: 'Status Report', match: 'weekly-report.html' },
         { href: 'howtouse.html', label: 'Help', match: 'howtouse.html' },
-        { href: 'users.html', label: 'Users (IT)', match: 'users.html' }
+        { href: 'users.html', label: 'Admin', match: 'users.html' }
     ];
 
     // --- Styles (namespaced so they never clash with page CSS) ---

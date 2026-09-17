@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sections reordered and renamed.** The briefing now reads **Active Projects → Quick Tasks → Daily Tasks** (Quick Tasks is the new name for Active Tasks — the underlying data is unchanged). The Dashboard tabs, Excel export sheets ("Quick Tasks", ordered Projects/Quick Tasks/Daily Tasks), Analytics charts and tables, the Status Report section labels, and the Help page all follow the new names and order. The Status Report's offline `.xlsx` import accepts both the new "Quick Tasks" sheet name and the old "Active Tasks" name.
 - The briefing page title is now simply **Aqua Briefing** (was "Daily Briefing" / "Weekly Report" depending on mode).
 - Dashboard opens on the **Active Projects** tab (was Daily Tasks), and the stray `<<div` typo in the tab markup was fixed.
+- Navigation bar: the **Users (IT)** link is renamed **Admin** (still opens `users.html`).
 
 ### Removed
 - **Daily Briefing mode retired** (no longer used): the `?daily=` passcode-locked view, lock screen, Meetings/Emails sections, and Outlook sync loader are gone from the viewer. Old `?daily=ID` bookmarks now open the regular report view for that ID.
