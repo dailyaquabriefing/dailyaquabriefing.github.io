@@ -324,7 +324,7 @@ const SECTION_DEFS = [
   ["status", "Status of Projects"],
   ["key", "Key Projects"],
   ["onhold", "On Hold"],
-  ["tasks", "Active Tasks"],
+  ["tasks", "Quick Tasks"],
   ["daily", "Daily Workload"],
   ["maint", "Maintenance"],
   ["done", "Recently Completed"]
@@ -768,7 +768,9 @@ function sheetToObjects(ws){
 }
 
 function parseWorkbook(wb){
-  const need = ["Daily Tasks","Projects","Active Tasks"];
+  // Newer exports name the sheet "Quick Tasks"; older ones used "Active Tasks".
+  const taskSheet = wb.SheetNames.includes("Quick Tasks") ? "Quick Tasks" : "Active Tasks";
+  const need = ["Daily Tasks","Projects",taskSheet];
   for(const n of need){ if(!wb.SheetNames.includes(n)) throw new Error("Sheet \""+n+"\" not found. Is this a Daily Aqua Briefing export?"); }
   const info = {user:"", exported:null};
   if(wb.SheetNames.includes("Analytics Overview")){
@@ -782,7 +784,7 @@ function parseWorkbook(wb){
     info,
     daily: sheetToObjects(wb.Sheets["Daily Tasks"]),
     projects: sheetToObjects(wb.Sheets["Projects"]).map(withMilestones),
-    tasks: sheetToObjects(wb.Sheets["Active Tasks"]).map(withMilestones)
+    tasks: sheetToObjects(wb.Sheets[taskSheet]).map(withMilestones)
   };
 }
 
@@ -1090,7 +1092,7 @@ function buildUserReport(data){
   }
 
   if(SECTIONS.tasks && openTasks.length){
-    h += `<div class="bar">Active Tasks (${openTasks.length})</div>
+    h += `<div class="bar">Quick Tasks (${openTasks.length})</div>
     <table class="tpl">
     <thead><tr><th>Task</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Start</th><th>Est/ Act Complete</th></tr></thead><tbody>`;
     for(const t of openTasks){
@@ -1714,7 +1716,7 @@ function saveAsPdf(){
 
   /* active tasks */
   if(SECTIONS.tasks && m.activeTasks && m.activeTasks.length){
-    bar("Active Tasks (" + m.activeTasks.length + ")");
+    bar("Quick Tasks (" + m.activeTasks.length + ")");
     table({
       head:[["Task","Status","Assigned To","Start","Est/Act Complete"]],
       body: m.activeTasks.map(t=>{

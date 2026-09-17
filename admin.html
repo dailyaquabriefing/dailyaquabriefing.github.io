@@ -175,22 +175,6 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;}
         
-        /* Private Field Styles */
-        .private-field-group {
-            background: #fff5f5;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ffc9c9;
-            margin-bottom: 15px;
-            display: none; /* Hidden by default */
-        }
-        .private-label {
-            color: #c0392b; 
-            display: flex; 
-            align-items: center; 
-            gap: 5px;
-        }
-
         /* Complex field grid */
         .complex-field { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .date-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; } 
@@ -381,21 +365,13 @@
         </header>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="openTab('tasks')">Daily Tasks</button>
-            <button class="tab-btn" onclick="openTab('projects')">Active Projects</button>
-            <button class="tab-btn" onclick="openTab('active')">Active Tasks</button>
+            <button class="tab-btn active" onclick="openTab('projects')">Active Projects</button>
+            <button class="tab-btn" onclick="openTab('active')">Quick Tasks</button>
+            <button class="tab-btn" onclick="openTab('tasks')">Daily Tasks</button>
             <button class="tab-btn" onclick="openTab('settings')">Settings</button>
         </div>
 
-        <div id="tab-tasks" class="tab-content active">
-            <div style="display:flex; gap:10px; margin-bottom:20px;">
-                <input type="text" id="new-task-input" class="w-full" placeholder="Enter a new task...">
-                <button class="btn btn-primary" onclick="addDailyTask()">Add</button>
-            </div>
-            <ul id="daily-task-list" class="item-list"></ul>
-        </div>
-
-        <<div id="tab-projects" class="tab-content">
+        <div id="tab-projects" class="tab-content active">
     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
         <button class="btn btn-primary" onclick="openModal('project')">+ Add New Project</button>
         <button class="btn btn-secondary" onclick="autoSortList('project')">↕ Sort by Status</button>
@@ -405,12 +381,20 @@
 
 <div id="tab-active" class="tab-content">
     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-        <button class="btn btn-primary" onclick="openModal('active')">+ Add New Active Task</button>
+        <button class="btn btn-primary" onclick="openModal('active')">+ Add New Quick Task</button>
         <button class="btn btn-secondary" onclick="autoSortList('active')">↕ Sort by Status</button>
     </div>
     <div id="active-task-list"></div>
 </div>
-        
+
+        <div id="tab-tasks" class="tab-content">
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <input type="text" id="new-task-input" class="w-full" placeholder="Enter a new task...">
+                <button class="btn btn-primary" onclick="addDailyTask()">Add</button>
+            </div>
+            <ul id="daily-task-list" class="item-list"></ul>
+        </div>
+
         <div id="tab-settings" class="tab-content">
             <div style="max-width: 450px; padding-top: 10px;">
                 <h3 style="color: var(--primary);">User Mapping</h3>
@@ -432,15 +416,7 @@
                     <input type="text" id="settings-department" class="w-full" placeholder="e.g. Information Technology">
                 </div>
 
-                <h3 style="color: var(--primary); margin-top: 30px;">Viewer Security</h3>
-                <p style="color: #666; font-size: 0.9em;">
-                    Set a passcode for your <b>Daily Briefing</b> page. Leave empty for public access.
-                </p>
-                <div class="form-group" style="margin-top: 20px;">
-                    <label>Daily Briefing Passcode</label>
-                    <input type="text" id="settings-passcode" class="w-full" placeholder="e.g. 1234">
-                </div>
-                <button class="btn btn-primary" style="margin-top: 20px;" onclick="savePasscode()">Save Settings</button>
+                <button class="btn btn-primary" style="margin-top: 20px;" onclick="saveSettings()">Save Settings</button>
 
                 <h3 style="color: var(--primary); margin-top: 40px;">Change Password</h3>
                 <p style="color: #666; font-size: 0.9em;">
@@ -592,11 +568,6 @@
                 </div>
             </div>
 
-            <div id="m-it-comments-container" class="private-field-group">
-                <label class="private-label">🔒 Private Comments (Visible only via Passcode)</label>
-                <div id="editor-container-it" style="background:white;"></div>
-            </div>
-
             <div id="m-comments-wrapper" class="form-group" style="border-top: 4px solid #f1f1f1; margin-top: 15px; padding-top: 15px;">
                 <label>💬 Public Comments</label>
                 <div id="m-comments-list" style="max-height: 250px; overflow-y: auto; background:#fff; padding:5px;">
@@ -666,13 +637,11 @@
             dailyTasks: [],
             projects: [],
             activeTasks: [],
-            passcode: "",
             displayName: "",
             department: ""
         };
-        
+
         // --- EDITOR INSTANCES ---
-        let quillIT;
         let quillNotes;
 
         // Initialize Editors when DOM is ready
@@ -685,12 +654,6 @@
                 [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
                 ['link', 'clean']                                 // remove formatting button
             ];
-
-            quillIT = new Quill('#editor-container-it', {
-                theme: 'snow',
-                placeholder: 'Internal private notes...',
-                modules: { toolbar: toolbarOptions }
-            });
 
             quillNotes = new Quill('#editor-container-notes', {
                 theme: 'snow',
@@ -805,14 +768,12 @@
 
                     localData.projects = data.structuredProjects || [];
                     localData.activeTasks = data.structuredActiveTasks || [];
-                    localData.passcode = data.passcode || "";
                     localData.displayName = data.displayName || "";
                     localData.department = data.department || "";
-                    document.getElementById('settings-passcode').value = localData.passcode;
                     document.getElementById('settings-displayname').value = localData.displayName;
                     document.getElementById('settings-department').value = localData.department;
                 } else {
-                    localData = { dailyTasks: [], projects: [], activeTasks: [], passcode: "", displayName: "", department: "" };
+                    localData = { dailyTasks: [], projects: [], activeTasks: [], displayName: "", department: "" };
                     // New user, no briefing doc yet: create an empty one right away so
                     // "View My Briefing" and the Status Report work before any items exist.
                     if (!briefingDocCreated) {
@@ -836,7 +797,6 @@
                 structuredDailyTasks: localData.dailyTasks,
                 structuredProjects: localData.projects,
                 structuredActiveTasks: localData.activeTasks,
-                passcode: localData.passcode,
                 displayName: localData.displayName || "",
                 department: localData.department || "",
                 lastUpdated: new Date().toISOString(), // Updates Global Report Time
@@ -847,8 +807,7 @@
             }, { merge: true }).catch(e => console.error("Save error", e));
         }
 
-        function savePasscode() {
-            localData.passcode = document.getElementById('settings-passcode').value.trim();
+        function saveSettings() {
             localData.displayName = document.getElementById('settings-displayname').value.trim();
             localData.department = document.getElementById('settings-department').value.trim();
             pushData();
@@ -942,8 +901,6 @@
                 // Show attachment count
                 const attCount = (task.attachments && task.attachments.length) || (task.attachment ? 1 : 0);
                 if(attCount > 0) extraInfo.push(`📎 ${attCount} File(s)`);
-                
-                if(task.itComments) extraInfo.push(`🔒 (Has Private Note)`);
 
                 // Check for public comments and display count
                 const commentCount = (task.publicComments || []).length;
@@ -992,16 +949,6 @@
                     attStr = `<br>📎 ${atts.length} Attachment(s)`;
                 }
                 
-                // Private note logic
-                // Strip HTML for the preview snippet
-                let cleanItComment = "";
-                if (item.itComments) {
-                    let tmp = document.createElement("DIV");
-                    tmp.innerHTML = item.itComments;
-                    cleanItComment = tmp.textContent || tmp.innerText || "";
-                }
-                const itStr = item.itComments ? `<br><strong style="color:#c0392b;">🔒 Private Note:</strong> <span style="font-style:italic;">${cleanItComment.substring(0, 30)}...</span>` : '';
-
                 // Check for public comments and display count
                 const commentCount = (item.publicComments || []).length;
                 const commentStr = commentCount > 0 ? `<br>💬 <strong>${commentCount} Comment(s)</strong>` : '';
@@ -1035,7 +982,6 @@
                             ${msStr}
                             ${goalStr}
                             ${attStr}
-                            ${itStr}
                             ${commentStr}
                             ${testerStr}
                             ${dateStr}
@@ -1202,19 +1148,11 @@
                 document.getElementById('modal-title').textContent = 'Edit Daily Task';
                 complexOnlyFields.forEach(el => el.style.display = 'none');
             } else {
-                document.getElementById('modal-title').textContent = isNew ? (type === 'project' ? 'Add Project' : 'Add Active Task') : 'Edit Item';
+                document.getElementById('modal-title').textContent = isNew ? (type === 'project' ? 'Add Project' : 'Add Quick Task') : 'Edit Item';
                 complexOnlyFields.forEach(el => el.style.removeProperty('display'));
             }
 
-            // --- IT COMMENTS VISIBILITY LOGIC ---
-            const itContainer = document.getElementById('m-it-comments-container');
-            if (localData.passcode && localData.passcode.trim() !== "") {
-                itContainer.style.display = 'block';
-            } else {
-                itContainer.style.display = 'none';
-            }
-            
-            let item = {name: '', status: 'On Track', priority: 'High', assignedTo: 'N/A', milestone: '', milestones: [], notes: '', tester: '', startDate: '', lastUpdated: '', endDate: '', goal: '', attachments: [], itComments: ''};
+            let item = {name: '', status: 'On Track', priority: 'High', assignedTo: 'N/A', milestone: '', milestones: [], notes: '', tester: '', startDate: '', lastUpdated: '', endDate: '', goal: '', attachments: []};
             
             if (!isNew) {
                 const list = type === 'project' ? localData.projects : (type === 'active' ? localData.activeTasks : localData.dailyTasks);
@@ -1257,7 +1195,6 @@
             // RICH TEXT POPULATION
             // Handle possibility of existing plain text vs HTML
             quillNotes.root.innerHTML = item.notes || '';
-            quillIT.root.innerHTML = item.itComments || '';
 
             document.getElementById('m-tester').value = item.tester || '';
             document.getElementById('m-collaborators').value = item.collaborators || '';
@@ -1293,7 +1230,6 @@
                 start: document.getElementById('m-start-date').value,
                 end: document.getElementById('m-end-date').value,
                 notes: quillNotes ? quillNotes.root.innerHTML : '',
-                it: quillIT ? quillIT.root.innerHTML : '',
                 ms: tempMilestones,
                 atts: tempAttachments,
                 checks: tempDailyChecks
@@ -1330,7 +1266,6 @@
 
                 // GET HTML FROM QUILL
                 notes: quillNotes.root.innerHTML,
-                itComments: quillIT.root.innerHTML,
 
                 tester: document.getElementById('m-tester').value,
                 collaborators: document.getElementById('m-collaborators').value,

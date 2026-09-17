@@ -12,13 +12,10 @@ firebase.initializeApp(firebaseConfig);
 
 // --- GLOBAL VARIABLES ---
 const db = firebase.firestore();
-let pendingData = null;
 let targetId = null;
-let currentShowPrivate = false;
 
-// NEW GLOBALS FOR EXPORT AND ANALYTICS
+// GLOBALS FOR EXPORT AND ANALYTICS
 let currentReportData = null;
-let currentOutlookData = null;
 
 // STORE QUILL INSTANCES
 let commentEditors = {};
@@ -154,8 +151,8 @@ window.postComment = function(listType, itemIndex, uniqueId) {
             lastUpdated: new Date().toISOString()
         }).then(() => {
             delete commentEditors[uniqueId];
-            
-            renderList(containerId, listData, currentShowPrivate);
+
+            renderList(containerId, listData);
             
             const newContainer = document.getElementById('comments-' + uniqueId);
             if (newContainer) {
@@ -189,10 +186,10 @@ window.setCollapsedStatusFilter = function(listType, status) {
 
     if (listType === 'project') {
         const projectsData = currentReportData.structuredProjects || currentReportData.projects || [];
-        renderList('content-projects', projectsData, currentShowPrivate);
+        renderList('content-projects', projectsData);
     } else if (listType === 'active') {
         const activeData = currentReportData.structuredActiveTasks || currentReportData.activeTasks || [];
-        renderList('content-active', activeData, currentShowPrivate);
+        renderList('content-active', activeData);
     }
 };
 
@@ -242,7 +239,7 @@ function buildStatusFilterButtons(listType, items, showOnlySelected = false) {
 
 
 
-const renderList = (id, items, showPrivate = false) => {
+const renderList = (id, items) => {
     const el = document.getElementById(id);
     const headerEl = document.getElementById('header-' + id.replace('content-', ''));
     
@@ -269,7 +266,7 @@ if (headerEl) {
     const titleMap = {
         'header-tasks': 'Daily Tasks',
         'header-projects': 'Active Projects',
-        'header-active': 'Active Tasks'
+        'header-active': 'Quick Tasks'
     };
 
     const baseTitle = titleMap[headerEl.id] || headerEl.textContent.split('(')[0].trim();
@@ -303,7 +300,7 @@ html += '<ol style="padding-left:20px;">';
 
 filteredItems.forEach((item) => {
     const index = originalItems.indexOf(item);
-        let name, notes = '', status, priority = '', assignedTo = '', milestone = '', milestones = [], tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], itComments = '', publicComments = [];
+        let name, notes = '', status, priority = '', assignedTo = '', milestone = '', milestones = [], tester = '', collaborators = '', startDate = '', endDate = '', lastUpdated = '', goal = '', attachments = [], publicComments = [];
         let dailyChecks = item.dailyChecks || [];    
         
         if (typeof item === 'object' && item !== null && item.name) {
@@ -327,7 +324,6 @@ filteredItems.forEach((item) => {
                 attachments = [{ name: "Resource", url: item.attachment }];
             }
 
-            itComments = item.itComments;
             publicComments = item.publicComments || [];
 
         } else if (typeof item === 'string') {
@@ -499,7 +495,6 @@ if (safeNotes) {
         ${safeNotes ? `<div style="color:#666; margin-bottom:2px;">${safeNotes}</div>` : ''}
         ${goal ? `<div class="item-goal">🎯 <strong>Goal:</strong> ${linkify(goal)}</div>` : ''}
         ${attachmentHtml}
-        ${showPrivate && itComments ? `<div class="item-it-comment">🔒 <strong>Private:</strong> ${linkify(itComments)}</div>` : ''}
         ${milestoneHtml}
         ${metaHtml}
     </div>
@@ -513,81 +508,25 @@ if (safeNotes) {
     el.innerHTML = html + '</ol>';
 };
 
-// --- OUTLOOK DATA LOADER ---
-function loadOutlookData(reportId) {
-    const outlookDocId = reportId + "_outlook";
-    db.collection("briefings").doc(outlookDocId).onSnapshot((doc) => {
-        const headerMeetings = document.getElementById('header-meetings');
-        const headerEmails = document.getElementById('header-emails');
-        const meetingsContent = document.getElementById('content-meetings');
-        const emailsContent = document.getElementById('content-emails');
-
-        if (doc.exists) {
-            const data = doc.data();
-            currentOutlookData = data;
-            headerMeetings.textContent = `Meetings (${data.meetings_count || 0})`;
-            headerEmails.textContent   = `Emails (${data.emails_count || 0})`;
-            meetingsContent.innerHTML = linkify(data.meetings || "") || "<i>No meetings found.</i>";
-            emailsContent.innerHTML   = linkify(data.emails || "")   || "<i>No unread emails.</i>";
-        } else {
-            headerMeetings.textContent = `Meetings (0)`;
-            headerEmails.textContent   = `Unread Emails (0)`;
-            meetingsContent.innerHTML = "<i>Waiting for Outlook Sync...</i>";
-            emailsContent.innerHTML   = "<i>Waiting for Outlook Sync...</i>";
-        }
-    }, (error) => {
-         console.error("Error Outlook Sync:", error);
-         document.getElementById('content-meetings').innerHTML = "<i>Error loading meetings.</i>";
-         document.getElementById('content-emails').innerHTML = "<i>Error loading emails.</i>";
-    });
-}
-
-
 // --- CORE RENDER FUNCTION ---
-function renderReport(data, isDailyMode) {
+function renderReport(data) {
     document.getElementById('default-message').classList.add('hidden');
-    document.getElementById('lock-screen').classList.add('hidden');
     document.getElementById('loading-overlay').classList.add('hidden');
     document.getElementById('nav-links').classList.remove('hidden');
     document.getElementById('report-body').classList.remove('hidden');
     document.getElementById('report-subtitle').textContent = "Report: " +
         (data.displayName ? data.displayName + " (" + data.reportId + ")" : data.reportId) +
         (data.department ? " · " + data.department : "");
-    
+
     currentReportData = data;
-    
-    const hasPasscode = (data.passcode && data.passcode.trim() !== "");
-    const showPrivate = isDailyMode && hasPasscode;
-    currentShowPrivate = showPrivate;
 
-    let updateTime = "Unknown";
-    if (data.lastUpdated) {
-        const dateObj = data.lastUpdated.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated);
-        if (!isNaN(dateObj)) {
-            updateTime = dateObj.toLocaleString('en-US', {
-                year: 'numeric', month: 'long', day: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            });
-        } else {
-            updateTime = data.lastUpdated;
-        }
-    }
-
-    if (isDailyMode) {
-        document.getElementById('container-meetings').classList.remove('hidden');
-        document.getElementById('container-emails').classList.remove('hidden');
-    } else {
-        document.getElementById('container-meetings').classList.add('hidden');
-        document.getElementById('container-emails').classList.add('hidden');
-    }
-
-    const dailyTasksData = data.structuredDailyTasks || data.dailyTasks;
     const projectsData = data.structuredProjects || data.projects;
     const activeData = data.structuredActiveTasks || data.activeTasks;
+    const dailyTasksData = data.structuredDailyTasks || data.dailyTasks;
 
-    renderList('content-tasks', dailyTasksData || [], showPrivate);
-    renderList('content-projects', projectsData || [], showPrivate);
-    renderList('content-active', activeData || [], showPrivate);
+    renderList('content-projects', projectsData || []);
+    renderList('content-active', activeData || []);
+    renderList('content-tasks', dailyTasksData || []);
 }
 
 
@@ -601,21 +540,6 @@ function viewReport() {
         alert("Please enter a User ID.");
         input.focus();
     }
-}
-
-function attemptUnlock() {
-    const entered = document.getElementById('unlock-pass').value;
-    if (entered === pendingData.passcode) {
-        document.getElementById('lock-screen').classList.add('hidden');
-        renderReport(pendingData, true);
-        loadOutlookData(targetId);
-    } else {
-        document.getElementById('unlock-error').style.display = 'block';
-    }
-}
-
-function cancelUnlock() {
-    window.location.href = window.location.pathname;
 }
 
 function setLastGenerated() {
@@ -639,27 +563,57 @@ function setLastGenerated() {
 let statusChart = null;
 let priorityChart = null;
 let workloadChart = null;
+let milestoneChart = null;
 
 function toggleAnalyticsView() {
-    document.getElementById('container-tasks').classList.add('hidden');
     document.getElementById('container-projects').classList.add('hidden');
     document.getElementById('container-active').classList.add('hidden');
-    document.getElementById('container-meetings').classList.add('hidden');
-    document.getElementById('container-emails').classList.add('hidden');
+    document.getElementById('container-tasks').classList.add('hidden');
     document.getElementById('container-analytics').classList.remove('hidden');
     renderPublicAnalytics();
 }
 
 function closeAnalytics() {
     document.getElementById('container-analytics').classList.add('hidden');
-    document.getElementById('container-tasks').classList.remove('hidden');
     document.getElementById('container-projects').classList.remove('hidden');
     document.getElementById('container-active').classList.remove('hidden');
-    
-    if (currentShowPrivate) {
-        document.getElementById('container-meetings').classList.remove('hidden');
-        document.getElementById('container-emails').classList.remove('hidden');
-    }
+    document.getElementById('container-tasks').classList.remove('hidden');
+}
+
+// Classify a milestone into a single state (same precedence as the list view icons)
+function getMilestoneState(m) {
+    if (m.done) return 'Completed';
+    if (m.roadblock) return 'Roadblock';
+    if (m.onHold) return 'On-Hold';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (m.estActDate && new Date(m.estActDate + 'T00:00:00') < today) return 'Overdue';
+    if (m.inProgress) return 'In Progress';
+    return 'Not Started';
+}
+
+// Milestone states in fixed display order, with the site's status colors
+const MILESTONE_STATES = [
+    { key: 'Completed',   color: '#28a745' },
+    { key: 'In Progress', color: '#5b9bd5' },
+    { key: 'Overdue',     color: '#dc3545' },
+    { key: 'On-Hold',     color: '#6c757d' },
+    { key: 'Roadblock',   color: '#fd7e14' },
+    { key: 'Not Started', color: '#adb5bd' }
+];
+
+// Counts of milestone states across a list of projects
+function getMilestoneStats(projects) {
+    const counts = {};
+    MILESTONE_STATES.forEach(s => counts[s.key] = 0);
+    let total = 0;
+    projects.forEach(p => {
+        (Array.isArray(p.milestones) ? p.milestones : []).forEach(m => {
+            counts[getMilestoneState(m)]++;
+            total++;
+        });
+    });
+    return { counts, total, completed: counts['Completed'] };
 }
 
 function renderPublicAnalytics() {
@@ -726,9 +680,10 @@ function renderPublicAnalytics() {
     const workloadHeader = document.getElementById('chart-header-workload');
     if (workloadHeader) workloadHeader.textContent = `Workload Distribution (Total: ${totalWorkload})`;
 
-    if (statusChart)   statusChart.destroy();
-    if (priorityChart) priorityChart.destroy();
-    if (workloadChart) workloadChart.destroy();
+    if (statusChart)    statusChart.destroy();
+    if (priorityChart)  priorityChart.destroy();
+    if (workloadChart)  workloadChart.destroy();
+    if (milestoneChart) milestoneChart.destroy();
 
     statusChart = new Chart(document.getElementById('chartStatus'), {
         type: 'doughnut',
@@ -779,10 +734,10 @@ function renderPublicAnalytics() {
     workloadChart = new Chart(document.getElementById('chartWorkload'), {
         type: 'pie',
         data: {
-            labels: ['Daily Priorities', 'Projects', 'Active Tasks'],
+            labels: ['Active Projects', 'Quick Tasks', 'Daily Tasks'],
             datasets: [{
-                data: [daily.length, projects.length, active.length],
-                backgroundColor: ['#007bff', '#9b59b6', '#fd7e14']
+                data: [projects.length, active.length, daily.length],
+                backgroundColor: ['#9b59b6', '#fd7e14', '#007bff']
             }]
         },
         options: {
@@ -795,6 +750,106 @@ function renderPublicAnalytics() {
             }
         }
     });
+
+    // --- PROJECT MILESTONES CHART ---
+    const msStats = getMilestoneStats(projects);
+    const msHeader = document.getElementById('chart-header-milestones');
+    if (msHeader) {
+        msHeader.textContent = msStats.total > 0
+            ? `Project Milestones (${msStats.completed}/${msStats.total} complete)`
+            : 'Project Milestones';
+    }
+
+    const msActiveStates = MILESTONE_STATES.filter(s => msStats.counts[s.key] > 0);
+    milestoneChart = new Chart(document.getElementById('chartMilestones'), {
+        type: 'doughnut',
+        data: {
+            labels: msActiveStates.map(s => `${s.key} (${msStats.counts[s.key]})`),
+            datasets: [{
+                data: msActiveStates.map(s => msStats.counts[s.key]),
+                backgroundColor: msActiveStates.map(s => s.color)
+            }]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    color: '#ffffff',
+                    font: { weight: 'bold' },
+                    formatter: (value) => value > 0 ? value : ''
+                },
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // --- MILESTONE PROGRESS BY PROJECT TABLE ---
+    const msTableEl = document.getElementById('analytics-milestone-table');
+    if (msTableEl) {
+        const projectsWithMs = projects.filter(p => Array.isArray(p.milestones) && p.milestones.length > 0);
+        if (projectsWithMs.length === 0) {
+            msTableEl.innerHTML = '';
+            msTableEl.style.display = 'none';
+        } else {
+            msTableEl.style.display = 'block';
+            let mHtml = `
+                <table style="width:100%; border-collapse:collapse; font-size:0.92em;">
+                    <thead>
+                        <tr style="background:#f8f9fa; border-bottom:2px solid #dee2e6;">
+                            <th style="padding:10px 14px; text-align:left; color:#555; font-weight:700;" colspan="5">🏁 Milestone Progress by Project</th>
+                        </tr>
+                        <tr style="background:#f8f9fa; border-bottom:2px solid #dee2e6;">
+                            <th style="padding:8px 14px; text-align:left; color:#555; font-weight:700;">Project</th>
+                            <th style="padding:8px 14px; text-align:left; color:#555; font-weight:700;">Progress</th>
+                            <th style="padding:8px 14px; text-align:left; color:#555; font-weight:700;">Next Milestone</th>
+                            <th style="padding:8px 14px; text-align:center; color:#555; font-weight:700;">Est/Act Date</th>
+                            <th style="padding:8px 14px; text-align:center; color:#555; font-weight:700;">Flags</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            projectsWithMs.forEach((p, i) => {
+                const list = p.milestones;
+                const doneCount = list.filter(m => m.done).length;
+                const pct = Math.round((doneCount / list.length) * 100);
+                const next = list.find(m => !m.done);
+                const nextName = next ? (next.name || '—') : 'All complete 🎉';
+                const nextDate = next ? (next.estActDate || next.baseDate || '—') : '—';
+
+                const flags = [];
+                list.forEach(m => {
+                    const state = getMilestoneState(m);
+                    if (state === 'Overdue') flags.push('⚠️ Overdue');
+                    if (state === 'Roadblock') flags.push('🚧 Roadblock');
+                    if (state === 'On-Hold') flags.push('⏸️ On-Hold');
+                });
+                const flagStr = [...new Set(flags)].join(' ');
+                const hasProblem = flagStr.includes('Overdue') || flagStr.includes('Roadblock');
+
+                const rowBg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+                const barColor = pct === 100 ? '#28a745' : (hasProblem ? '#dc3545' : '#0078D4');
+                mHtml += `
+                        <tr style="background:${rowBg}; border-bottom:1px solid #e9ecef;">
+                            <td style="padding:9px 14px;"><strong>${p.name || ''}</strong></td>
+                            <td style="padding:9px 14px; min-width:140px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <div style="flex:1; background:#e9ecef; border-radius:4px; height:10px; overflow:hidden; min-width:60px;">
+                                        <div style="width:${pct}%; background:${barColor}; height:100%;"></div>
+                                    </div>
+                                    <span style="white-space:nowrap; color:#555;">${doneCount}/${list.length}</span>
+                                </div>
+                            </td>
+                            <td style="padding:9px 14px;">${nextName}</td>
+                            <td style="padding:9px 14px; text-align:center; color:#555;">${nextDate}</td>
+                            <td style="padding:9px 14px; text-align:center; ${hasProblem ? 'color:#dc3545; font-weight:bold;' : 'color:#555;'}">${flagStr || '—'}</td>
+                        </tr>`;
+            });
+
+            mHtml += `
+                    </tbody>
+                </table>`;
+            msTableEl.innerHTML = mHtml;
+        }
+    }
 
     // --- STATUS SUMMARY TABLE ---
     const tableEl = document.getElementById('analytics-status-table');
@@ -810,7 +865,7 @@ function renderPublicAnalytics() {
                         <tr style="background:${headerBg}; border-bottom:2px solid #dee2e6;">
                             <th style="padding:10px 14px; text-align:left; color:#555; font-weight:700;">Status</th>
                             <th style="padding:10px 14px; text-align:center; color:#555; font-weight:700;">Projects</th>
-                            <th style="padding:10px 14px; text-align:center; color:#555; font-weight:700;">Active Tasks</th>
+                            <th style="padding:10px 14px; text-align:center; color:#555; font-weight:700;">Quick Tasks</th>
                             <th style="padding:10px 14px; text-align:center; color:#555; font-weight:700;">Total</th>
                         </tr>
                     </thead>
@@ -856,23 +911,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === "Enter") viewReport();
     });
 
-    document.getElementById('unlock-pass').addEventListener("keypress", function(event) {
-        if (event.key === "Enter") attemptUnlock();
-    });
-    
     const urlParams = new URLSearchParams(window.location.search);
-    const dailyId = urlParams.get('daily');
-    const reportId = urlParams.get('report');
+    // ?daily= is the retired Daily Briefing URL — old bookmarks fall through to the report view.
+    const reportId = urlParams.get('report') || urlParams.get('daily');
     const isJsonView = urlParams.get('json') === 'true';
 
-    let potentialTargetId = dailyId || reportId;
-    targetId = potentialTargetId ? potentialTargetId.toLowerCase() : null;
-    const isDailyMode = !!dailyId;
+    targetId = reportId ? reportId.toLowerCase() : null;
 
     if (targetId) {
-        document.getElementById('link-weekly').href = "?report=" + encodeURIComponent(targetId);
-        document.getElementById('link-daily').href = "?daily=" + encodeURIComponent(targetId);
-
         db.collection('briefings').doc(targetId).get().then(doc => {
             if (doc.exists) {
                 const data = doc.data();
@@ -881,28 +927,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.title = `JSON Report - ${targetId}`;
                     return; // Stop further rendering
                 }
-                if (isDailyMode) {
-                    document.getElementById('report-title').textContent = "Daily Briefing";
-                    if (data.passcode && data.passcode.trim() !== "") {
-                        pendingData = data;
-                        document.getElementById('loading-overlay').classList.add('hidden');
-                        document.getElementById('lock-screen').classList.remove('hidden');
-                        document.getElementById('report-subtitle').textContent = "Protected";
-                        
-                        setTimeout(() => {
-                            document.getElementById('unlock-pass').focus();
-                        }, 100);
-
-                    } else {
-                        renderReport(data, true);
-                        loadOutlookData(targetId);
-                        setLastGenerated();
-                    }
-                } else {
-                    document.getElementById('report-title').textContent = "Weekly Report";
-                    renderReport(data, false);
-                    setLastGenerated();
-                }
+                renderReport(data);
+                setLastGenerated();
             } else {
                 document.getElementById('loading-overlay').classList.add('hidden');
                 document.getElementById('default-message').classList.remove('hidden');
@@ -1005,10 +1031,6 @@ function exportReportToExcel() {
                 Public_Comments: commentsStr,
                 Daily_Check_History: checkHistoryStr
             };
-
-            if (currentShowPrivate) {
-                row.Private_Comments = stripHtml(item.itComments || "");
-            }
             row.Attachment = attachmentStr;
             return row;
         });
@@ -1099,7 +1121,7 @@ const applyGlobalStyles = (ws) => {
             }
 
             // Column Widths
-            if (["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Private_Comments", "Milestones"].includes(headerVal)) {
+            if (["Notes", "Public_Comments", "Daily_Check_History", "Attachment", "Milestones"].includes(headerVal)) {
                 ws['!cols'][C] = { wch: COLUMN_WIDTH_CHARS };
             }
 
@@ -1136,25 +1158,37 @@ const applyGlobalStyles = (ws) => {
 
         const rows = [
             // Workload summary
-            { Category: 'WORKLOAD SUMMARY', Metric: 'Daily Tasks',    Count: daily.length,    Projects: '',    Active_Tasks: '' },
-            { Category: 'WORKLOAD SUMMARY', Metric: 'Active Projects', Count: projects.length, Projects: '',    Active_Tasks: '' },
-            { Category: 'WORKLOAD SUMMARY', Metric: 'Active Tasks',   Count: active.length,   Projects: '',    Active_Tasks: '' },
-            { Category: '',                 Metric: '',               Count: '',              Projects: '',    Active_Tasks: '' },
+            { Category: 'WORKLOAD SUMMARY', Metric: 'Active Projects', Count: projects.length, Projects: '',    Quick_Tasks: '' },
+            { Category: 'WORKLOAD SUMMARY', Metric: 'Quick Tasks',    Count: active.length,   Projects: '',    Quick_Tasks: '' },
+            { Category: 'WORKLOAD SUMMARY', Metric: 'Daily Tasks',    Count: daily.length,    Projects: '',    Quick_Tasks: '' },
+            { Category: '',                 Metric: '',               Count: '',              Projects: '',    Quick_Tasks: '' },
             // Status breakdown header
-            { Category: 'STATUS BREAKDOWN', Metric: 'Status',         Count: 'Combined Total', Projects: 'Projects', Active_Tasks: 'Active Tasks' }
+            { Category: 'STATUS BREAKDOWN', Metric: 'Status',         Count: 'Combined Total', Projects: 'Projects', Quick_Tasks: 'Quick Tasks' }
         ];
 
         statusOrder.forEach(status => {
             const pCount = projects.filter(i => (i.status || '') === status).length;
             const aCount = active.filter(i   => (i.status || '') === status).length;
             if (pCount + aCount > 0) {
-                rows.push({ Category: '', Metric: status, Count: pCount + aCount, Projects: pCount, Active_Tasks: aCount });
+                rows.push({ Category: '', Metric: status, Count: pCount + aCount, Projects: pCount, Quick_Tasks: aCount });
             }
         });
 
-        rows.push({ Category: '', Metric: '', Count: '', Projects: '', Active_Tasks: '' });
-        rows.push({ Category: 'REPORT INFO', Metric: 'User',     Count: targetId,                    Projects: '', Active_Tasks: '' });
-        rows.push({ Category: 'REPORT INFO', Metric: 'Exported', Count: new Date().toLocaleString(), Projects: '', Active_Tasks: '' });
+        // Project milestone summary (matches the Analytics view's milestone chart)
+        const msStats = getMilestoneStats(projects);
+        if (msStats.total > 0) {
+            rows.push({ Category: '', Metric: '', Count: '', Projects: '', Quick_Tasks: '' });
+            rows.push({ Category: 'PROJECT MILESTONES', Metric: 'Total Milestones', Count: msStats.total, Projects: '', Quick_Tasks: '' });
+            MILESTONE_STATES.forEach(s => {
+                if (msStats.counts[s.key] > 0) {
+                    rows.push({ Category: '', Metric: s.key, Count: msStats.counts[s.key], Projects: '', Quick_Tasks: '' });
+                }
+            });
+        }
+
+        rows.push({ Category: '', Metric: '', Count: '', Projects: '', Quick_Tasks: '' });
+        rows.push({ Category: 'REPORT INFO', Metric: 'User',     Count: targetId,                    Projects: '', Quick_Tasks: '' });
+        rows.push({ Category: 'REPORT INFO', Metric: 'Exported', Count: new Date().toLocaleString(), Projects: '', Quick_Tasks: '' });
 
         return rows;
     })();
@@ -1167,15 +1201,15 @@ const applyGlobalStyles = (ws) => {
         { wch: 28 }, // Metric
         { wch: 16 }, // Count
         { wch: 14 }, // Projects
-        { wch: 14 }  // Active_Tasks
+        { wch: 14 }  // Quick_Tasks
     ];
     XLSX.utils.book_append_sheet(wb, wsAnalytics, 'Analytics Overview');
 
-    // 2. Data Sheets
+    // 2. Data Sheets (same order as the report: Projects, Quick Tasks, Daily Tasks)
     const sheetsToProcess = [
-        { name: "Daily Tasks", data: currentReportData.structuredDailyTasks || currentReportData.dailyTasks },
         { name: "Projects", data: currentReportData.structuredProjects || currentReportData.projects },
-        { name: "Active Tasks", data: currentReportData.structuredActiveTasks || currentReportData.activeTasks }
+        { name: "Quick Tasks", data: currentReportData.structuredActiveTasks || currentReportData.activeTasks },
+        { name: "Daily Tasks", data: currentReportData.structuredDailyTasks || currentReportData.dailyTasks }
     ];
 
     sheetsToProcess.forEach(sheetObj => {
@@ -1186,19 +1220,6 @@ const applyGlobalStyles = (ws) => {
             XLSX.utils.book_append_sheet(wb, ws, sheetObj.name);
         }
     });
-
-    // 3. Outlook
-    if (currentShowPrivate && currentOutlookData) {
-        const outlookRows = [];
-        if(currentOutlookData.meetings) outlookRows.push({ Type: "MEETINGS", Content: stripHtml(currentOutlookData.meetings) });
-        if(currentOutlookData.emails) outlookRows.push({ Type: "EMAILS", Content: stripHtml(currentOutlookData.emails) });
-        
-        if (outlookRows.length > 0) {
-            const wsOutlook = XLSX.utils.json_to_sheet(outlookRows);
-            applyGlobalStyles(wsOutlook);
-            XLSX.utils.book_append_sheet(wb, wsOutlook, "Outlook Data");
-        }
-    }
 
     const dateStr = new Date().toISOString().split('T')[0];
     XLSX.writeFile(wb, `Briefing_${targetId}_${dateStr}.xlsx`);
