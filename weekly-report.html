@@ -663,6 +663,11 @@ function applyReportView(rv){
 
 function saveReportView(){
   if(!REPORTS.length) return;
+  if(CURRENT_TEAM){
+    $("err").textContent = "Save report is unavailable on a team report — team views are saved with \"💾 Save team\" instead.";
+    $("err").style.display = "block";
+    return;
+  }
   const view = {
     sections: Object.assign({}, SECTIONS),
     sort: FILTERS.sort,
@@ -1389,6 +1394,9 @@ function renderUserChips(){
   });
   $("mergeLbl").style.display = REPORTS.length > 1 ? "inline-flex" : "none";
   $("mergeChk").checked = MERGED;
+  /* Save report is for personal views only — a team report's layout comes
+     from the team's saved settings, so the button is hidden there. */
+  $("saveReportBtn").style.display = CURRENT_TEAM ? "none" : "";
   $("usersWrap").style.display = REPORTS.length ? "flex" : "none";
   fillAddUserSel();
 }
