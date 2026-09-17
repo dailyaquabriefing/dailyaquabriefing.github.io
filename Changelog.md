@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.1] - 2026-09-17
+
+### Changed
+- **Status Report: Save report is now personal-only.** The button is enabled only when a **signed-in user is viewing their own single report** (`?report=<their ID>`, matched against the account's linked network ID from `user_prefs`); for everyone else it is disabled with an explanatory tooltip, and direct calls are refused with a visible message. It writes **only the signed-in user's own briefing document** — previously it wrote the current view to every loaded user's document, so a lead curating several users (or any visitor opening someone's report link) could overwrite other people's saved views. Saving a **team** never has and still does not touch individual users' saved report views — team layouts live entirely in the team entry.
+
 ## [1.23.0] - 2026-09-17
 
 ### Added

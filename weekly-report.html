@@ -238,7 +238,7 @@
     <input type="text" id="addUserInput" placeholder="Add user&hellip;" autocomplete="off" aria-label="Add another user to the report">
     <button id="addUserBtn" type="button">+ Add</button>
     <label class="mergelbl" id="mergeLbl" style="display:none"><input type="checkbox" id="mergeChk"> Merge into one report</label>
-    <button id="saveReportBtn" type="button" title="Save the selected sections and projects for this report so it opens the same way next time">&#128190; Save report</button>
+    <button id="saveReportBtn" type="button" disabled title="Sign in and open your own report (?report=<your ID>) to save its view">&#128190; Save report</button>
     <button id="saveTeamBtn" type="button" style="display:none" title="Save the current users as a named team">&#128190; Save team</button>
     <button id="projBtn" type="button" title="Choose which projects appear and set a custom order">&#128194; Projects&hellip;</button>
   </div>
@@ -558,6 +558,7 @@ let CURRENT_TEAM = ""; /* name of the team currently open (prefills Save team) *
    if that is denied, fall back to the caller's own user_prefs network ID. */
 const MANAGE_USERS_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/manageUsers";
 let CAN_MANAGE_TEAMS = false;
+let MY_NETWORK_ID = ""; /* signed-in account's own linked report ID (from user_prefs) */
 
 function setTeamBtnState(){
   const b = $("saveTeamBtn");
@@ -571,7 +572,14 @@ function setTeamBtnState(){
 
 async function computeTeamPerms(user){
   CAN_MANAGE_TEAMS = false;
+  MY_NETWORK_ID = "";
   if(user){
+    /* Own network ID from user_prefs — own-doc reads are allowed for any
+       signed-in account (same read the Dashboard does at login). */
+    try{
+      const doc = await db.collection("user_prefs").doc(user.uid).get();
+      if(doc.exists) MY_NETWORK_ID = (doc.data().reportId || "").toLowerCase();
+    }catch(e){ /* read blocked → no network ID */ }
     try{
       const token = await user.getIdToken();
       const res = await fetch(MANAGE_USERS_URL, {
@@ -583,16 +591,16 @@ async function computeTeamPerms(user){
         const data = await res.json().catch(()=>({}));
         const role = data.callerRole || "";
         const me = (data.users || []).find(u => u.uid === user.uid) || {};
-        const myId = (me.reportId || "").toLowerCase();
-        CAN_MANAGE_TEAMS = role === "admin" || role === "lead" || myId === "ckonkol";
+        if(!MY_NETWORK_ID) MY_NETWORK_ID = (me.reportId || "").toLowerCase();
+        CAN_MANAGE_TEAMS = role === "admin" || role === "lead" || MY_NETWORK_ID === "ckonkol";
       }else{
-        /* not a lead/admin — permitted only if this account's network ID is ckonkol */
-        const doc = await db.collection("user_prefs").doc(user.uid).get();
-        CAN_MANAGE_TEAMS = doc.exists && (doc.data().reportId || "").toLowerCase() === "ckonkol";
+        /* not a lead/admin — team management only for the ckonkol account */
+        CAN_MANAGE_TEAMS = MY_NETWORK_ID === "ckonkol";
       }
-    }catch(e){ /* offline or read blocked by rules → not permitted */ }
+    }catch(e){ /* offline or blocked → not permitted */ }
   }
   setTeamBtnState();
+  setSaveReportBtnState();
 }
 
 try{
@@ -635,9 +643,28 @@ function syncSectionChecks(){
 }
 
 /* ---------- saved report view (per user, stored on their briefing doc) ----------
-   "💾 Save report" lets any viewer keep their selected sections, sort, and
-   Projects-panel choices with the report itself (briefings/<id>.reportView),
-   so the report opens the same way next time on any device. */
+   "💾 Save report" keeps the selected sections, sort, and Projects-panel
+   choices with the report itself (briefings/<id>.reportView). It is only
+   available to a signed-in user viewing THEIR OWN report — it never writes
+   to anyone else's briefing (Save team snapshots a team separately and
+   does not touch individual users' saved views). */
+function canSaveReport(){
+  return !CURRENT_TEAM &&
+         REPORTS.length === 1 &&
+         !!MY_NETWORK_ID &&
+         String(REPORTS[0].info.user || "").toLowerCase() === MY_NETWORK_ID;
+}
+
+function setSaveReportBtnState(){
+  const b = $("saveReportBtn");
+  if(!b) return;
+  const ok = canSaveReport();
+  b.disabled = !ok;
+  b.title = ok
+    ? "Save the selected sections and projects for this report so it opens the same way next time"
+    : "Sign in and open your own report (?report=<your ID>) to save its view";
+}
+
 function applyReportView(rv){
   if(!rv || typeof rv !== "object") return;
   if(rv.sections && typeof rv.sections === "object"){
@@ -668,17 +695,22 @@ function saveReportView(){
     $("err").style.display = "block";
     return;
   }
+  if(!canSaveReport()){
+    $("err").textContent = "Save report only works when you're signed in and viewing your own report (?report=" + (MY_NETWORK_ID || "<your ID>") + "). It never changes other users' saved views.";
+    $("err").style.display = "block";
+    return;
+  }
   const view = {
     sections: Object.assign({}, SECTIONS),
     sort: FILTERS.sort,
     projSel: { order: (PROJSEL.order||[]).slice(), hidden: (PROJSEL.hidden||[]).slice() },
     savedAt: new Date().toISOString()
   };
-  const ids = REPORTS.map(r=>String(r.info.user||"").toLowerCase()).filter(Boolean);
-  Promise.all(ids.map(id=>db.collection("briefings").doc(id).update({ reportView: view }))).then(()=>{
-    REPORTS.forEach(r=>{ r.reportView = view; });
+  /* Writes ONLY the signed-in user's own briefing doc */
+  db.collection("briefings").doc(MY_NETWORK_ID).update({ reportView: view }).then(()=>{
+    REPORTS[0].reportView = view;
     const t = $("toast");
-    t.textContent = "Report view saved" + (ids.length === 1 ? " for " + ids[0] : " for " + ids.length + " users");
+    t.textContent = "Report view saved for " + MY_NETWORK_ID;
     t.classList.add("show");
     setTimeout(()=>t.classList.remove("show"), 1600);
   }).catch(ex=>{
@@ -1394,9 +1426,10 @@ function renderUserChips(){
   });
   $("mergeLbl").style.display = REPORTS.length > 1 ? "inline-flex" : "none";
   $("mergeChk").checked = MERGED;
-  /* Save report is for personal views only — a team report's layout comes
-     from the team's saved settings, so the button is hidden there. */
+  /* Save report is for personal views only — hidden on team reports and
+     enabled only for a signed-in user viewing their own report. */
   $("saveReportBtn").style.display = CURRENT_TEAM ? "none" : "";
+  setSaveReportBtnState();
   $("usersWrap").style.display = REPORTS.length ? "flex" : "none";
   fillAddUserSel();
 }
