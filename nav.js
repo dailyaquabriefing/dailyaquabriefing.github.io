@@ -1,29 +1,28 @@
 // Shared site navigation bar for Daily Aqua Briefing.
 // Include on any page with: <script src="nav.js" defer></script>
 // Remembers the last used report ID (from ?report=, ?daily=, or the admin
-// dashboard) so Briefing / Status Report links stay personalized.
+// dashboard). The remembered ID personalizes the Briefing / Status Report
+// links ONLY while signed in — signed-out visitors get the plain pages.
+// An ID in the current page URL still carries across (active context).
 (function () {
     'use strict';
 
     // --- Figure out the report ID ---
     var params = new URLSearchParams(location.search);
-    var reportId = (params.get('report') || params.get('daily') || '').toLowerCase().trim();
+    var urlId = (params.get('report') || params.get('daily') || '').toLowerCase().trim();
     try {
-        if (reportId) {
-            localStorage.setItem('dab_reportId', reportId);
-        } else {
-            reportId = localStorage.getItem('dab_reportId') || '';
-        }
+        if (urlId) localStorage.setItem('dab_reportId', urlId);
     } catch (e) { /* localStorage blocked; links fall back to generic pages */ }
 
-    var q = reportId ? '?report=' + encodeURIComponent(reportId) : '';
+    function linkQ(id) { return id ? '?report=' + encodeURIComponent(id) : ''; }
+
     var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     if (page === '') page = 'index.html';
 
     var links = [
-        { href: 'index.html' + q, label: '🏠 Briefing', match: 'index.html' },
+        { href: 'index.html' + linkQ(urlId), label: '🏠 Briefing', match: 'index.html', idBase: 'index.html' },
         { href: 'admin.html', label: 'Dashboard', match: 'admin.html' },
-        { href: 'weekly-report.html' + q, label: 'Status Report', match: 'weekly-report.html' },
+        { href: 'weekly-report.html' + linkQ(urlId), label: 'Status Report', match: 'weekly-report.html', idBase: 'weekly-report.html' },
         { href: 'howtouse.html', label: 'Help', match: 'howtouse.html' },
         { href: 'users.html', label: 'Admin', match: 'users.html' }
     ];
@@ -64,11 +63,13 @@
     brand.appendChild(document.createTextNode('Aqua Daily Briefing'));
     nav.appendChild(brand);
 
+    var idAnchors = [];
     links.forEach(function (l) {
         var a = document.createElement('a');
         a.className = 'dab-link' + (page === l.match ? ' dab-active' : '');
         a.href = l.href;
         a.textContent = l.label;
+        if (l.idBase) idAnchors.push({ a: a, base: l.idBase });
         nav.appendChild(a);
     });
 
@@ -81,6 +82,15 @@
     try {
         if (window.firebase && firebase.apps && firebase.apps.length && firebase.auth) {
             firebase.auth().onAuthStateChanged(function (user) {
+                // Briefing / Status Report links: the remembered ID is used
+                // only while signed in; signed out falls back to the URL's
+                // ID (if any) or the plain page.
+                var id = urlId;
+                if (user && !id) {
+                    try { id = localStorage.getItem('dab_reportId') || ''; } catch (e) {}
+                }
+                idAnchors.forEach(function (x) { x.a.href = x.base + linkQ(id); });
+
                 var existing = document.getElementById('dab-user');
                 if (existing) existing.remove();
                 if (!user) return;
