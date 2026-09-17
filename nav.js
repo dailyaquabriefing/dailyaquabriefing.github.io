@@ -79,17 +79,36 @@
     // Shown only on pages that load Firebase Auth (nav.js is deferred, so the
     // page's Firebase scripts have already run) and only while signed in.
     // This is the single place username/logout live — pages don't add their own.
+    function applyLinkId(id) {
+        idAnchors.forEach(function (x) { x.a.href = x.base + linkQ(id); });
+    }
+
     try {
         if (window.firebase && firebase.apps && firebase.apps.length && firebase.auth) {
             firebase.auth().onAuthStateChanged(function (user) {
-                // Briefing / Status Report links: the remembered ID is used
-                // only while signed in; signed out falls back to the URL's
-                // ID (if any) or the plain page.
+                // Briefing / Status Report links: while signed in they point
+                // at the account's OWN report — the linked network ID from
+                // user_prefs (falling back to the remembered ID until that
+                // read resolves, or on pages without Firestore). Signed out
+                // falls back to the URL's ID (if any) or the plain pages.
                 var id = urlId;
                 if (user && !id) {
                     try { id = localStorage.getItem('dab_reportId') || ''; } catch (e) {}
                 }
-                idAnchors.forEach(function (x) { x.a.href = x.base + linkQ(id); });
+                applyLinkId(id);
+                if (user) {
+                    try {
+                        if (firebase.firestore) {
+                            firebase.firestore().collection('user_prefs').doc(user.uid).get().then(function (doc) {
+                                var own = doc && doc.exists ? String(doc.data().reportId || '').toLowerCase() : '';
+                                if (own) {
+                                    applyLinkId(own);
+                                    try { localStorage.setItem('dab_reportId', own); } catch (e) {}
+                                }
+                            }).catch(function () { /* keep the fallback links */ });
+                        }
+                    } catch (e) { /* no Firestore on this page */ }
+                }
 
                 var existing = document.getElementById('dab-user');
                 if (existing) existing.remove();

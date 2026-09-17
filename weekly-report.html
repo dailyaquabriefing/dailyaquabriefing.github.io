@@ -561,6 +561,16 @@ let CURRENT_TEAM = ""; /* name of the team currently open (prefills Save team) *
 const MANAGE_USERS_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/manageUsers";
 let CAN_MANAGE_TEAMS = false;
 let MY_NETWORK_ID = ""; /* signed-in account's own linked report ID (from user_prefs) */
+let URL_AUTOLOAD = false; /* true when ?report/?user/?team drove the initial load */
+
+/* Signed-in user opened the plain page (no ?report/?team, nothing loaded):
+   open their own report automatically, like the Briefing page link does. */
+function autoLoadOwnReport(){
+  if(URL_AUTOLOAD || REPORTS.length || !MY_NETWORK_ID) return;
+  $("liveUser").value = MY_NETWORK_ID;
+  try{ history.replaceState(null, "", "weekly-report.html?report=" + encodeURIComponent(MY_NETWORK_ID)); }catch(e){}
+  loadLive(MY_NETWORK_ID);
+}
 
 function setTeamBtnState(){
   const b = $("saveTeamBtn");
@@ -609,6 +619,7 @@ async function computeTeamPerms(user){
   }
   setTeamBtnState();
   setSaveReportBtnState();
+  autoLoadOwnReport();
 }
 
 try{
@@ -1688,12 +1699,15 @@ loadTeams();
   const urlUser = params.get("report") || params.get("user");
   const urlTeam = params.get("team");
   if(urlTeam){
+    URL_AUTOLOAD = true;
     loadTeamByName(urlTeam);
   } else if(urlUser){
+    URL_AUTOLOAD = true;
     $("liveUser").value = urlUser;
     loadLive(urlUser);
   } else {
     $("liveUser").value = localStorage.getItem("weeklyReportUser") || "";
+    autoLoadOwnReport(); /* in case sign-in resolved before this block ran */
   }
 }
 

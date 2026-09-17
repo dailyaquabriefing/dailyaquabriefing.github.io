@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.3] - 2026-09-17
+
+### Fixed
+- **Signed-in users landing on the Status Report connect screen instead of their report.** Two fixes: (1) the nav bar's Briefing / Status Report links now resolve the signed-in account's **own linked Network ID from `user_prefs`** (previously they relied on a locally remembered ID that was empty until the user had opened the Dashboard or a report URL — and could even hold someone else's ID from the last viewed report); the resolved ID also repairs the remembered value. (2) Opening `weekly-report.html` with no `?report`/`?team` while signed in now **auto-loads your own report** (and puts `?report=<your ID>` in the address bar), instead of showing "Build your weekly report". Signed-out behavior is unchanged.
+
 ## [1.23.2] - 2026-09-17
 
 ### Added
