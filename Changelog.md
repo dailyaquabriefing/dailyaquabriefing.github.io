@@ -20,10 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Admin page sign-in prompt reworded to "Sign in with your admin account" (dropped "(IT only)").
 - Dashboard header: the **View My Briefing** and **Logout** buttons are removed — the shared nav bar's personalized **Briefing** link replaces the former.
 - **Username and Logout now live only in the shared navigation bar** (`nav.js`): when signed in, the bar shows the account email and a Logout link on every page that loads Firebase Auth (Dashboard, Admin, Briefing). The User Management header's own email/Logout were removed — the nav bar is the single sign-out spot site-wide.
+- **Status Report: saving teams now requires permission.** The "💾 Save team" button (create/update) only works for signed-in department leads/admins or the ckonkol account — the same rule the Admin page's Saved Teams panel enforces for removal. The button stays disabled (with an explanatory tooltip) for everyone else; the role check reuses the `manageUsers` list call, falling back to the caller's own `user_prefs` network ID. The Status Report page now loads Firebase Auth, so the shared session from the Dashboard/Admin pages applies and the nav bar shows the signed-in account there too. (Note: this is page-level enforcement — making it tamper-proof needs a Firestore-rules change in the Firebase project.)
 
 ### Removed
 - **Daily Briefing mode retired** (no longer used): the `?daily=` passcode-locked view, lock screen, Meetings/Emails sections, and Outlook sync loader are gone from the viewer. Old `?daily=ID` bookmarks now open the regular report view for that ID.
 - With it went the **Daily Briefing Passcode** setting and the **Private Comments** editor on the Dashboard (nothing could display them anymore). Existing passcodes and private notes remain untouched in Firestore — they're just no longer shown or edited. The Excel export no longer has a Private Comments column or Outlook Data sheet.
+
+### Fixed
+- Status Report header showed the date twice ("Sep 17, 2026" above "Live data as of Sep 17, 2026"). The bare date now only appears when it differs from the data line's date — live reports show a single "Live data as of …" line. Same fix applied to the Save PDF header.
 
 ## [1.22.10] - 2026-09-16
 

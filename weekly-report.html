@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 <style>
   :root{
@@ -545,6 +546,54 @@ function fillAddUserSel(){
 let TEAMS = [];
 let CURRENT_TEAM = ""; /* name of the team currently open (prefills Save team) */
 
+/* ---------- team management permissions ----------
+   Only signed-in department leads/admins, or the account whose network ID
+   is ckonkol, may create, update, or delete saved teams. Sign-in happens on
+   the Dashboard or Admin page; the Firebase session is shared site-wide.
+   Role comes from the manageUsers "list" call (same source users.html uses);
+   if that is denied, fall back to the caller's own user_prefs network ID. */
+const MANAGE_USERS_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/manageUsers";
+let CAN_MANAGE_TEAMS = false;
+
+function setTeamBtnState(){
+  const b = $("saveTeamBtn");
+  if(!b) return;
+  b.disabled = !CAN_MANAGE_TEAMS;
+  b.title = CAN_MANAGE_TEAMS
+    ? "Save the current users as a named team"
+    : "Saving teams requires signing in on the Dashboard or Admin page with a lead/admin account (or as ckonkol)";
+}
+
+async function computeTeamPerms(user){
+  CAN_MANAGE_TEAMS = false;
+  if(user){
+    try{
+      const token = await user.getIdToken();
+      const res = await fetch(MANAGE_USERS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ action: "list" })
+      });
+      if(res.ok){
+        const data = await res.json().catch(()=>({}));
+        const role = data.callerRole || "";
+        const me = (data.users || []).find(u => u.uid === user.uid) || {};
+        const myId = (me.reportId || "").toLowerCase();
+        CAN_MANAGE_TEAMS = role === "admin" || role === "lead" || myId === "ckonkol";
+      }else{
+        /* not a lead/admin — permitted only if this account's network ID is ckonkol */
+        const doc = await db.collection("user_prefs").doc(user.uid).get();
+        CAN_MANAGE_TEAMS = doc.exists && (doc.data().reportId || "").toLowerCase() === "ckonkol";
+      }
+    }catch(e){ /* offline or read blocked by rules → not permitted */ }
+  }
+  setTeamBtnState();
+}
+
+try{
+  firebase.auth().onAuthStateChanged(u => { computeTeamPerms(u); });
+}catch(e){ /* auth unavailable → button stays disabled */ }
+
 /* Open a saved team: apply its members, merge setting, and section toggles */
 function applyTeam(t){
   CURRENT_TEAM = t.name || "";
@@ -608,6 +657,11 @@ function renderTeamChips(){
 }
 
 function saveTeam(){
+  if(!CAN_MANAGE_TEAMS){
+    $("err").textContent = "Saving teams requires signing in with a lead/admin account (or as ckonkol). Sign in on the Dashboard or Admin page, then reload this page.";
+    $("err").style.display = "block";
+    return;
+  }
   if(!REPORTS.length) return;
   /* Prefill with the open team's name so re-saving updates it in place.
      Also snapshot the merge setting and section toggles with the team. */
@@ -998,11 +1052,16 @@ function buildUserReport(data){
   const staleNote = (staleDays !== null && staleDays > 7)
     ? `<br><span style="color:#b02a2a;font-weight:bold">&#9888; Last updated ${staleDays} days ago</span>` : "";
 
+  /* Right-hand date block: the bare date is skipped when the data line
+     already shows the same date (live data always does — no duplicate). */
+  const exportedLine = expDate ? (info.source==="live" ? "Live data as of " : "Data exported ") + fmtDate(expDate) : "";
+  const bareDate = (!exportedLine || fmtDate(expDate) !== fmtDate(now)) ? fmtDate(now) : "";
+
   let h = "";
 
   h += `<div class="doc-title">
     <span><img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems" class="doc-logo"><b>Weekly Status Report</b><br>${esc(info.displayName || info.user || "report")}${info.department ? " &middot; " + esc(info.department) : ""}${info.merged ? "" : " &middot; Aqua-Aerobic Systems, Inc."}</span>
-    <span style="text-align:right">${esc(fmtDate(now))}<br>${info.exported ? (info.source==="live" ? "Live data as of " : "Data exported ")+esc(fmtDate(info.exported)) : ""}${staleNote}</span>
+    <span style="text-align:right">${esc(bareDate)}${bareDate && exportedLine ? "<br>" : ""}${esc(exportedLine)}${staleNote}</span>
   </div>`;
 
   if(anyFilter){
@@ -1415,6 +1474,7 @@ $("addUserSel").addEventListener("change", ()=>{
   if(v) loadLive(v, true);
 });
 $("saveTeamBtn").addEventListener("click", saveTeam);
+setTeamBtnState(); /* disabled until sign-in + role check pass */
 $("projBtn").addEventListener("click", ()=>{
   const p = $("projPanel");
   p.style.display = p.style.display === "none" ? "block" : "none";
@@ -1583,7 +1643,9 @@ function saveAsPdf(){
   pdf.setTextColor(26,26,26); pdf.setFont("helvetica","bold"); pdf.setFontSize(15);
   pdf.text("Weekly Status Report", M, y+12);
   pdf.setFont("helvetica","normal"); pdf.setFontSize(9); pdf.setTextColor(MUTED[0],MUTED[1],MUTED[2]);
-  pdf.text(fmtDate(new Date()), pageW-M, y+12, {align:"right"});
+  /* Skip the bare date when the data line below already shows the same date */
+  const bareDate = fmtDate(new Date());
+  if(!m.exportedLine || !m.exportedLine.endsWith(bareDate)) pdf.text(bareDate, pageW-M, y+12, {align:"right"});
   y += 20;
   pdf.text((m.info.displayName || m.info.user || "report") + (m.info.department ? " \u00b7 " + m.info.department : "") + (m.info.merged ? "" : " \u00b7 Aqua-Aerobic Systems, Inc."), M, y+9);
   if(m.exportedLine) pdf.text(m.exportedLine, pageW-M, y+9, {align:"right"});
