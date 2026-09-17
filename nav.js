@@ -85,9 +85,11 @@
                 wrap.id = 'dab-user';
                 wrap.className = 'dab-user';
 
+                // Show just the user ID (email with the @domain stripped);
+                // the full email stays available as the tooltip.
                 var email = document.createElement('span');
                 email.className = 'dab-email';
-                email.textContent = user.email || '';
+                email.textContent = (user.email || '').split('@')[0];
                 email.title = user.email || '';
                 wrap.appendChild(email);
 

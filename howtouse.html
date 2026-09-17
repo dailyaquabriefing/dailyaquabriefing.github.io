@@ -80,6 +80,17 @@
             margin: 0 2px;
         }
     </style>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+<script>
+    // Firebase Auth only — lets the shared nav bar (nav.js) show the
+    // signed-in user ID + Logout on this page like everywhere else.
+    firebase.initializeApp({
+        apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+        authDomain: "dailybriefing-fe7df.firebaseapp.com",
+        projectId: "dailybriefing-fe7df"
+    });
+</script>
 <script src="nav.js" defer></script>
 </head>
 <body>
