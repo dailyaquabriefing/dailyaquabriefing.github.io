@@ -63,14 +63,6 @@
             gap: 10px;
         }
         header h1 { margin: 0; font-size: 1.2rem; }
-        .logout-btn {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
         .content { padding: 20px; }
 
         /* Forms & buttons */
@@ -189,10 +181,6 @@
     <div id="app-container">
         <header>
             <h1>Daily Briefing — User Management</h1>
-            <div>
-                <span id="admin-email" style="margin-right:10px; font-size:0.85rem;"></span>
-                <button class="logout-btn" onclick="logout()">Logout</button>
-            </div>
         </header>
         <div class="content">
             <div id="status-msg"></div>
@@ -292,7 +280,6 @@
             if (user) {
                 document.getElementById('login-container').style.display = 'none';
                 document.getElementById('app-container').style.display = 'block';
-                document.getElementById('admin-email').textContent = user.email;
                 loadUsers();
                 loadTeams();
             } else {
@@ -319,8 +306,6 @@
         document.getElementById('login-password').addEventListener('keydown', e => {
             if (e.key === 'Enter') loginWithEmail();
         });
-
-        function logout() { auth.signOut(); }
 
         // --- API helper ---
         async function api(payload) {

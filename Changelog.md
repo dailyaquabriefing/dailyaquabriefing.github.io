@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Navigation bar: the **Users (IT)** link is renamed **Admin** (still opens `users.html`).
 - Admin page sign-in prompt reworded to "Sign in with your admin account" (dropped "(IT only)").
 - Dashboard header: the **View My Briefing** and **Logout** buttons are removed — the shared nav bar's personalized **Briefing** link replaces the former.
+- **Username and Logout now live only in the shared navigation bar** (`nav.js`): when signed in, the bar shows the account email and a Logout link on every page that loads Firebase Auth (Dashboard, Admin, Briefing). The User Management header's own email/Logout were removed — the nav bar is the single sign-out spot site-wide.
 
 ### Removed
 - **Daily Briefing mode retired** (no longer used): the `?daily=` passcode-locked view, lock screen, Meetings/Emails sections, and Outlook sync loader are gone from the viewer. Old `?daily=ID` bookmarks now open the regular report view for that ID.
