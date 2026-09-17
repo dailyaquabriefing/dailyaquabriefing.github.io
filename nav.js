@@ -31,7 +31,11 @@
     // --- Styles (namespaced so they never clash with page CSS) ---
     var style = document.createElement('style');
     style.textContent =
-        '#dab-nav{background:#005a9e;max-width:1100px;margin:0 auto 20px auto;padding:8px 14px;' +
+        // Fixed 1100px width (like the Admin page) on every page: the bar
+        // centers itself on the viewport, escaping width-constrained bodies
+        // (Briefing 900px, Help 800px) via left:50% + translateX(-50%).
+        '#dab-nav{background:#005a9e;width:min(1100px,calc(100vw - 40px));position:relative;left:50%;' +
+        'transform:translateX(-50%);margin:0 0 20px 0;padding:8px 14px;' +
         'border-radius:8px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;box-sizing:border-box;' +
         "font-family:'Segoe UI',system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.12);}" +
         '#dab-nav .dab-brand{color:#fff;font-weight:700;font-size:0.95rem;text-decoration:none;margin-right:auto;padding:6px 8px;display:inline-flex;align-items:center;gap:8px;}' +
