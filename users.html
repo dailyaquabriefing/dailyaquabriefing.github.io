@@ -103,6 +103,11 @@
         }
         .btn-small:hover { background: #eef4fb; }
         .btn-danger-outline { color: var(--danger); border-color: var(--danger); }
+        .btn:disabled, .btn-small:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .btn-small:disabled:hover { background: #f9f9f9; }
 
         /* Add-user panel */
         .add-panel {
@@ -172,7 +177,7 @@
     <div id="login-container">
         <div class="login-box">
             <h2>User Management</h2>
-            <p class="muted">Sign in with your admin account (IT only).</p>
+            <p class="muted">Sign in with your admin account</p>
             <input type="email" id="login-email" class="w-full" placeholder="name@aqua-aerobic.com">
             <input type="password" id="login-password" class="w-full" placeholder="Password">
             <p id="login-error" style="color: var(--danger); font-size: 0.9rem; display: none;"></p>
@@ -236,11 +241,34 @@
                 </table>
             </div>
             <p class="muted">"Network ID" is filled in after the user's first login to the dashboard, when they link their Aqua Network ID.</p>
+
+            <!-- Saved Teams (briefings/_teams, created on the Status Report page) -->
+            <h2 style="font-size:1rem; margin-top:32px;">Saved Teams <button class="btn-small" onclick="loadTeams()">Refresh</button></h2>
+            <p class="muted">Teams saved from the Status Report page ("💾 Save team"). Removing a team only deletes the saved grouping — no user accounts or briefing data are touched.</p>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Members</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teams-body">
+                        <tr><td colspan="3" class="muted">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-primary" id="teams-save-btn" onclick="saveTeams()" disabled>Save Changes</button>
+                <span id="teams-perm-note" class="muted"></span>
+            </div>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -250,6 +278,7 @@
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const db = firebase.firestore();
 
         const FUNCTION_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/manageUsers";
         let currentUser = null;
@@ -259,11 +288,13 @@
         // --- Auth ---
         auth.onAuthStateChanged(user => {
             currentUser = user;
+            updateTeamPerms();
             if (user) {
                 document.getElementById('login-container').style.display = 'none';
                 document.getElementById('app-container').style.display = 'block';
                 document.getElementById('admin-email').textContent = user.email;
                 loadUsers();
+                loadTeams();
             } else {
                 document.getElementById('login-container').style.display = 'flex';
                 document.getElementById('app-container').style.display = 'none';
@@ -323,8 +354,10 @@
                 callerRole = data.callerRole || "";
                 renderUsers(data.users || []);
             } catch (e) {
+                callerRole = "";
                 body.innerHTML = '<tr><td colspan="8" style="color:var(--danger);">' + esc(e.message) + '</td></tr>';
             }
+            updateTeamPerms();
         }
 
         function renderUsers(users) {
@@ -489,6 +522,84 @@
                 loadUsers();
             } catch (e) {
                 showMsg('Delete failed: ' + e.message, true);
+            }
+        }
+
+        // --- Saved Teams (briefings/_teams) ---
+        // View is open to any signed-in user; Save/Remove only work for
+        // department leads, admins, or the ckonkol account.
+        let teams = [];
+        let teamsLoaded = false;
+        let teamsDirty = false;
+        let canManageTeams = false;
+
+        function updateTeamPerms() {
+            const me = currentUser ? (usersByUid[currentUser.uid] || {}) : {};
+            const myNetworkId = (me.reportId || '').toLowerCase();
+            canManageTeams = !!currentUser &&
+                (callerRole === 'admin' || callerRole === 'lead' || myNetworkId === 'ckonkol');
+            renderTeams();
+        }
+
+        async function loadTeams() {
+            const body = document.getElementById('teams-body');
+            body.innerHTML = '<tr><td colspan="3" class="muted">Loading…</td></tr>';
+            teamsDirty = false;
+            try {
+                const doc = await db.collection('briefings').doc('_teams').get();
+                teams = doc.exists ? (doc.data().teams || []) : [];
+                teamsLoaded = true;
+                renderTeams();
+            } catch (e) {
+                teamsLoaded = false;
+                body.innerHTML = '<tr><td colspan="3" style="color:var(--danger);">' + esc(e.message) + '</td></tr>';
+            }
+        }
+
+        function renderTeams() {
+            const body = document.getElementById('teams-body');
+            const saveBtn = document.getElementById('teams-save-btn');
+            const note = document.getElementById('teams-perm-note');
+            if (!body || !teamsLoaded) return;
+
+            if (!teams.length) {
+                body.innerHTML = '<tr><td colspan="3" class="muted">No saved teams' + (teamsDirty ? ' (all removed — click Save Changes to apply)' : '') + '.</td></tr>';
+            } else {
+                body.innerHTML = teams.map(function (t, i) {
+                    const ids = t.ids || [];
+                    return '<tr>' +
+                        '<td><b>' + esc(t.name || '(unnamed)') + '</b></td>' +
+                        '<td>' + ids.length + (ids.length ? ' — ' + esc(ids.join(', ')) : '') + '</td>' +
+                        '<td><button class="btn-small btn-danger-outline" onclick="removeTeam(' + i + ')"' + (canManageTeams ? '' : ' disabled') + '>Remove</button></td>' +
+                        '</tr>';
+                }).join('');
+            }
+
+            saveBtn.disabled = !(canManageTeams && teamsDirty);
+            note.textContent = !canManageTeams
+                ? 'Removing teams or saving changes requires a lead/admin role (or the ckonkol account).'
+                : (teamsDirty ? 'Unsaved changes — click Save Changes to apply.' : '');
+        }
+
+        function removeTeam(i) {
+            if (!canManageTeams) { showMsg('You need a lead/admin role (or the ckonkol account) to remove teams.', true); return; }
+            const t = teams[i] || {};
+            if (!confirm('Remove saved team "' + (t.name || '(unnamed)') + '"?\n\nThis only deletes the saved grouping — no user accounts or briefing data are touched. Click "Save Changes" afterwards to apply.')) return;
+            teams.splice(i, 1);
+            teamsDirty = true;
+            renderTeams();
+        }
+
+        async function saveTeams() {
+            if (!canManageTeams) { showMsg('You need a lead/admin role (or the ckonkol account) to save team changes.', true); return; }
+            if (!teamsDirty) return;
+            try {
+                await db.collection('briefings').doc('_teams').update({ teams: teams });
+                teamsDirty = false;
+                renderTeams();
+                showMsg('Saved teams updated.', false);
+            } catch (e) {
+                showMsg('Team save failed: ' + e.message, true);
             }
         }
 

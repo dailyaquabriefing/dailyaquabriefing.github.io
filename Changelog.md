@@ -10,12 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Analytics: Project Milestones.** A fourth chart card shows every project milestone by state — Completed, In Progress, Overdue, On-Hold, Roadblock, Not Started — with counts in the legend. Below the charts, a new **Milestone Progress by Project** table lists each project's progress bar (e.g. 2/5 complete), its next milestone and Est/Act date, and red flags for Overdue / Roadblock / On-Hold milestones. The Excel export's Analytics Overview sheet gained a matching **PROJECT MILESTONES** summary section.
 - **Expand All / Collapse All** links in the briefing action bar, so a whole report can be opened or closed with one click. Active Projects now starts expanded (it's the section people come for); Quick Tasks and Daily Tasks start collapsed.
+- **Admin page: Saved Teams panel.** Lists every team saved from the Status Report page with its members, and lets **department leads, admins, or the ckonkol account** remove teams (staged removals commit via a **Save Changes** button). For anyone else the Remove buttons and Save Changes stay disabled with a note explaining why. Removing a team only deletes the saved grouping — no user accounts or briefing data are touched.
 
 ### Changed
 - **Sections reordered and renamed.** The briefing now reads **Active Projects → Quick Tasks → Daily Tasks** (Quick Tasks is the new name for Active Tasks — the underlying data is unchanged). The Dashboard tabs, Excel export sheets ("Quick Tasks", ordered Projects/Quick Tasks/Daily Tasks), Analytics charts and tables, the Status Report section labels, and the Help page all follow the new names and order. The Status Report's offline `.xlsx` import accepts both the new "Quick Tasks" sheet name and the old "Active Tasks" name.
 - The briefing page title is now simply **Aqua Briefing** (was "Daily Briefing" / "Weekly Report" depending on mode).
 - Dashboard opens on the **Active Projects** tab (was Daily Tasks), and the stray `<<div` typo in the tab markup was fixed.
 - Navigation bar: the **Users (IT)** link is renamed **Admin** (still opens `users.html`).
+- Admin page sign-in prompt reworded to "Sign in with your admin account" (dropped "(IT only)").
+- Dashboard header: the **View My Briefing** and **Logout** buttons are removed — the shared nav bar's personalized **Briefing** link replaces the former.
 
 ### Removed
 - **Daily Briefing mode retired** (no longer used): the `?daily=` passcode-locked view, lock screen, Meetings/Emails sections, and Outlook sync loader are gone from the viewer. Old `?daily=ID` bookmarks now open the regular report view for that ID.

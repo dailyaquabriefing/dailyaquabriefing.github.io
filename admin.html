@@ -62,14 +62,6 @@
             align-items: center;
         }
         header h1 { margin: 0; font-size: 1.2rem; }
-        .logout-btn {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
 
         /* Tabs */
         .tabs {
@@ -357,10 +349,6 @@
             <div>
                 <h1>Dashboard</h1>
                 <small id="current-report-id" style="font-weight:bold; color:rgba(255,255,255,0.8); display:block;">...</small>
-            </div>
-            <div style="display:flex; gap:10px; align-items:center;">
-                <a id="view-briefing-link" href="#" target="_blank" class="logout-btn" style="text-decoration:none; display:none;">View My Briefing</a>
-                <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
         </header>
 
@@ -724,10 +712,8 @@
         function initializeDashboard() {
             document.getElementById('app-container').style.display = 'block';
             document.getElementById('current-report-id').textContent = "Managing: " + managedReportId;
-            const viewLink = document.getElementById('view-briefing-link');
-            viewLink.href = "index.html?report=" + encodeURIComponent(managedReportId);
-            viewLink.style.display = 'inline-block';
-            // Let the shared nav bar (nav.js) personalize its links too.
+            // Let the shared nav bar (nav.js) personalize its links too —
+            // "Briefing" in the nav opens this user's report.
             try { localStorage.setItem('dab_reportId', managedReportId); } catch (e) {}
             document.getElementById('settings-report-id-display').value = managedReportId; 
             loadData();
@@ -748,8 +734,6 @@
                 errEl.style.display = 'block';
             });
         }
-
-        function logout() { auth.signOut(); }
 
         // --- DATA OPERATIONS ---
         let briefingDocCreated = false; // guard so the empty skeleton is only written once
