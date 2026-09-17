@@ -33,6 +33,7 @@
   .toolbar h1 small{display:block;font-size:11px;font-weight:normal;opacity:.85;margin-top:2px}
   .toolbar button, .toolbar label.btn{background:#fff;color:var(--bar-dark);border:none;border-radius:4px;padding:8px 14px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit}
   .toolbar button:disabled{opacity:.45;cursor:default}
+  .toolbar select#teamSel{background:#fff;color:var(--bar-dark);border:none;border-radius:4px;padding:8px 10px;font-size:13px;font-weight:bold;cursor:pointer;font-family:inherit}
   .toolbar button:focus-visible, .toolbar label.btn:focus-within{outline:3px solid #ffd268;outline-offset:2px}
   .toolbar input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
   /* Collapsible options area (filters / users / sections) — collapsed by default */
@@ -200,6 +201,7 @@
   <button id="printBtn" disabled>Save PDF</button>
   <button id="fullBtn" type="button" title="Toggle full-width report">&#x26F6; Full width</button>
   <button id="fsBtn" type="button" disabled title="Show the report full screen (press Esc to exit)">&#x2922; Full screen</button>
+  <select id="teamSel" style="display:none" aria-label="Open a saved team report" title="Open a saved team report"></select>
   <button id="optsBtn" type="button" title="Show filters, users, and section toggles">&#9881; Options &#9660;</button>
   <div class="toolbar-controls" id="toolbarControls">
   <div class="filters" id="filterWrap" style="display:none">
@@ -238,7 +240,7 @@
     <input type="text" id="addUserInput" placeholder="Add user&hellip;" autocomplete="off" aria-label="Add another user to the report">
     <button id="addUserBtn" type="button">+ Add</button>
     <label class="mergelbl" id="mergeLbl" style="display:none"><input type="checkbox" id="mergeChk"> Merge into one report</label>
-    <button id="saveReportBtn" type="button" disabled title="Sign in and open your own report (?report=<your ID>) to save its view">&#128190; Save report</button>
+    <button id="saveReportBtn" type="button" disabled title="Sign in and open your own report (?report=<your ID>) to save its view">&#128190; Save Personal Report</button>
     <button id="saveTeamBtn" type="button" style="display:none" title="Save the current users as a named team">&#128190; Save team</button>
     <button id="projBtn" type="button" title="Choose which projects appear and set a custom order">&#128194; Projects&hellip;</button>
   </div>
@@ -564,9 +566,15 @@ function setTeamBtnState(){
   const b = $("saveTeamBtn");
   if(!b) return;
   /* Team and add-user management is hidden entirely for non-managers —
-     they keep the viewing tools plus "Save report" for their own view. */
+     they keep the viewing tools plus "Save Personal Report" for their own view. */
   b.style.display = CAN_MANAGE_TEAMS ? "" : "none";
   b.disabled = !CAN_MANAGE_TEAMS;
+  /* With a team open the button updates it ("Save team"); on a personal or
+     ad-hoc view, saving makes a new team ("Create Team"). */
+  b.innerHTML = CURRENT_TEAM ? "&#128190; Save team" : "&#128190; Create Team";
+  b.title = CURRENT_TEAM
+    ? "Save changes to the open team (\"" + CURRENT_TEAM + "\")"
+    : "Save the current users as a new named team";
   fillAddUserSel();
 }
 
@@ -691,12 +699,12 @@ function applyReportView(rv){
 function saveReportView(){
   if(!REPORTS.length) return;
   if(CURRENT_TEAM){
-    $("err").textContent = "Save report is unavailable on a team report — team views are saved with \"💾 Save team\" instead.";
+    $("err").textContent = "Save Personal Report is unavailable on a team report — team views are saved with \"💾 Save team\" instead.";
     $("err").style.display = "block";
     return;
   }
   if(!canSaveReport()){
-    $("err").textContent = "Save report only works when you're signed in and viewing your own report (?report=" + (MY_NETWORK_ID || "<your ID>") + "). It never changes other users' saved views.";
+    $("err").textContent = "Save Personal Report only works when you're signed in and viewing your own report (?report=" + (MY_NETWORK_ID || "<your ID>") + "). It never changes other users' saved views.";
     $("err").style.display = "block";
     return;
   }
@@ -723,8 +731,29 @@ function loadTeams(){
   return db.collection("briefings").doc("_teams").get().then(doc=>{
     TEAMS = doc.exists ? (doc.data().teams || []) : [];
     renderTeamChips();
+    fillTeamSel();
     return TEAMS;
   }).catch(()=>{ TEAMS = []; return TEAMS; });
+}
+
+/* Toolbar team dropdown — available to ALL users. Selecting a team
+   navigates to ?team=<name>, which loads it with its saved settings. */
+function fillTeamSel(){
+  const sel = $("teamSel");
+  if(!sel) return;
+  if(!TEAMS.length){ sel.style.display = "none"; return; }
+  sel.innerHTML = "";
+  const ph = document.createElement("option");
+  ph.value = ""; ph.textContent = "👥 Teams…";
+  sel.appendChild(ph);
+  for(const t of TEAMS){
+    const o = document.createElement("option");
+    o.value = t.name || "";
+    o.textContent = "👥 " + (t.name || "team") + " (" + (t.ids||[]).length + ")";
+    sel.appendChild(o);
+  }
+  sel.value = CURRENT_TEAM && TEAMS.some(t=>(t.name||"")===CURRENT_TEAM) ? CURRENT_TEAM : "";
+  sel.style.display = "";
 }
 
 function renderTeamChips(){
@@ -1426,12 +1455,13 @@ function renderUserChips(){
   });
   $("mergeLbl").style.display = REPORTS.length > 1 ? "inline-flex" : "none";
   $("mergeChk").checked = MERGED;
-  /* Save report is for personal views only — hidden on team reports and
-     enabled only for a signed-in user viewing their own report. */
+  /* Save Personal Report is for personal views only — hidden on team reports
+     and enabled only for a signed-in user viewing their own report. */
   $("saveReportBtn").style.display = CURRENT_TEAM ? "none" : "";
   setSaveReportBtnState();
   $("usersWrap").style.display = REPORTS.length ? "flex" : "none";
-  fillAddUserSel();
+  setTeamBtnState(); /* also refreshes the Create Team / Save team label */
+  fillTeamSel();     /* keep the toolbar team dropdown in sync with the open team */
 }
 
 function moveUser(i, dir){
@@ -1574,6 +1604,10 @@ $("addUserSel").addEventListener("change", ()=>{
 });
 $("saveTeamBtn").addEventListener("click", saveTeam);
 $("saveReportBtn").addEventListener("click", saveReportView);
+$("teamSel").addEventListener("change", ()=>{
+  const v = $("teamSel").value;
+  if(v) location.href = "weekly-report.html?team=" + encodeURIComponent(v);
+});
 setTeamBtnState(); /* team + add-user controls stay hidden until sign-in + role check pass */
 $("projBtn").addEventListener("click", ()=>{
   const p = $("projPanel");

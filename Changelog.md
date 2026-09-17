@@ -5,6 +5,15 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.2] - 2026-09-17
+
+### Added
+- **Status Report: 👥 Teams… dropdown in the top toolbar, for all users.** Lists every saved team; selecting one navigates to `weekly-report.html?team=<name>` and loads it with its saved settings. Works from the connect screen or while viewing any report, and shows the currently open team as selected.
+
+### Changed
+- **"Save report" renamed "Save Personal Report"** (button, tooltips, and messages) to make clear it saves your own report's view.
+- The team button now reads **"💾 Create Team"** when no team is open (e.g. a lead/admin viewing their personal `?report=<id>` — saving makes a new team) and **"💾 Save team"** when a team is open (updates it in place). Lead/admin/ckonkol only, as before.
+
 ## [1.23.1] - 2026-09-17
 
 ### Changed
