@@ -238,7 +238,8 @@
     <input type="text" id="addUserInput" placeholder="Add user&hellip;" autocomplete="off" aria-label="Add another user to the report">
     <button id="addUserBtn" type="button">+ Add</button>
     <label class="mergelbl" id="mergeLbl" style="display:none"><input type="checkbox" id="mergeChk"> Merge into one report</label>
-    <button id="saveTeamBtn" type="button" title="Save the current users as a named team">&#128190; Save team</button>
+    <button id="saveReportBtn" type="button" title="Save the selected sections and projects for this report so it opens the same way next time">&#128190; Save report</button>
+    <button id="saveTeamBtn" type="button" style="display:none" title="Save the current users as a named team">&#128190; Save team</button>
     <button id="projBtn" type="button" title="Choose which projects appear and set a custom order">&#128194; Projects&hellip;</button>
   </div>
   <div class="sectionbar" id="sectionWrap" style="display:none">
@@ -447,6 +448,7 @@ function fetchReport(id){
     if(d.lastUpdated) updated = d.lastUpdated.toDate ? d.lastUpdated.toDate() : toDate(d.lastUpdated);
     return {
       info: { user: d.reportId || id, displayName: d.displayName || "", department: d.department || "", exported: updated || new Date(), source: "live" },
+      reportView: d.reportView || null,
       daily: (d.structuredDailyTasks || d.dailyTasks || []).map(itemToRow),
       projects: (d.structuredProjects || d.projects || []).map(itemToRow),
       tasks: (d.structuredActiveTasks || d.activeTasks || []).map(itemToRow)
@@ -503,9 +505,11 @@ function scanUserList(){
    the text input stays as a fallback when the directory can't be read. */
 function fillAddUserSel(){
   const hasList = Array.isArray(ALL_USERS) && ALL_USERS.length > 0;
-  $("addUserSel").style.display = hasList ? "" : "none";
-  $("addUserInput").style.display = hasList ? "none" : "";
-  $("addUserBtn").style.display = hasList ? "none" : "";
+  /* Adding users to a report is manager-only (lead/admin/ckonkol) — the
+     controls are hidden entirely for everyone else. */
+  $("addUserSel").style.display = (CAN_MANAGE_TEAMS && hasList) ? "" : "none";
+  $("addUserInput").style.display = (CAN_MANAGE_TEAMS && !hasList) ? "" : "none";
+  $("addUserBtn").style.display = (CAN_MANAGE_TEAMS && !hasList) ? "" : "none";
   if(!hasList) return;
 
   const loaded = new Set(REPORTS.map(r=>String(r.info.user||"").toLowerCase()));
@@ -558,10 +562,11 @@ let CAN_MANAGE_TEAMS = false;
 function setTeamBtnState(){
   const b = $("saveTeamBtn");
   if(!b) return;
+  /* Team and add-user management is hidden entirely for non-managers —
+     they keep the viewing tools plus "Save report" for their own view. */
+  b.style.display = CAN_MANAGE_TEAMS ? "" : "none";
   b.disabled = !CAN_MANAGE_TEAMS;
-  b.title = CAN_MANAGE_TEAMS
-    ? "Save the current users as a named team"
-    : "Saving teams requires signing in on the Dashboard or Admin page with a lead/admin account (or as ckonkol)";
+  fillAddUserSel();
 }
 
 async function computeTeamPerms(user){
@@ -626,6 +631,54 @@ function applyTeam(t){
 function syncSectionChecks(){
   $("sectionWrap").querySelectorAll("input[type=checkbox]").forEach(c=>{
     if(c.dataset.key) c.checked = !!SECTIONS[c.dataset.key];
+  });
+}
+
+/* ---------- saved report view (per user, stored on their briefing doc) ----------
+   "💾 Save report" lets any viewer keep their selected sections, sort, and
+   Projects-panel choices with the report itself (briefings/<id>.reportView),
+   so the report opens the same way next time on any device. */
+function applyReportView(rv){
+  if(!rv || typeof rv !== "object") return;
+  if(rv.sections && typeof rv.sections === "object"){
+    for(const k in SECTIONS){
+      if(typeof rv.sections[k] === "boolean") SECTIONS[k] = rv.sections[k];
+    }
+    try{ localStorage.setItem("weeklyReportSections", JSON.stringify(SECTIONS)); }catch(e){}
+    syncSectionChecks();
+  }
+  if(rv.sort){
+    FILTERS.sort = rv.sort;
+    $("fSort").value = rv.sort;
+    try{ localStorage.setItem("weeklyReportSort", rv.sort); }catch(e){}
+  }
+  if(rv.projSel && typeof rv.projSel === "object"){
+    PROJSEL = {
+      order: Array.isArray(rv.projSel.order) ? rv.projSel.order.slice() : [],
+      hidden: Array.isArray(rv.projSel.hidden) ? rv.projSel.hidden.slice() : []
+    };
+    saveProjSel();
+  }
+}
+
+function saveReportView(){
+  if(!REPORTS.length) return;
+  const view = {
+    sections: Object.assign({}, SECTIONS),
+    sort: FILTERS.sort,
+    projSel: { order: (PROJSEL.order||[]).slice(), hidden: (PROJSEL.hidden||[]).slice() },
+    savedAt: new Date().toISOString()
+  };
+  const ids = REPORTS.map(r=>String(r.info.user||"").toLowerCase()).filter(Boolean);
+  Promise.all(ids.map(id=>db.collection("briefings").doc(id).update({ reportView: view }))).then(()=>{
+    REPORTS.forEach(r=>{ r.reportView = view; });
+    const t = $("toast");
+    t.textContent = "Report view saved" + (ids.length === 1 ? " for " + ids[0] : " for " + ids.length + " users");
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"), 1600);
+  }).catch(ex=>{
+    $("err").textContent = "Could not save the report view: " + ex.message;
+    $("err").style.display = "block";
   });
 }
 
@@ -802,6 +855,11 @@ function loadLive(input, append){
     SOURCE = "live";
     rememberUsers();
     if(append) $("addUserInput").value = "";
+    /* Single-user report opened directly (not via a team): apply the view
+       saved with "💾 Save report" so it opens the same way everywhere. */
+    if(!append && !CURRENT_TEAM && REPORTS.length === 1 && REPORTS[0].reportView){
+      applyReportView(REPORTS[0].reportView);
+    }
     setupFilters();
     buildReport();
   }).catch(ex=>{
@@ -1474,7 +1532,8 @@ $("addUserSel").addEventListener("change", ()=>{
   if(v) loadLive(v, true);
 });
 $("saveTeamBtn").addEventListener("click", saveTeam);
-setTeamBtnState(); /* disabled until sign-in + role check pass */
+$("saveReportBtn").addEventListener("click", saveReportView);
+setTeamBtnState(); /* team + add-user controls stay hidden until sign-in + role check pass */
 $("projBtn").addEventListener("click", ()=>{
   const p = $("projPanel");
   p.style.display = p.style.display === "none" ? "block" : "none";
