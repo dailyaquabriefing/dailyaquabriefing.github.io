@@ -24,8 +24,9 @@
         { href: 'admin.html', label: 'Dashboard', match: 'admin.html' },
         { href: 'weekly-report.html' + linkQ(urlId), label: 'Status Report', match: 'weekly-report.html', idBase: 'weekly-report.html' },
         // Team Hub lives on the intranet dashboards server (Windows sign-in),
-        // fronted by the managerhub subdomain.
-        { href: 'https://managerhub.aquatools.app/', label: 'Team Hub', match: 'manager-hub.html' },
+        // fronted by the managerhub subdomain. Opens in a new tab so the
+        // briefing page stays put.
+        { href: 'https://managerhub.aquatools.app/', label: 'Team Hub', match: 'manager-hub.html', newTab: true },
         { href: 'howtouse.html', label: 'Help', match: 'howtouse.html' },
         { href: 'users.html', label: 'Admin', match: 'users.html' }
     ];
@@ -72,6 +73,7 @@
         a.className = 'dab-link' + (page === l.match ? ' dab-active' : '');
         a.href = l.href;
         a.textContent = l.label;
+        if (l.newTab) { a.target = '_blank'; a.rel = 'noopener'; }
         if (l.idBase) idAnchors.push({ a: a, base: l.idBase });
         nav.appendChild(a);
     });
