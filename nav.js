@@ -23,7 +23,9 @@
         { href: 'index.html' + linkQ(urlId), label: '🏠 Briefing', match: 'index.html', idBase: 'index.html' },
         { href: 'admin.html', label: 'Dashboard', match: 'admin.html' },
         { href: 'weekly-report.html' + linkQ(urlId), label: 'Status Report', match: 'weekly-report.html', idBase: 'weekly-report.html' },
-        { href: 'manager-hub.html', label: 'Team Hub', match: 'manager-hub.html' },
+        // Team Hub lives on the intranet dashboards server (Windows sign-in),
+        // fronted by the managerhub subdomain.
+        { href: 'https://managerhub.aquatools.app/', label: 'Team Hub', match: 'manager-hub.html' },
         { href: 'howtouse.html', label: 'Help', match: 'howtouse.html' },
         { href: 'users.html', label: 'Admin', match: 'users.html' }
     ];

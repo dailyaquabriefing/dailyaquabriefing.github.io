@@ -5,6 +5,11 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.2] - 2026-09-18
+
+### Changed
+- **Team Hub moved to Windows (NTLM) sign-in at https://managerhub.aquatools.app/.** The hub now runs as its own app on aqua94 (\\aqua94\Apps\ManagerHub, port 5096, PM2 "manager-hub") behind the same Windows sign-in stack the other Aqua dashboards use: silent NTLM SSO at /sso, a username+password fallback checked against Windows itself, and one sign-in per browser per year. Accounts auto-provision read-only ("general") on first sign-in and the server **emails ckonkol@aqua-aerobic.com** through the internal relay; roles (general/manager/admin) and the activity log live in the hub's ⚙ Admin panel, stored in the app's data/users.json. The nav bar's **Team Hub** link points at the new address, and this site's manager-hub.html is now just a forwarder for old bookmarks (with an on-network note). Note: the subdomain is fronted by Cloudflare, which cannot carry the connection-based NTLM handshake — on managerhub.aquatools.app use the **username + password** sign-in; the one-click "Sign in with Windows" button works when opening http://aqua94:5096/ directly on the office network. The earlier Microsoft-provider/Firebase sign-in variant is retired — no Firebase console setup needed.
+
 ## [1.25.1] - 2026-09-18
 
 ### Changed
