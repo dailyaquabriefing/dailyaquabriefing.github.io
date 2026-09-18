@@ -5,6 +5,34 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.1] - 2026-09-18
+
+### Changed
+- **Team Hub: the whole page now follows the Team / Status / Search selections.** Previously only the projects list filtered; now the KPI tiles, all three charts (with the scope named in their titles, e.g. "Project Status — 👥 IT Steering"), the Risk & Focus board, and the header subtitle all show only what's in the selected scope. Search re-scoping is debounced so charts don't redraw on every keystroke. Chat and Ideas stay hub-wide.
+
+## [1.25.0] - 2026-09-18
+
+### Added
+- **Team Hub: SSO sign-in with roles and an Admin area.**
+  - The hub now requires a sign-in: **Sign in with Microsoft** (Aqua Entra account, via Firebase Auth's Microsoft provider) or an existing Daily Briefing session. Sessions persist per browser with silent renewal — no repeated prompts; a different browser or an explicit logout is the only thing that asks again.
+  - **Every signed-in account gets read access.** A first-time SSO sign-in **auto-creates a hub account with the `general` role**, records it in the activity log, raises a 🔔 notification, and (when a webhook URL is configured — see below) **emails ckonkol@aqua-aerobic.com** so manager access can be granted.
+  - **Roles:** `general` = read-only; `manager` = comments, priorities, ideas, chat; `admin` = manager rights + the Admin panel. The **site's existing lead/admin/ckonkol rule always counts as admin** and is what shows/hides the ⚙ Admin button. A role chip in the header shows your access level.
+  - **⚙ Admin panel:** *User Accounts* (change role, enable/disable — disabled accounts fall back to read-only, with created/last-sign-in columns) and *Activity Log* (sign-ups, role changes, account toggles, comments, priorities, idea activity — who/what/when, last 500 entries kept).
+  - Setup notes (one-time, outside this repo): enable the **Microsoft provider** in Firebase console → Authentication (needs an Entra app registration; redirect URI `https://dailybriefing-fe7df.firebaseapp.com/__/auth/handler`). For the new-user **email**, create a Power Automate "When an HTTP request is received" flow that mails ckonkol and paste its URL into `NEW_USER_WEBHOOK` in manager-hub.html — until then, new users are announced via the activity log and 🔔 bell. Modeled on the shipments-dashboard auth design (auto-provision on first SSO sign-in, JSON user list with roles, first-class admin); its Windows-NTLM handshake itself can't run on GitHub Pages, so Microsoft Entra sign-in fills that role here.
+
+## [1.24.0] - 2026-09-18
+
+### Added
+- **Team Hub (`manager-hub.html`)** — a live management report across ALL team status reports, linked from the nav bar on every page. What it does:
+  - **All Projects board:** every project from every briefing in one list with owner, department, status, milestone progress, and expandable detail. **Search** across names/owners/status/notes/goals plus team, status, and sort filters.
+  - **Manager comments:** leads/admins (or ckonkol) can comment on any project. Comments are stored in the shared hub data — they never touch the owner's briefing document.
+  - **Manager priorities:** tag any project P1/P2/P3 (or clear it); "Sort: Manager priority" orders the board and the Risk board by those tags. Also an overlay — user data is untouched.
+  - **Project Ideas backlog:** managers add new project ideas with notes, vote 👍, and move them through New → Reviewing → Approved/Dropped.
+  - **Live Manager Chat:** real-time via Firestore snapshots (kept to the last 300 messages).
+  - **Notifications:** a 🔔 bell with unread badge and activity feed (chat, comments, ideas), "mark all read", and optional desktop alerts while the page is open.
+  - **Analytics:** KPI tiles (projects tracked, active, % complete, overdue milestones, roadblocks, open ideas), status doughnut across all teams, open-projects-by-owner bar, milestone-health doughnut, and a **Risk & Focus board** listing every delayed/roadblocked/overdue project with reasons.
+  - Read-only for everyone; comment/prioritize/ideas/chat writes use the same lead/admin/ckonkol rule as team management. Hub data lives under a `hub` field on the existing `briefings/_teams` document (client-side doc creation is blocked by the Firestore rules). Briefing data reloads every 10 minutes or via ⟳ Refresh; a 🖨 Print button produces a clean printable report.
+
 ## [1.23.3] - 2026-09-17
 
 ### Fixed

@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Hub — Daily Aqua Briefing</title>
+<link rel="icon" href="favicon.ico">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<style>
+  :root{
+    --primary:#0078D4;
+    --bar:#005a9e;
+    --ink:#1a1a1a;
+    --muted:#5a6a7a;
+    --bg:#eef3f8;
+    --card:#ffffff;
+    --border:#d5e0ea;
+    --danger:#dc3545;
+    --ok:#28a745;
+    --warn:#e0a02f;
+  }
+  *{box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:16px;line-height:1.45}
+  .wrap{max-width:1100px;margin:0 auto}
+
+  /* Page header */
+  .hub-head{background:var(--bar);color:#fff;border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .hub-head h1{margin:0;font-size:1.25rem}
+  .hub-head small{opacity:.85;display:block;font-weight:normal}
+  .hub-head .spacer{flex:1}
+  .hb-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:#fff;border-radius:6px;padding:7px 12px;font-size:.85rem;font-weight:600;cursor:pointer;position:relative}
+  .hb-btn:hover{background:rgba(255,255,255,0.28)}
+  #bellBadge{position:absolute;top:-7px;right:-7px;background:var(--danger);color:#fff;border-radius:10px;font-size:.7rem;padding:1px 6px;font-weight:bold;display:none}
+
+  /* Notification dropdown */
+  #notifPanel{display:none;position:absolute;right:0;top:42px;width:340px;max-height:420px;overflow-y:auto;background:#fff;color:var(--ink);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:60;text-align:left}
+  #notifPanel .np-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:700;font-size:.9rem}
+  #notifPanel .np-item{padding:9px 12px;border-bottom:1px solid #eef2f6;font-size:.84rem}
+  #notifPanel .np-item.fresh{background:#f0f7ff}
+  #notifPanel .np-kind{font-weight:700;color:var(--bar);margin-right:6px}
+  #notifPanel .np-time{color:var(--muted);font-size:.75rem;display:block}
+  .np-actions{padding:8px 12px;display:flex;gap:8px}
+  .np-actions button{flex:1;font-size:.78rem;padding:6px;border:1px solid var(--border);background:#f8fafc;border-radius:5px;cursor:pointer}
+
+  /* KPI tiles */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+  .kpi .v{font-size:1.7rem;font-weight:800;line-height:1.1}
+  .kpi .l{font-size:.78rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .kpi.bad .v{color:var(--danger)}
+  .kpi.good .v{color:var(--ok)}
+
+  /* Controls */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .controls input[type=search]{flex:2;min-width:220px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:.95rem}
+  .controls select{padding:9px 10px;border:1px solid var(--border);border-radius:6px;font-size:.88rem;background:#fff}
+  .controls button{padding:9px 14px;border:none;border-radius:6px;background:var(--primary);color:#fff;font-weight:600;cursor:pointer;font-size:.88rem}
+  .controls button.ghost{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+
+  /* Layout */
+  .grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:16px;align-items:start}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .card h2{margin:0;padding:11px 14px;font-size:.95rem;background:#f5f8fb;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+  .card h2 .count{color:var(--muted);font-weight:normal;font-size:.82rem}
+
+  /* Project rows */
+  .proj{border-bottom:1px solid #eef2f6;padding:10px 14px}
+  .proj:last-child{border-bottom:none}
+  .proj-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;cursor:pointer}
+  .proj-top b{font-size:.95rem}
+  .badge{font-size:.72rem;padding:1px 7px;border-radius:9px;border:1px solid;white-space:nowrap;font-weight:600}
+  .owner{color:var(--muted);font-size:.8rem}
+  .pflag{font-size:.7rem;font-weight:800;border-radius:4px;padding:1px 6px;color:#fff}
+  .p1{background:#c62828}.p2{background:#ef6c00}.p3{background:#546e7a}
+  .proj-detail{display:none;margin-top:8px;font-size:.86rem;color:#333}
+  .proj.open .proj-detail{display:block}
+  .proj-detail .meta{color:var(--muted);font-size:.8rem;margin:4px 0}
+  .prio-row{display:flex;gap:6px;align-items:center;margin:8px 0;flex-wrap:wrap}
+  .prio-row span{font-size:.78rem;color:var(--muted);font-weight:600}
+  .prio-btn{font-size:.75rem;padding:3px 9px;border-radius:12px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:700}
+  .prio-btn.on.p1b{background:#c62828;color:#fff;border-color:#c62828}
+  .prio-btn.on.p2b{background:#ef6c00;color:#fff;border-color:#ef6c00}
+  .prio-btn.on.p3b{background:#546e7a;color:#fff;border-color:#546e7a}
+  .prio-btn:disabled{opacity:.45;cursor:not-allowed}
+  .cmt{background:#f8fafc;border:1px solid #e4ebf2;border-left:3px solid var(--primary);border-radius:5px;padding:6px 9px;margin:5px 0;font-size:.83rem}
+  .cmt .who{font-weight:700}
+  .cmt .when{color:var(--muted);font-size:.73rem;margin-left:6px}
+  .cmt-form{display:flex;gap:6px;margin-top:7px}
+  .cmt-form input{flex:1;padding:7px 9px;border:1px solid var(--border);border-radius:5px;font-size:.85rem}
+  .cmt-form button{padding:7px 12px;border:none;border-radius:5px;background:var(--primary);color:#fff;font-weight:600;cursor:pointer}
+  .cmt-form button:disabled,.idea-form button:disabled,#chatForm button:disabled{opacity:.45;cursor:not-allowed}
+
+  /* Chat */
+  #chatBox{height:340px;overflow-y:auto;padding:10px 12px;background:#fbfdff}
+  .msg{margin-bottom:9px}
+  .msg .who{font-weight:700;font-size:.8rem;color:var(--bar)}
+  .msg .when{color:var(--muted);font-size:.72rem;margin-left:6px}
+  .msg .txt{font-size:.86rem;background:#eef4fa;border-radius:0 9px 9px 9px;padding:6px 10px;display:inline-block;max-width:95%}
+  .msg.mine .txt{background:#dcefdc}
+  #chatForm{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--border)}
+  #chatForm input{flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.88rem}
+  #chatForm button{padding:8px 14px;border:none;border-radius:6px;background:var(--primary);color:#fff;font-weight:700;cursor:pointer}
+  .live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* Ideas */
+  .idea{border-bottom:1px solid #eef2f6;padding:9px 12px;font-size:.86rem}
+  .idea:last-child{border-bottom:none}
+  .idea b{display:block}
+  .idea .i-meta{color:var(--muted);font-size:.76rem;margin-top:2px}
+  .idea select{font-size:.76rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;margin-top:4px}
+  .idea .votes{font-size:.76rem;background:#eef4fa;border:1px solid #d8e5f0;border-radius:10px;padding:1px 8px;cursor:pointer;font-weight:700}
+  .idea-form{padding:10px 12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+  .idea-form input,.idea-form textarea{padding:7px 9px;border:1px solid var(--border);border-radius:5px;font-size:.85rem;font-family:inherit}
+  .idea-form button{align-self:flex-end;padding:7px 14px;border:none;border-radius:5px;background:var(--primary);color:#fff;font-weight:600;cursor:pointer}
+  .ist{font-size:.7rem;font-weight:700;border-radius:4px;padding:1px 6px;color:#fff}
+  .ist-New{background:#0277bd}.ist-Reviewing{background:#ef6c00}.ist-Approved{background:#2e7d32}.ist-Dropped{background:#78909c}
+
+  /* Analytics */
+  .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px}
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+  .chart-card h3{margin:0 0 8px;font-size:.9rem;text-align:center;color:#444}
+
+  /* Risk table */
+  table.risk{width:100%;border-collapse:collapse;font-size:.85rem}
+  table.risk th{background:#f5f8fb;text-align:left;padding:8px 12px;font-size:.75rem;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+  table.risk td{padding:8px 12px;border-bottom:1px solid #eef2f6}
+  .risk-flag{color:var(--danger);font-weight:700}
+
+  .note{color:var(--muted);font-size:.8rem;padding:10px 14px}
+  #permNote{display:none;background:#fff8e6;border:1px solid #f0dfa8;color:#7a5d00;border-radius:6px;padding:9px 12px;font-size:.84rem;margin-bottom:12px}
+
+  /* Sign-in gate */
+  #loginGate{position:fixed;inset:0;background:#eef3f8;z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:60px 16px}
+  .login-card{background:#fff;border:1px solid #d7dfe8;border-radius:12px;box-shadow:0 8px 28px rgba(16,42,74,.1);width:100%;max-width:420px;padding:28px;text-align:center}
+  .login-card h1{font-size:1.25rem;color:var(--bar);margin:0 0 4px}
+  .login-card p{color:var(--muted);font-size:.9rem;margin:0 0 18px}
+  .ms-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:none;border-radius:8px;background:var(--bar);color:#fff;font-weight:700;font-size:.95rem;cursor:pointer}
+  .ms-btn:hover{background:#004a82}
+  .ms-logo{display:inline-grid;grid-template-columns:8px 8px;gap:1.5px}
+  .ms-logo i{width:8px;height:8px;display:block}
+  .login-alt{margin-top:14px;font-size:.82rem;color:var(--muted)}
+  .login-err{display:none;background:#fdecea;border:1px solid #f5c6c0;color:#90261b;border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:.85rem;text-align:left}
+  .role-chip{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);border-radius:10px;padding:2px 10px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+
+  /* Admin modal */
+  #adminModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:90;overflow-y:auto;padding:30px 14px}
+  .adm-box{background:#fff;border-radius:10px;max-width:900px;margin:0 auto;overflow:hidden}
+  .adm-head{background:var(--bar);color:#fff;padding:13px 18px;display:flex;align-items:center;gap:12px}
+  .adm-head h2{margin:0;font-size:1rem;flex:1}
+  .adm-tabs{display:flex;border-bottom:1px solid var(--border);background:#f5f8fb}
+  .adm-tab{padding:11px 18px;border:none;background:none;font-weight:700;font-size:.88rem;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent}
+  .adm-tab.on{color:var(--primary);border-bottom-color:var(--primary);background:#fff}
+  .adm-body{padding:14px 18px;max-height:60vh;overflow-y:auto}
+  table.adm{width:100%;border-collapse:collapse;font-size:.85rem}
+  table.adm th{background:#f5f8fb;text-align:left;padding:7px 10px;font-size:.72rem;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border)}
+  table.adm td{padding:7px 10px;border-bottom:1px solid #eef2f6;vertical-align:middle}
+  table.adm select{padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:.82rem}
+  .adm-close{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:600}
+  .tag-off{color:var(--danger);font-weight:700}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#123c63;color:#fff;padding:10px 20px;border-radius:6px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .25s;z-index:80}
+  .toast.show{opacity:1}
+  @media print{.hub-head button,.controls,#chatCard,.idea-form,.cmt-form,.prio-row,#permNote{display:none!important}body{background:#fff}}
+</style>
+<script src="nav.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hub-head">
+    <div>
+      <h1>Team Hub</h1>
+      <small id="subTitle">All team status reports · live</small>
+    </div>
+    <span class="role-chip" id="roleChip" style="display:none"></span>
+    <span class="spacer"></span>
+    <button class="hb-btn" id="adminBtn" style="display:none" title="User accounts and activity log">⚙ Admin</button>
+    <button class="hb-btn" id="refreshBtn" title="Reload all briefing data">⟳ Refresh</button>
+    <button class="hb-btn" id="printBtn" title="Print or save this page as PDF">🖨 Print</button>
+    <div style="position:relative">
+      <button class="hb-btn" id="bellBtn" title="Activity and notifications">🔔<span id="bellBadge"></span></button>
+      <div id="notifPanel">
+        <div class="np-head">Activity <span style="flex:1"></span><span class="live-dot" title="live"></span></div>
+        <div id="notifList"><div class="np-item">Loading…</div></div>
+        <div class="np-actions">
+          <button id="markReadBtn">Mark all read</button>
+          <button id="desktopBtn">Enable desktop alerts</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div id="permNote">Viewing in read-only mode. Sign in on the <a href="admin.html">Dashboard</a> with a lead/admin account (or as ckonkol) to comment, prioritize, add ideas, and chat.</div>
+
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search projects, owners, status, notes…">
+    <select id="fTeam"><option value="">All teams</option></select>
+    <select id="fStatus"><option value="">All statuses</option></select>
+    <select id="fSort">
+      <option value="mgr">Sort: Manager priority</option>
+      <option value="attention">Sort: Needs attention</option>
+      <option value="owner">Sort: Owner</option>
+      <option value="updated">Sort: Recently updated</option>
+    </select>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>📋 All Projects <span class="count" id="projCount"></span></h2>
+        <div id="projList"><div class="note">Loading briefings…</div></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>⚠️ Risk &amp; Focus Board <span class="count" id="riskCount"></span></h2>
+        <div style="overflow-x:auto">
+          <table class="risk">
+            <thead><tr><th>Project</th><th>Owner</th><th>Why it needs attention</th></tr></thead>
+            <tbody id="riskBody"><tr><td colspan="3" class="note">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" id="chatCard">
+        <h2>💬 Manager Chat <span class="live-dot" title="live"></span></h2>
+        <div id="chatBox"><div class="note">Loading…</div></div>
+        <form id="chatForm">
+          <input type="text" id="chatInput" maxlength="500" placeholder="Message the managers…" autocomplete="off">
+          <button type="submit" id="chatSend" disabled>Send</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>💡 Project Ideas <span class="count" id="ideaCount"></span></h2>
+        <div id="ideaList"><div class="note">Loading…</div></div>
+        <div class="idea-form">
+          <input type="text" id="ideaTitle" maxlength="120" placeholder="New project idea…">
+          <textarea id="ideaNotes" rows="2" maxlength="600" placeholder="Why is it worth looking into? (optional)"></textarea>
+          <button id="ideaAdd" disabled>+ Add idea</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div class="chart-card"><h3 id="hStatus">Project Status — all teams</h3><canvas id="cStatus"></canvas></div>
+    <div class="chart-card"><h3 id="hOwner">Open Projects by Owner</h3><canvas id="cOwner"></canvas></div>
+    <div class="chart-card"><h3 id="hMs">Milestone Health</h3><canvas id="cMs"></canvas></div>
+  </div>
+
+  <div class="note" style="text-align:center;margin-top:10px" id="stamp"></div>
+</div>
+
+<div class="toast" id="toast">Saved</div>
+
+<!-- Sign-in gate: the hub requires a login; every signed-in user gets read access -->
+<div id="loginGate">
+  <div class="login-card">
+    <img src="aqua-aerobics-logo.png" alt="Aqua-Aerobic Systems" style="max-height:46px;margin-bottom:14px">
+    <h1>Team Hub</h1>
+    <p>Sign in to view the team status hub. New accounts start with read access; ckonkol is notified to grant manager rights.</p>
+    <div class="login-err" id="loginErr"></div>
+    <button class="ms-btn" id="msBtn">
+      <span class="ms-logo" aria-hidden="true"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></span>
+      Sign in with Microsoft
+    </button>
+    <div class="login-alt">Have a Daily Briefing account instead? <a href="admin.html">Sign in on the Dashboard</a>, then come back — the session carries over.</div>
+  </div>
+</div>
+
+<!-- Admin: user accounts + activity log -->
+<div id="adminModal">
+  <div class="adm-box">
+    <div class="adm-head">
+      <h2>⚙ Team Hub Administration</h2>
+      <button class="adm-close" onclick="closeAdmin()">Close</button>
+    </div>
+    <div class="adm-tabs">
+      <button class="adm-tab on" id="tabUsersBtn" onclick="admTab('users')">User Accounts</button>
+      <button class="adm-tab" id="tabLogBtn" onclick="admTab('log')">Activity Log</button>
+    </div>
+    <div class="adm-body" id="admUsers">
+      <p class="note" style="padding:0 0 10px">Every SSO sign-in auto-creates an account with <b>general</b> (read-only) access. Set <b>manager</b> to allow comments, priorities, ideas, and chat; <b>admin</b> also opens this panel. Deactivated accounts fall back to read-only.</p>
+      <div style="overflow-x:auto">
+        <table class="adm">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Active</th><th>Created</th><th>Last sign-in</th></tr></thead>
+          <tbody id="admUserRows"><tr><td colspan="6" class="note">No hub accounts yet — accounts appear at first SSO sign-in.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="adm-body" id="admLog" style="display:none">
+      <div style="overflow-x:auto">
+        <table class="adm">
+          <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th></tr></thead>
+          <tbody id="admLogRows"><tr><td colspan="4" class="note">No activity recorded yet.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+<script>
+"use strict";
+firebase.initializeApp({
+  apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+  authDomain: "dailybriefing-fe7df.firebaseapp.com",
+  projectId: "dailybriefing-fe7df"
+});
+const db = firebase.firestore();
+const auth = firebase.auth();
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+
+/* ================= state ================= */
+let ALL = [];        /* every project across every briefing */
+let DIR = {};        /* id -> {displayName, department} */
+let TEAMS = [];      /* saved teams from _teams */
+let HUB = { chat:[], comments:[], ideas:[], priorities:[], users:[], log:[] }; /* live, stored on briefings/_teams.hub */
+let CAN_MANAGE = false;   /* the site's existing lead/admin/ckonkol rule */
+let HUB_ROLE = "";        /* this account's hub role: general | manager | admin */
+let AUTH_USER = null;
+let MY_ID = "", MY_NAME = "";
+let hubUnsub = null;
+
+/* Optional: paste a Power Automate "When an HTTP request is received" URL
+   here to EMAIL ckonkol@aqua-aerobic.com when a new user signs in. The flow
+   receives {email, name, at} and sends the mail. Empty = notification is
+   only logged in the hub (activity log + 🔔 bell). */
+const NEW_USER_WEBHOOK = "";
+const NOTIFY_ADMIN_EMAIL = "ckonkol@aqua-aerobic.com";
+let openKeys = new Set(); /* expanded project rows survive re-render */
+const stripHtml = h => { const d = document.createElement("div"); d.innerHTML = h || ""; return d.textContent || ""; };
+const keyOf = p => p.owner + "||" + (p.name || "");
+const fmtWhen = iso => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}); };
+
+const MANAGE_USERS_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/manageUsers";
+const isStorageId = id => id.startsWith("_") || id.endsWith("_outlook");
+
+/* ================= SSO sign-in + hub accounts =================
+   The hub requires a login (Microsoft SSO through Firebase Auth, or an
+   existing Daily Briefing email session). Firebase keeps the session in
+   this browser with silent renewal, so nobody is re-prompted — a new
+   browser or a sign-out is the only thing that asks again.
+   Every signed-in account gets READ access. Hub roles (stored with the
+   hub data, granted in the Admin panel):
+     general  — read only (every new SSO account starts here)
+     manager  — comment, prioritize, ideas, chat
+     admin    — manager rights + the Admin panel
+   The site's existing lead/admin/ckonkol rule always counts as admin. */
+
+function msSignIn() {
+  $("loginErr").style.display = "none";
+  const provider = new firebase.auth.OAuthProvider("microsoft.com");
+  provider.setCustomParameters({ tenant: "aqua-aerobic.com" });
+  auth.signInWithPopup(provider).catch(ex => {
+    const el = $("loginErr");
+    el.style.display = "block";
+    el.textContent = ex.code === "auth/operation-not-allowed"
+      ? "Microsoft sign-in is not switched on yet for this site (Firebase console → Authentication → Microsoft provider). Use the Dashboard sign-in link below for now."
+      : "Sign-in failed: " + ex.message;
+  });
+}
+$("msBtn").addEventListener("click", msSignIn);
+
+auth.onAuthStateChanged(async user => {
+  AUTH_USER = user;
+  CAN_MANAGE = false; HUB_ROLE = ""; MY_ID = ""; MY_NAME = "";
+  $("loginGate").style.display = user ? "none" : "flex";
+  if (user) {
+    try {
+      const doc = await db.collection("user_prefs").doc(user.uid).get();
+      if (doc.exists) MY_ID = (doc.data().reportId || "").toLowerCase();
+    } catch (e) {}
+    MY_NAME = user.displayName || (DIR[MY_ID] && DIR[MY_ID].displayName) || MY_ID || (user.email || "").split("@")[0];
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(MANAGE_USERS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ action: "list" })
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const role = data.callerRole || "";
+        CAN_MANAGE = role === "admin" || role === "lead" || MY_ID === "ckonkol";
+      } else {
+        CAN_MANAGE = MY_ID === "ckonkol";
+      }
+    } catch (e) {}
+    ensureHubAccount();
+  }
+  applyPerms();
+});
+
+/* First sign-in auto-provisions a hub account with general access, records
+   it in the activity log, and notifies ckonkol (webhook email if configured;
+   always the 🔔 activity feed). Later sign-ins just stamp last_login. */
+let provisioning = false;
+function myHubUser() {
+  if (!AUTH_USER) return null;
+  const em = (AUTH_USER.email || "").toLowerCase();
+  return (HUB.users || []).find(u => u.uid === AUTH_USER.uid || (em && (u.email || "").toLowerCase() === em)) || null;
+}
+
+function ensureHubAccount() {
+  if (!AUTH_USER || provisioning || !hubLoaded) return;
+  const existing = myHubUser();
+  const nowIso = new Date().toISOString();
+  if (existing) {
+    HUB_ROLE = existing.active === false ? "general" : (existing.role || "general");
+    /* stamp last_login at most once per hour to keep writes low */
+    if (!existing.last_login || (Date.now() - new Date(existing.last_login)) > 3600e3) {
+      const users = (HUB.users || []).map(u => u === existing ? Object.assign({}, u, { last_login: nowIso, uid: AUTH_USER.uid }) : u);
+      saveHub("users", users);
+    }
+    applyPerms();
+    return;
+  }
+  provisioning = true;
+  const acct = {
+    uid: AUTH_USER.uid,
+    email: AUTH_USER.email || "",
+    name: MY_NAME,
+    role: "general",
+    active: true,
+    created: nowIso,
+    last_login: nowIso
+  };
+  const users = (HUB.users || []).concat([acct]);
+  const logRow = { at: nowIso, who: MY_NAME, action: "new-user", detail: (acct.email || acct.name) + " signed in for the first time — general access. Grant manager rights in Admin." };
+  db.collection("briefings").doc("_teams").update({ "hub.users": users, "hub.log": (HUB.log || []).slice(-499).concat([logRow]) })
+    .then(() => {
+      HUB_ROLE = "general";
+      toast("Welcome! Your account has read access — " + NOTIFY_ADMIN_EMAIL + " has been notified to grant more.");
+      if (NEW_USER_WEBHOOK) {
+        fetch(NEW_USER_WEBHOOK, {
+          method: "POST", mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: acct.email, name: acct.name, at: nowIso, notify: NOTIFY_ADMIN_EMAIL })
+        }).catch(() => {});
+      }
+    })
+    .catch(ex => toast("Could not create your hub account: " + ex.message))
+    .finally(() => { provisioning = false; applyPerms(); });
+}
+
+function logAct(action, detail) {
+  const row = { at: new Date().toISOString(), who: MY_NAME || "unknown", action, detail: String(detail || "").slice(0, 200) };
+  saveHub("log", (HUB.log || []).slice(-499).concat([row]));
+}
+
+function canWrite() { return CAN_MANAGE || HUB_ROLE === "manager" || HUB_ROLE === "admin"; }
+function canAdmin() { return CAN_MANAGE || HUB_ROLE === "admin"; } /* existing lead/admin/ckonkol rule always shows Admin */
+
+function applyPerms() {
+  const w = canWrite();
+  $("permNote").style.display = (AUTH_USER && !w) ? "block" : "none";
+  $("permNote").textContent = "You have read access. Ask " + NOTIFY_ADMIN_EMAIL + " for manager rights to comment, prioritize, add ideas, and chat.";
+  $("chatSend").disabled = !w;
+  $("ideaAdd").disabled = !w;
+  $("chatInput").placeholder = w ? "Message the managers…" : "Manager rights needed to chat";
+  $("adminBtn").style.display = canAdmin() ? "" : "none";
+  const chip = $("roleChip");
+  if (AUTH_USER) {
+    chip.style.display = "";
+    chip.textContent = CAN_MANAGE ? "admin" : (HUB_ROLE || "…");
+  } else chip.style.display = "none";
+  renderProjects(); /* re-render enables comment/priority controls */
+  renderIdeas();
+  renderAdmin();
+}
+
+/* Old references: CAN_MANAGE alone used to gate writes */
+Object.defineProperty(window, "CAN_WRITE", { get: canWrite });
+
+/* ================= data loading ================= */
+function milestoneState(m) {
+  if (m.done) return "Completed";
+  if (m.roadblock) return "Roadblock";
+  if (m.onHold) return "On-Hold";
+  const t = new Date(); t.setHours(0,0,0,0);
+  if (m.estActDate && new Date(m.estActDate + "T00:00:00") < t) return "Overdue";
+  if (m.inProgress) return "In Progress";
+  return "Not Started";
+}
+
+async function loadAll() {
+  $("projList").innerHTML = '<div class="note">Loading briefings…</div>';
+  try {
+    const [dirDoc, snap] = await Promise.all([
+      db.collection("briefings").doc("_directory").get().catch(() => null),
+      db.collection("briefings").get()
+    ]);
+    DIR = {};
+    if (dirDoc && dirDoc.exists) (dirDoc.data().users || []).forEach(u => { if (u && u.id) DIR[u.id] = u; });
+
+    ALL = [];
+    snap.forEach(doc => {
+      if (isStorageId(doc.id)) return;
+      const d = doc.data();
+      const owner = (d.reportId || doc.id).toLowerCase();
+      (d.structuredProjects || []).forEach(p => {
+        if (!p || !p.name) return;
+        ALL.push({
+          owner,
+          ownerName: d.displayName || (DIR[owner] && DIR[owner].displayName) || owner,
+          dept: d.department || (DIR[owner] && DIR[owner].department) || "",
+          name: p.name, status: p.status || "Other", priority: p.priority || "",
+          assignedTo: p.assignedTo || "", goal: p.goal || "",
+          notes: stripHtml(p.notes || "").slice(0, 400),
+          startDate: p.startDate || "", endDate: p.endDate || "",
+          lastUpdated: p.lastUpdated || "",
+          milestones: Array.isArray(p.milestones) ? p.milestones : []
+        });
+      });
+    });
+
+    fillFilters();
+    renderAll();
+    $("stamp").textContent = "Data loaded " + new Date().toLocaleString() + " · " + ALL.length + " projects across " + new Set(ALL.map(p => p.owner)).size + " briefings";
+  } catch (e) {
+    $("projList").innerHTML = '<div class="note">Could not load briefings: ' + esc(e.message) + "</div>";
+  }
+}
+
+/* Live hub data (chat / comments / ideas / priorities / users / log) */
+let hubLoaded = false;
+function subscribeHub() {
+  if (hubUnsub) hubUnsub();
+  hubUnsub = db.collection("briefings").doc("_teams").onSnapshot(doc => {
+    const d = doc.exists ? doc.data() : {};
+    TEAMS = d.teams || [];
+    const prev = eventCount();
+    HUB = Object.assign({ chat:[], comments:[], ideas:[], priorities:[], users:[], log:[] }, d.hub || {});
+    hubLoaded = true;
+    ensureHubAccount(); /* provision / refresh role once both auth + hub data exist */
+    const me = myHubUser();
+    if (me) HUB_ROLE = me.active === false ? "general" : (me.role || "general");
+    fillFilters();
+    renderAll();
+    applyPerms();
+    maybeNotify(prev);
+  }, () => {});
+}
+
+function saveHub(field, value) {
+  const upd = {}; upd["hub." + field] = value;
+  return db.collection("briefings").doc("_teams").update(upd).catch(ex => {
+    toast("Save failed: " + ex.message);
+  });
+}
+
+/* ================= filters + projects ================= */
+function fillFilters() {
+  const ft = $("fTeam"), keepT = ft.value;
+  ft.innerHTML = '<option value="">All teams</option>';
+  TEAMS.forEach(t => {
+    const o = document.createElement("option");
+    o.value = t.name || ""; o.textContent = "👥 " + (t.name || "team");
+    ft.appendChild(o);
+  });
+  if ([...ft.options].some(o => o.value === keepT)) ft.value = keepT;
+
+  const fs = $("fStatus"), keepS = fs.value;
+  fs.innerHTML = '<option value="">All statuses</option>';
+  [...new Set(ALL.map(p => p.status))].sort().forEach(s => {
+    const o = document.createElement("option");
+    o.value = s; o.textContent = s;
+    fs.appendChild(o);
+  });
+  if ([...fs.options].some(o => o.value === keepS)) fs.value = keepS;
+}
+
+const STATUS_COLORS = {
+  "Delayed":"#dc3545","Requirement Gathering":"#17a2b8","Planning":"#5b9bd5","On Track":"#28a745",
+  "In Progress":"#2e8b57","Development":"#6610f2","Testing":"#ff9f43","Review":"#b8860b",
+  "Training":"#20c997","Follow-Up":"#fd7e14","Future":"#adb5bd","On-Hold":"#6c757d",
+  "Completed":"#800080","Maintenance":"#9b59b6","Other":"#98a4b0"
+};
+
+function mgrPrio(key) {
+  const e = (HUB.priorities || []).find(x => x.key === key);
+  return e ? e.rank : 0;
+}
+function commentsFor(key) { return (HUB.comments || []).filter(c => c.key === key); }
+
+function needsAttention(p) {
+  /* Closed work can't need attention — stale milestone checkboxes on
+     Completed/Maintenance/Future projects shouldn't raise flags. */
+  if (p.status === "Completed" || p.status === "Maintenance" || p.status === "Future") return [];
+  const reasons = [];
+  if (p.status === "Delayed") reasons.push("Status: Delayed");
+  p.milestones.forEach(m => {
+    const st = milestoneState(m);
+    if (st === "Roadblock") reasons.push("🚧 Roadblock: " + (m.name || "") + (m.blockReason ? " — " + m.blockReason : ""));
+    if (st === "Overdue") reasons.push("⚠️ Overdue milestone: " + (m.name || "") + (m.estActDate ? " (" + m.estActDate + ")" : ""));
+  });
+  return reasons;
+}
+
+/* Everything on the page — KPIs, charts, risk board, projects list — shows
+   only the projects inside the current Team / Status / Search selections. */
+function scopedProjects() {
+  const q = $("q").value.trim().toLowerCase();
+  const team = $("fTeam").value;
+  const st = $("fStatus").value;
+  let ids = null;
+  if (team) {
+    const t = TEAMS.find(x => (x.name || "") === team);
+    ids = new Set(((t && t.ids) || []).map(s => String(s).toLowerCase()));
+  }
+  return ALL.filter(p => {
+    if (ids && !ids.has(p.owner)) return false;
+    if (st && p.status !== st) return false;
+    if (q) {
+      const hay = (p.name + " " + p.owner + " " + p.ownerName + " " + p.status + " " + p.assignedTo + " " + p.goal + " " + p.notes + " " + p.dept).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+/* Short label describing the current scope, used in headers */
+function scopeLabel() {
+  const bits = [$("fTeam").value ? "👥 " + $("fTeam").value : "all teams"];
+  if ($("fStatus").value) bits.push($("fStatus").value);
+  if ($("q").value.trim()) bits.push("“" + $("q").value.trim() + "”");
+  return bits.join(" · ");
+}
+
+function filteredProjects() {
+  let list = scopedProjects().slice();
+  const sort = $("fSort").value;
+  const attScore = p => (needsAttention(p).length ? 0 : 1);
+  if (sort === "mgr") list.sort((a,b) => (mgrPrio(keyOf(a)) || 9) - (mgrPrio(keyOf(b)) || 9) || attScore(a) - attScore(b) || a.name.localeCompare(b.name));
+  else if (sort === "attention") list.sort((a,b) => attScore(a) - attScore(b) || a.name.localeCompare(b.name));
+  else if (sort === "owner") list.sort((a,b) => a.ownerName.localeCompare(b.ownerName) || a.name.localeCompare(b.name));
+  else if (sort === "updated") list.sort((a,b) => new Date(b.lastUpdated || 0) - new Date(a.lastUpdated || 0));
+  return list;
+}
+
+function renderProjects() {
+  const list = filteredProjects();
+  $("projCount").textContent = "(" + list.length + " of " + ALL.length + ")";
+  const el = $("projList");
+  if (!ALL.length) { el.innerHTML = '<div class="note">No briefing data found.</div>'; return; }
+  if (!list.length) { el.innerHTML = '<div class="note">No projects match the current search/filters.</div>'; return; }
+
+  el.innerHTML = list.map(p => {
+    const key = keyOf(p);
+    const color = STATUS_COLORS[p.status] || "#98a4b0";
+    const rank = mgrPrio(key);
+    const cmts = commentsFor(key);
+    const msDone = p.milestones.filter(m => m.done).length;
+    const att = needsAttention(p);
+    const open = openKeys.has(key);
+    return `
+<div class="proj ${open ? "open" : ""}" data-key="${esc(key)}">
+  <div class="proj-top" onclick="toggleProj('${esc(key).replace(/'/g,"\\'")}')">
+    ${rank ? `<span class="pflag p${rank}">P${rank}</span>` : ""}
+    <b>${esc(p.name)}</b>
+    <span class="badge" style="color:${color};border-color:${color}">${esc(p.status)}</span>
+    ${att.length ? '<span class="risk-flag" title="Needs attention">⚠</span>' : ""}
+    <span class="owner">👤 ${esc(p.ownerName)}${p.dept ? " · " + esc(p.dept) : ""}</span>
+    ${p.milestones.length ? `<span class="owner">🏁 ${msDone}/${p.milestones.length}</span>` : ""}
+    ${cmts.length ? `<span class="owner">💬 ${cmts.length}</span>` : ""}
+  </div>
+  <div class="proj-detail">
+    ${p.goal ? `<div>🎯 <b>Goal:</b> ${esc(p.goal)}</div>` : ""}
+    ${p.notes ? `<div class="meta">${esc(p.notes)}</div>` : ""}
+    <div class="meta">${p.startDate ? "Start " + esc(p.startDate) + " · " : ""}${p.endDate ? "Est/Act " + esc(p.endDate) + " · " : ""}${p.lastUpdated ? "Updated " + esc(p.lastUpdated) : ""}${p.assignedTo ? " · Assigned to " + esc(p.assignedTo) : ""}</div>
+    ${att.map(r => `<div class="meta risk-flag">${esc(r)}</div>`).join("")}
+    <div class="prio-row">
+      <span>Manager priority:</span>
+      ${[1,2,3].map(r => `<button class="prio-btn p${r}b ${rank === r ? "on" : ""}" ${canWrite() ? "" : "disabled"} onclick="setPrio('${esc(key).replace(/'/g,"\\'")}', ${r})">P${r}</button>`).join("")}
+      <button class="prio-btn" ${canWrite() ? "" : "disabled"} onclick="setPrio('${esc(key).replace(/'/g,"\\'")}', 0)">Clear</button>
+    </div>
+    ${cmts.map(c => `<div class="cmt"><span class="who">${esc(c.by)}</span><span class="when">${esc(fmtWhen(c.at))}</span><div>${esc(c.text)}</div></div>`).join("")}
+    <div class="cmt-form">
+      <input type="text" maxlength="400" placeholder="${canWrite() ? "Add a manager comment…" : "Manager rights needed to comment"}" ${canWrite() ? "" : "disabled"}>
+      <button ${canWrite() ? "" : "disabled"} onclick="addComment(this)">Post</button>
+    </div>
+  </div>
+</div>`;
+  }).join("");
+}
+
+window.toggleProj = function (key) {
+  if (openKeys.has(key)) openKeys.delete(key); else openKeys.add(key);
+  renderProjects();
+};
+
+window.setPrio = function (key, rank) {
+  if (!canWrite()) return;
+  const list = (HUB.priorities || []).filter(x => x.key !== key);
+  if (rank) list.push({ key, rank, by: MY_NAME, at: new Date().toISOString() });
+  saveHub("priorities", list).then(() => {
+    logAct("priority", key.split("||")[1] + (rank ? " -> P" + rank : " cleared"));
+    toast(rank ? "Priority set to P" + rank : "Priority cleared");
+  });
+};
+
+window.addComment = function (btn) {
+  if (!canWrite()) return;
+  const wrap = btn.closest(".proj");
+  const input = wrap.querySelector(".cmt-form input");
+  const text = input.value.trim();
+  if (!text) return;
+  const key = wrap.dataset.key;
+  const list = (HUB.comments || []).slice(-499);
+  list.push({ key, by: MY_NAME, text, at: new Date().toISOString() });
+  openKeys.add(key);
+  saveHub("comments", list).then(() => {
+    logAct("comment", key.split("||")[1]);
+    toast("Comment posted");
+  });
+};
+
+/* ================= chat ================= */
+function renderChat() {
+  const box = $("chatBox");
+  const chat = HUB.chat || [];
+  box.innerHTML = chat.length
+    ? chat.map(m => `<div class="msg ${m.by === MY_NAME ? "mine" : ""}"><span class="who">${esc(m.by)}</span><span class="when">${esc(fmtWhen(m.at))}</span><br><span class="txt">${esc(m.text)}</span></div>`).join("")
+    : '<div class="note">No messages yet — start the conversation.</div>';
+  box.scrollTop = box.scrollHeight;
+}
+
+$("chatForm").addEventListener("submit", e => {
+  e.preventDefault();
+  if (!canWrite()) return;
+  const text = $("chatInput").value.trim();
+  if (!text) return;
+  const chat = (HUB.chat || []).slice(-299); /* keep the doc small */
+  chat.push({ by: MY_NAME, text, at: new Date().toISOString() });
+  $("chatInput").value = "";
+  saveHub("chat", chat);
+});
+
+/* ================= ideas ================= */
+const IDEA_STATUSES = ["New", "Reviewing", "Approved", "Dropped"];
+function renderIdeas() {
+  const list = (HUB.ideas || []).slice().sort((a,b) => new Date(b.at || 0) - new Date(a.at || 0));
+  $("ideaCount").textContent = "(" + list.length + ")";
+  $("ideaList").innerHTML = list.length ? list.map((i, n) => `
+<div class="idea">
+  <b>${esc(i.title)} <span class="ist ist-${esc(i.status || "New")}">${esc(i.status || "New")}</span></b>
+  ${i.notes ? `<div>${esc(i.notes)}</div>` : ""}
+  <div class="i-meta">by ${esc(i.by)} · ${esc(fmtWhen(i.at))}
+    <span class="votes" title="${canWrite() ? "Click to vote" : "Manager rights needed to vote"}" onclick="voteIdea(${n})">👍 ${(i.votes || []).length}</span>
+  </div>
+  ${canWrite() ? `<select onchange="ideaStatus(${n}, this.value)">${IDEA_STATUSES.map(s => `<option ${s === (i.status || "New") ? "selected" : ""}>${s}</option>`).join("")}</select>` : ""}
+</div>`).join("") : '<div class="note">No ideas yet — add the first one.</div>';
+}
+/* renderIdeas uses the sorted list's index — map back to the stored array by id */
+function ideaByRenderIndex(n) {
+  const sorted = (HUB.ideas || []).slice().sort((a,b) => new Date(b.at || 0) - new Date(a.at || 0));
+  const target = sorted[n];
+  return (HUB.ideas || []).findIndex(i => i === target || (i.id && target && i.id === target.id));
+}
+
+$("ideaAdd").addEventListener("click", () => {
+  if (!canWrite()) return;
+  const title = $("ideaTitle").value.trim();
+  if (!title) { toast("Give the idea a title."); return; }
+  const ideas = (HUB.ideas || []).slice();
+  ideas.push({ id: "idea_" + Date.now(), title, notes: $("ideaNotes").value.trim(), by: MY_NAME, at: new Date().toISOString(), status: "New", votes: [] });
+  $("ideaTitle").value = ""; $("ideaNotes").value = "";
+  saveHub("ideas", ideas).then(() => {
+    logAct("idea-added", title);
+    toast("Idea added");
+  });
+});
+
+window.ideaStatus = function (n, status) {
+  if (!canWrite()) return;
+  const idx = ideaByRenderIndex(n);
+  if (idx < 0) return;
+  const ideas = (HUB.ideas || []).slice();
+  ideas[idx] = Object.assign({}, ideas[idx], { status });
+  saveHub("ideas", ideas).then(() => logAct("idea-status", ideas[idx].title + " -> " + status));
+};
+
+window.voteIdea = function (n) {
+  if (!canWrite()) return;
+  const idx = ideaByRenderIndex(n);
+  if (idx < 0) return;
+  const ideas = (HUB.ideas || []).slice();
+  const votes = new Set(ideas[idx].votes || []);
+  votes.has(MY_NAME) ? votes.delete(MY_NAME) : votes.add(MY_NAME);
+  ideas[idx] = Object.assign({}, ideas[idx], { votes: [...votes] });
+  saveHub("ideas", ideas);
+};
+
+/* ================= admin: user accounts + activity log ================= */
+const HUB_ROLES = ["general", "manager", "admin"];
+
+function renderAdmin() {
+  if (!canAdmin()) return;
+  const users = (HUB.users || []).slice().sort((a,b) => (a.name || a.email || "").localeCompare(b.name || b.email || ""));
+  $("admUserRows").innerHTML = users.length ? users.map((u, i) => `
+<tr>
+  <td><b>${esc(u.name || "—")}</b></td>
+  <td>${esc(u.email || "—")}</td>
+  <td><select onchange="setUserRole(${i}, this.value)">${HUB_ROLES.map(r => `<option ${r === (u.role || "general") ? "selected" : ""}>${r}</option>`).join("")}</select></td>
+  <td><button class="prio-btn ${u.active === false ? "" : "on p3b"}" onclick="setUserActive(${i}, ${u.active === false})">${u.active === false ? '<span class="tag-off">off</span>' : "on"}</button></td>
+  <td>${esc((u.created || "").slice(0, 10))}</td>
+  <td>${esc(fmtWhen(u.last_login || ""))}</td>
+</tr>`).join("") : '<tr><td colspan="6" class="note">No hub accounts yet — accounts appear at first SSO sign-in.</td></tr>';
+
+  const log = (HUB.log || []).slice().reverse().slice(0, 200);
+  $("admLogRows").innerHTML = log.length ? log.map(r => `
+<tr>
+  <td style="white-space:nowrap">${esc(fmtWhen(r.at))}</td>
+  <td>${esc(r.who)}</td>
+  <td><b>${esc(r.action)}</b></td>
+  <td>${esc(r.detail)}</td>
+</tr>`).join("") : '<tr><td colspan="4" class="note">No activity recorded yet.</td></tr>';
+}
+
+/* users are sorted for display — map the row index back to the stored array */
+function userByRow(i) {
+  const sorted = (HUB.users || []).slice().sort((a,b) => (a.name || a.email || "").localeCompare(b.name || b.email || ""));
+  const t = sorted[i];
+  return (HUB.users || []).findIndex(u => u === t || (t && u.uid && u.uid === t.uid));
+}
+
+window.setUserRole = function (i, role) {
+  if (!canAdmin()) return;
+  const idx = userByRow(i);
+  if (idx < 0) return;
+  const users = (HUB.users || []).slice();
+  const who = users[idx].email || users[idx].name;
+  users[idx] = Object.assign({}, users[idx], { role });
+  saveHub("users", users).then(() => {
+    logAct("role-change", who + " → " + role);
+    toast(who + " is now " + role);
+  });
+};
+
+window.setUserActive = function (i, makeActive) {
+  if (!canAdmin()) return;
+  const idx = userByRow(i);
+  if (idx < 0) return;
+  const users = (HUB.users || []).slice();
+  const who = users[idx].email || users[idx].name;
+  users[idx] = Object.assign({}, users[idx], { active: !!makeActive });
+  saveHub("users", users).then(() => {
+    logAct(makeActive ? "account-enabled" : "account-disabled", who);
+    toast(who + (makeActive ? " enabled" : " disabled (read-only)"));
+  });
+};
+
+window.admTab = function (which) {
+  $("tabUsersBtn").classList.toggle("on", which === "users");
+  $("tabLogBtn").classList.toggle("on", which === "log");
+  $("admUsers").style.display = which === "users" ? "block" : "none";
+  $("admLog").style.display = which === "log" ? "block" : "none";
+};
+window.closeAdmin = function () { $("adminModal").style.display = "none"; };
+$("adminBtn").addEventListener("click", () => {
+  if (!canAdmin()) return;
+  renderAdmin();
+  $("adminModal").style.display = "block";
+});
+$("adminModal").addEventListener("click", e => { if (e.target === $("adminModal")) closeAdmin(); });
+
+/* ================= notifications ================= */
+function allEvents() {
+  const ev = [];
+  (HUB.chat || []).forEach(m => ev.push({ at: m.at, kind: "Chat", text: m.by + ": " + m.text }));
+  (HUB.comments || []).forEach(c => ev.push({ at: c.at, kind: "Comment", text: c.by + " on " + c.key.split("||")[1] + ": " + c.text }));
+  (HUB.ideas || []).forEach(i => ev.push({ at: i.at, kind: "Idea", text: i.by + ": " + i.title }));
+  (HUB.log || []).forEach(r => {
+    if (r.action === "new-user") ev.push({ at: r.at, kind: "New user", text: r.detail });
+    if (r.action === "role-change") ev.push({ at: r.at, kind: "Role", text: r.who + ": " + r.detail });
+  });
+  return ev.sort((a,b) => new Date(b.at || 0) - new Date(a.at || 0));
+}
+function eventCount() { return (HUB.chat || []).length + (HUB.comments || []).length + (HUB.ideas || []).length + (HUB.log || []).length; }
+function lastSeen() { try { return localStorage.getItem("hubLastSeen") || "1970-01-01"; } catch (e) { return "1970-01-01"; } }
+
+function renderNotifs() {
+  const ev = allEvents().slice(0, 25);
+  const seen = lastSeen();
+  const fresh = allEvents().filter(e => e.at > seen).length;
+  const badge = $("bellBadge");
+  badge.style.display = fresh ? "inline-block" : "none";
+  badge.textContent = fresh > 99 ? "99+" : fresh;
+  $("notifList").innerHTML = ev.length
+    ? ev.map(e => `<div class="np-item ${e.at > seen ? "fresh" : ""}"><span class="np-kind">${esc(e.kind)}</span>${esc(e.text.slice(0, 120))}<span class="np-time">${esc(fmtWhen(e.at))}</span></div>`).join("")
+    : '<div class="np-item">No activity yet.</div>';
+}
+
+let firstSnapshot = true;
+function maybeNotify(prevCount) {
+  renderNotifs();
+  if (firstSnapshot) { firstSnapshot = false; return; }
+  const grew = eventCount() > prevCount;
+  if (grew && "Notification" in window && Notification.permission === "granted") {
+    const latest = allEvents()[0];
+    if (latest && latest.at > lastSeen()) {
+      try { new Notification("Team Hub — " + latest.kind, { body: latest.text.slice(0, 140) }); } catch (e) {}
+    }
+  }
+}
+
+$("bellBtn").addEventListener("click", () => {
+  const p = $("notifPanel");
+  p.style.display = p.style.display === "block" ? "none" : "block";
+  renderNotifs();
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest("#notifPanel") && !e.target.closest("#bellBtn")) $("notifPanel").style.display = "none";
+});
+$("markReadBtn").addEventListener("click", () => {
+  try { localStorage.setItem("hubLastSeen", new Date().toISOString()); } catch (e) {}
+  renderNotifs();
+});
+$("desktopBtn").addEventListener("click", () => {
+  if (!("Notification" in window)) { toast("This browser does not support desktop alerts."); return; }
+  Notification.requestPermission().then(p => toast(p === "granted" ? "Desktop alerts on" : "Desktop alerts blocked"));
+});
+
+/* ================= KPIs + charts + risk ================= */
+let cStatus = null, cOwner = null, cMs = null;
+const OPEN_STATUSES = s => s !== "Completed" && s !== "Maintenance" && s !== "Future";
+
+function renderKpis() {
+  const scope = scopedProjects();
+  const open = scope.filter(p => OPEN_STATUSES(p.status));
+  const done = scope.filter(p => p.status === "Completed").length;
+  const denom = scope.filter(p => p.status !== "Future" && p.status !== "Maintenance").length;
+  let overdue = 0, blocks = 0;
+  open.forEach(p => p.milestones.forEach(m => {
+    const st = milestoneState(m);
+    if (st === "Overdue") overdue++;
+    if (st === "Roadblock") blocks++;
+  }));
+  const ideasOpen = (HUB.ideas || []).filter(i => i.status !== "Dropped" && i.status !== "Approved").length;
+  const k = [
+    { v: scope.length, l: scope.length === ALL.length ? "Projects tracked" : "Projects in view" },
+    { v: open.length, l: "Active projects" },
+    { v: denom ? Math.round(done / denom * 100) + "%" : "—", l: "Completed", cls: "good" },
+    { v: overdue, l: "Overdue milestones", cls: overdue ? "bad" : "" },
+    { v: blocks, l: "Roadblocks", cls: blocks ? "bad" : "" },
+    { v: ideasOpen, l: "Open ideas" }
+  ];
+  $("kpis").innerHTML = k.map(x => `<div class="kpi ${x.cls || ""}"><div class="v">${x.v}</div><div class="l">${x.l}</div></div>`).join("");
+  $("subTitle").textContent = ($("fTeam").value ? "Team: " + $("fTeam").value : "All team status reports") + " · live";
+}
+
+function renderCharts() {
+  if (typeof Chart === "undefined") return;
+  if (typeof ChartDataLabels !== "undefined") Chart.register(ChartDataLabels);
+  const dl = { color: "#fff", font: { weight: "bold" }, formatter: v => v > 0 ? v : "" };
+  const scope = scopedProjects();
+  $("hStatus").textContent = "Project Status — " + scopeLabel();
+  $("hOwner").textContent = "Open Projects by Owner — " + scopeLabel();
+  $("hMs").textContent = "Milestone Health — " + scopeLabel();
+
+  const byStatus = {};
+  scope.forEach(p => { byStatus[p.status] = (byStatus[p.status] || 0) + 1; });
+  const sKeys = Object.keys(byStatus).sort((a,b) => byStatus[b] - byStatus[a]);
+  if (cStatus) cStatus.destroy();
+  cStatus = new Chart($("cStatus"), {
+    type: "doughnut",
+    data: { labels: sKeys.map(k => k + " (" + byStatus[k] + ")"), datasets: [{ data: sKeys.map(k => byStatus[k]), backgroundColor: sKeys.map(k => STATUS_COLORS[k] || "#98a4b0") }] },
+    options: { plugins: { legend: { position: "right" }, datalabels: dl } }
+  });
+
+  const byOwner = {};
+  scope.filter(p => OPEN_STATUSES(p.status)).forEach(p => { byOwner[p.ownerName] = (byOwner[p.ownerName] || 0) + 1; });
+  const oKeys = Object.keys(byOwner).sort((a,b) => byOwner[b] - byOwner[a]).slice(0, 12);
+  if (cOwner) cOwner.destroy();
+  cOwner = new Chart($("cOwner"), {
+    type: "bar",
+    data: { labels: oKeys, datasets: [{ data: oKeys.map(k => byOwner[k]), backgroundColor: "#5b9bd5" }] },
+    options: { indexAxis: "y", plugins: { legend: { display: false }, datalabels: { anchor: "end", align: "right", color: "#333", formatter: v => v } }, scales: { x: { ticks: { stepSize: 1 } } } }
+  });
+
+  const MS_STATES = [
+    ["Completed", "#28a745"], ["In Progress", "#5b9bd5"], ["Overdue", "#dc3545"],
+    ["On-Hold", "#6c757d"], ["Roadblock", "#fd7e14"], ["Not Started", "#adb5bd"]
+  ];
+  const msCounts = {}; MS_STATES.forEach(([k]) => msCounts[k] = 0);
+  /* Milestone health covers open projects only — closed projects' stale
+     checkboxes would otherwise read as Overdue. */
+  scope.filter(p => OPEN_STATUSES(p.status)).forEach(p => p.milestones.forEach(m => { msCounts[milestoneState(m)]++; }));
+  const active = MS_STATES.filter(([k]) => msCounts[k] > 0);
+  if (cMs) cMs.destroy();
+  cMs = new Chart($("cMs"), {
+    type: "doughnut",
+    data: { labels: active.map(([k]) => k + " (" + msCounts[k] + ")"), datasets: [{ data: active.map(([k]) => msCounts[k]), backgroundColor: active.map(([,c]) => c) }] },
+    options: { plugins: { legend: { position: "right" }, datalabels: dl } }
+  });
+}
+
+function renderRisk() {
+  const rows = [];
+  scopedProjects().forEach(p => {
+    const reasons = needsAttention(p);
+    if (reasons.length) rows.push({ p, reasons });
+  });
+  rows.sort((a,b) => (mgrPrio(keyOf(a.p)) || 9) - (mgrPrio(keyOf(b.p)) || 9));
+  $("riskCount").textContent = "(" + rows.length + ")";
+  $("riskBody").innerHTML = rows.length ? rows.map(r => `
+<tr>
+  <td>${mgrPrio(keyOf(r.p)) ? `<span class="pflag p${mgrPrio(keyOf(r.p))}">P${mgrPrio(keyOf(r.p))}</span> ` : ""}<b>${esc(r.p.name)}</b></td>
+  <td>${esc(r.p.ownerName)}</td>
+  <td>${r.reasons.map(esc).join("<br>")}</td>
+</tr>`).join("") : '<tr><td colspan="3" class="note">Nothing needs attention right now. 🎉</td></tr>';
+}
+
+function renderAll() {
+  renderKpis();
+  renderProjects();
+  renderChat();
+  renderIdeas();
+  renderRisk();
+  renderCharts();
+  renderNotifs();
+}
+
+/* ================= wiring ================= */
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+/* Any Team / Status / Search / Sort change re-scopes the WHOLE page —
+   KPIs, charts, and the risk board follow the selections, not just the list.
+   Search re-renders are debounced so typing doesn't redraw charts per key. */
+let scopeTimer = null;
+function renderScope() {
+  renderProjects();
+  renderKpis();
+  renderRisk();
+  renderCharts();
+}
+["fTeam","fStatus","fSort"].forEach(id => $(id).addEventListener("input", renderScope));
+$("q").addEventListener("input", () => {
+  renderProjects(); /* the list itself stays instant */
+  clearTimeout(scopeTimer);
+  scopeTimer = setTimeout(renderScope, 300);
+});
+$("refreshBtn").addEventListener("click", loadAll);
+$("printBtn").addEventListener("click", () => window.print());
+setInterval(loadAll, 10 * 60 * 1000); /* keep briefing data fresh; hub data is already live */
+
+loadAll();
+subscribeHub();
+</script>
+</body>
+</html>
