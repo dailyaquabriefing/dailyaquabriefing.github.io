@@ -20,15 +20,12 @@
     if (page === '') page = 'index.html';
 
     var links = [
-        { href: 'index.html' + linkQ(urlId), label: '🏠 Briefing', match: 'index.html', idBase: 'index.html' },
-        { href: 'admin.html', label: 'Dashboard', match: 'admin.html' },
-        { href: 'weekly-report.html' + linkQ(urlId), label: 'Status Report', match: 'weekly-report.html', idBase: 'weekly-report.html' },
-        // Team Hub lives on the intranet dashboards server (Windows sign-in),
-        // fronted by the managerhub subdomain. Opens in a new tab so the
-        // briefing page stays put.
-        { href: 'https://managerhub.aquatools.app/', label: 'Team Hub', match: 'manager-hub.html', newTab: true },
-        { href: 'howtouse.html', label: 'Help', match: 'howtouse.html' },
-        { href: 'users.html', label: 'Admin', match: 'users.html' }
+        { href: 'index.html' + linkQ(urlId), label: '🏠 My Briefing', match: 'index.html', idBase: 'index.html' },
+        { href: 'weekly-report.html' + linkQ(urlId), label: '📋 Team Status', match: 'weekly-report.html', idBase: 'weekly-report.html' },
+        { href: 'manager-hub.html', label: '👥 Team Hub', match: 'manager-hub.html' },
+        { href: 'admin.html', label: '📊 Dashboard', match: 'admin.html' },
+        { href: 'howtouse.html', label: '❓ Help Guide', match: 'howtouse.html' },
+        { href: 'users.html', label: '🔐 Admin Panel', match: 'users.html' }
     ];
 
     // --- Styles (namespaced so they never clash with page CSS) ---

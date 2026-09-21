@@ -482,18 +482,34 @@
 
     <div id="default-message" class="message-box">
         <h2>Welcome to Aqua Briefing</h2>
-        <p>Enter your <strong>Aqua User ID</strong> below in <strong>lowercase</strong> to view your report.</p>
+        <p>This is your personalized work dashboard. Enter your <strong>Aqua User ID</strong> below in <strong>lowercase</strong> to view your report.</p>
+        
+        <div class="step-box">
+            <h3>How It Works</h3>
+            <ol>
+                <li><strong>Enter your ID</strong>: Type your lowercase user ID (e.g., 'jdoe')</li>
+                <li><strong>View your briefing</strong>: See your projects, tasks, and daily updates</li>
+                <li><strong>Navigate easily</strong>: Use the top navigation bar to switch between views</li>
+            </ol>
+        </div>
+        
         <div style="margin: 25px 0;">
             <input type="text" id="userid-input" class="userid-input" placeholder="e.g. jdoe" autofocus>
             <button onclick="viewReport()" class="action-btn btn-primary">View Briefing</button>
         </div>
+        
         <div id="team-row" class="hidden">
             <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 25px auto; width: 60%;">
             <p style="margin-bottom: 8px; font-weight: 600; color: #555;">Or open a team status report:</p>
             <div id="team-chips"></div>
         </div>
+        
         <hr style="border: 0; border-top: 1px solid #dae1e7; margin: 30px auto; width: 60%;">
-        <div style="margin-top: 20px;">
+        
+        <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+            <a href="howtouse.html" style="text-decoration:none;">
+                <button class="action-btn btn-secondary">How to Use This App</button>
+            </a>
             <a href="admin.html" style="text-decoration:none;">
                 <button class="action-btn btn-secondary">Log In to Dashboard</button>
             </a>
