@@ -5,6 +5,17 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.0] - 2026-09-20
+
+### Added
+- **Milestones now carry a real "last modified" stamp.** Saving a project in
+  the editor stamps `updatedAt` (ISO timestamp) on every milestone that is
+  new or changed in that save — untouched milestones keep the stamp they
+  already had (rows are compared by content, so reordering fields or leaving
+  a row alone never restamps it). Existing milestones pick up their first
+  stamp the next time they're edited. Team Hub reads this field to show true
+  modified dates in its report pickers.
+
 ## [1.25.3] - 2026-09-18
 
 ### Changed

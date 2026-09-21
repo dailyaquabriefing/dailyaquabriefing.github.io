@@ -1237,6 +1237,20 @@
 
             // Drop rows the user added but never filled in
             const cleanedMilestones = tempMilestones.filter(m => (m.name || '').trim() !== '');
+
+            // Per-milestone modified stamp: new or changed rows get updatedAt now,
+            // untouched rows keep the stamp they already had (content-compared,
+            // key order ignored). Team Hub reads this to show real modified dates.
+            const prevMsList = editIndex === -1 ? [] : (Array.isArray(list[editIndex].milestones) ? list[editIndex].milestones : []);
+            const msSig = m => { const o = {}; Object.keys(m).filter(k => k !== 'updatedAt').sort().forEach(k => { o[k] = m[k]; }); return JSON.stringify(o); };
+            const prevPool = prevMsList.map(m => ({ sig: msSig(m), at: m.updatedAt || '', used: false }));
+            const msNow = new Date().toISOString();
+            cleanedMilestones.forEach(m => {
+                const hit = prevPool.find(x => !x.used && x.sig === msSig(m));
+                if (hit) { hit.used = true; if (hit.at) m.updatedAt = hit.at; }
+                else { m.updatedAt = msNow; }
+            });
+
             const nextMs = cleanedMilestones.find(m => !m.done);
             const nextMsDate = nextMs ? (nextMs.estActDate || nextMs.baseDate) : '';
 
