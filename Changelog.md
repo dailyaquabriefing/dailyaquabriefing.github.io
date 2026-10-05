@@ -5,6 +5,18 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.4] - 2026-10-05
+
+### Added
+- **API Guide: example prompts for Claude** (`api.html#claude-prompts`).
+  Ready-to-use prompts for creating projects, quick tasks, and daily tasks;
+  changing status, dates, owner, and priority; marking milestones done, on
+  hold, or blocked; appending or replacing notes; tying briefing updates to
+  code work in Claude Code; and checking a briefing before changing it.
+  Includes what the connector can't do (delete, reorder, attachments,
+  comments, daily checks) and how milestone edits keep the rest of the list.
+  Linked from the page's contents list.
+
 ## [1.28.3] - 2026-10-05
 
 ### Changed

@@ -59,6 +59,12 @@
         .toc ol { margin: 4px 0 0; padding-left: 20px; }
         .toc a { color: #005a9e; text-decoration: none; }
         .toc a:hover { text-decoration: underline; }
+        .prompt-head { color: #005a9e; margin: 18px 0 6px; }
+        .prompt-list { list-style: none; padding-left: 0; margin: 0 0 10px; }
+        .prompt-list li {
+            background: #f3f7fb; border-left: 3px solid #0078D4; border-radius: 4px;
+            padding: 8px 12px; margin-bottom: 6px; font-style: italic; color: #333;
+        }
         .key-input { display: block; width: 100%; box-sizing: border-box; margin: 8px 0 4px; padding: 8px 10px; font-family: Consolas, monospace; font-size: 0.95em; border: 1px solid #b2dfdb; border-radius: 4px; }
         .copy-btn { background: #0078D4; color: #fff; border: none; border-radius: 4px; padding: 5px 14px; font-weight: 600; cursor: pointer; margin: -6px 0 8px; }
         .copy-btn:hover { background: #005a9e; }
@@ -100,7 +106,7 @@
                 <li><a href="#create-key">Create an API key</a> (anyone with a Dashboard account)</li>
                 <li><a href="#connect">Connect to the API</a> (developers): store the key, test, make calls</li>
                 <li><a href="#examples">Code examples</a>: Python, Node.js, C#, curl, Power Automate</li>
-                <li><a href="#claude">Connect Claude</a>: Claude Code and Claude Desktop</li>
+                <li><a href="#claude">Connect Claude</a>: Claude Code and Claude Desktop setup, plus <a href="#claude-prompts">example prompts</a></li>
                 <li><a href="#reference">Reference</a>: endpoints, fields, responses, errors</li>
             </ol>
         </div>
@@ -365,6 +371,63 @@ curl -X POST -H "Authorization: Bearer %DAB_API_KEY%" -H "Content-Type: applicat
             <li>Still stuck? Contact Chuck Konkol (IT).</li>
         </ul>
         <p>Claude on the web (claude.ai) can't connect with a key yet. It needs a sign-in flow this API doesn't have.</p>
+
+        <h3 id="claude-prompts">Example prompts</h3>
+        <p>These work in Claude Code and Claude Desktop once daily-briefing is connected. Start with "Using daily-briefing" or mention "my briefing" so Claude knows to use the connector. Refer to projects by name and Claude looks up the id for you. Dates can be written any way you like ("next Friday", "Nov 15"), and Claude converts them.</p>
+
+        <h4 class="prompt-head">Create a project</h4>
+        <ul class="prompt-list">
+            <li>"Using daily-briefing, add a project called 'Upgrade Epicor test server'. Priority High, assigned to Chuck Konkol, start 2026-10-06, end 2026-11-15. Goal: test the new Epicor version before the production upgrade."</li>
+            <li>"Add a project 'Warehouse barcode scanners' to my briefing, status Planning, priority Medium, with these milestones: Requirements by Oct 15, Vendor selection by Nov 1, Pilot by Dec 1."</li>
+            <li>"Add a quick task to my briefing: 'Renew SSL certificate for helpdesk.aquaai.app', due Oct 31, priority Medium."</li>
+            <li>"Add a daily task: 'Check the overnight backup report'."</li>
+        </ul>
+
+        <h4 class="prompt-head">Update status, dates, and owner</h4>
+        <ul class="prompt-list">
+            <li>"In daily-briefing, set 'OTD metric changes' to Testing."</li>
+            <li>"Move the end date of 'Upgrade Epicor test server' to Dec 1."</li>
+            <li>"Reassign 'Packing List Dashboard' to Dan Burns and set priority to Low."</li>
+            <li>"Mark 'Update Executive Dashboard' as Completed."</li>
+        </ul>
+
+        <h4 class="prompt-head">Work with milestones</h4>
+        <ul class="prompt-list">
+            <li>"On 'Warehouse barcode scanners', mark the Requirements milestone done with an actual date of today."</li>
+            <li>"Put the Vendor selection milestone on hold. Reason: waiting on a quote from the vendor."</li>
+            <li>"Flag a roadblock on the Pilot milestone: scanner firmware bug, ticket open with the vendor."</li>
+            <li>"Add a milestone 'Go-live' to 'Upgrade Epicor test server' with a base date of Dec 15."</li>
+        </ul>
+
+        <h4 class="prompt-head">Add notes</h4>
+        <ul class="prompt-list">
+            <li>"Add a note to 'Update Executive Dashboard': deployed to test on 10/5, waiting on Pat's review."</li>
+            <li>"Replace the notes on 'OTD metric changes' with a three-line summary of where it stands."</li>
+        </ul>
+        <p>"Add a note" appends to the existing notes. "Replace the notes" overwrites them, including any formatting from the Dashboard.</p>
+
+        <h4 class="prompt-head">Tie it to your code work (Claude Code)</h4>
+        <ul class="prompt-list">
+            <li>"When you finish this change, add a note to my 'Update Executive Dashboard' project saying what changed and the commit hash."</li>
+            <li>"Read PLAN.md and create a project in my briefing for it, with one milestone per phase and the dates from the plan."</li>
+            <li>"Look at the last week of commits in this repo and update the milestones on 'Packing List Dashboard' to match what's done."</li>
+        </ul>
+
+        <h4 class="prompt-head">Check before you change</h4>
+        <ul class="prompt-list">
+            <li>"What projects in my briefing are in Testing or On-Hold?"</li>
+            <li>"Show me the details and milestones for 'OTD metric changes'."</li>
+            <li>"Which of my projects have a roadblock?"</li>
+            <li>"What's on Mike Hevey's briefing (mhevey)?" Claude can read anyone's briefing but can only change your own.</li>
+        </ul>
+
+        <h4 class="prompt-head">Good to know</h4>
+        <ul>
+            <li>Claude asks for your approval before each create or update. Read what it plans to send, then approve.</li>
+            <li>When you change one milestone, Claude reads the full list first and sends it all back, so the others stay put. If something looks off, ask: "Show me the milestones on X."</li>
+            <li><strong>Do these on the Dashboard instead:</strong> deleting items, reordering them with Up/Down, attachments, comments, and daily checks. The connector can't do any of them.</li>
+            <li>New items go to the top of their tab, the same as on the Dashboard.</li>
+        </ul>
 
         <!-- ============================================================ -->
         <h2 id="reference">Reference</h2>
