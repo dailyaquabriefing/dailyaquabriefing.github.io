@@ -5,6 +5,25 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-10-05
+
+### Added
+- **Search on the Dashboard.** A search box under the tabs filters Active
+  Projects, Quick Tasks, and Daily Tasks together as you type. It checks name,
+  status, priority, Assigned To, goal, tester, collaborators, dates, notes
+  (rich-text formatting stripped), milestones (including on-hold and roadblock
+  reasons), attachment names, and comments. Every word typed must match, in any
+  order. While searching, each tab shows its match count and a "No items match"
+  message appears when nothing is found. Clear with the **Clear** button,
+  **Esc**, or the ✕ in the box. The box is hidden on the Settings tab.
+- Help Guide (howtouse.html) describes the new search under "Step 2: Managing
+  Your Content".
+
+### Changed
+- **Up/Down buttons are disabled while a search is active**, because they move
+  an item within the full list and its neighbours may be hidden by the filter.
+  Edit and Delete still act on the right item.
+
 ## [1.26.0] - 2026-09-20
 
 ### Added

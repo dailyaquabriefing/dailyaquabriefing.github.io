@@ -87,6 +87,27 @@
             background: white;
         }
 
+        /* Dashboard search */
+        .tab-count {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 7px;
+            border-radius: 10px;
+            background: #e9ecef;
+            color: #555;
+            font-size: 0.8em;
+        }
+        .tab-count.has-hits { background: var(--primary); color: white; }
+        .dash-search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px 0;
+        }
+        .dash-search input { flex: 1; min-width: 0; }
+        .dash-search-hint { font-size: 0.85em; color: #666; white-space: nowrap; }
+        .btn-move:disabled { opacity: 0.4; cursor: not-allowed; }
+
         /* Content Areas */
         .tab-content {
             display: none;
@@ -259,6 +280,8 @@
             .complex-field, .date-grid { grid-template-columns: 1fr; }
             #tab-tasks > div { flex-direction: column; }
             #new-task-input { margin-bottom: 10px; }
+            .dash-search { flex-wrap: wrap; padding: 10px 10px 0; }
+            .dash-search-hint { white-space: normal; }
         }
         /* --- ADMIN COMMENT STYLES --- */
         .admin-comment-item {
@@ -353,10 +376,17 @@
         </header>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="openTab('projects')">Active Projects</button>
-            <button class="tab-btn" onclick="openTab('active')">Quick Tasks</button>
-            <button class="tab-btn" onclick="openTab('tasks')">Daily Tasks</button>
+            <button class="tab-btn active" onclick="openTab('projects')">Active Projects<span class="tab-count" id="count-projects" style="display:none;"></span></button>
+            <button class="tab-btn" onclick="openTab('active')">Quick Tasks<span class="tab-count" id="count-active" style="display:none;"></span></button>
+            <button class="tab-btn" onclick="openTab('tasks')">Daily Tasks<span class="tab-count" id="count-tasks" style="display:none;"></span></button>
             <button class="tab-btn" onclick="openTab('settings')">Settings</button>
+        </div>
+
+        <div class="dash-search" id="dash-search">
+            <input type="search" id="dash-search-input" placeholder="🔍 Search projects and tasks (name, goal, notes, milestones, comments, people...)"
+                   oninput="renderAll()" onkeydown="if (event.key === 'Escape') clearDashSearch()">
+            <button class="btn btn-secondary" id="dash-search-clear" onclick="clearDashSearch()" style="display:none;">Clear</button>
+            <span class="dash-search-hint" id="dash-search-hint" style="display:none;">Clear the search to reorder with Up/Down</span>
         </div>
 
         <div id="tab-projects" class="tab-content active">
@@ -867,12 +897,76 @@
             renderDailyTasks();
             renderItems('project', localData.projects, 'project-list');
             renderItems('active', localData.activeTasks, 'active-task-list');
+            updateSearchUI();
+        }
+
+        // --- DASHBOARD SEARCH ---
+        // Every word typed must appear somewhere in the item (any order, any case).
+        function getSearchTerms() {
+            const input = document.getElementById('dash-search-input');
+            return (input ? input.value : '').toLowerCase().split(/\s+/).filter(Boolean);
+        }
+
+        function stripHtml(html) {
+            return new DOMParser().parseFromString(html, 'text/html').body.textContent || '';
+        }
+
+        function itemSearchText(item) {
+            const parts = [item.name, item.status, item.priority, item.assignedTo, item.goal,
+                           item.tester, item.collaborators, item.milestone, item.startDate, item.endDate];
+            (item.milestones || []).forEach(m => parts.push(m.name, m.holdReason, m.blockReason));
+            (item.attachments || []).forEach(a => parts.push(a.name));
+            (item.publicComments || []).forEach(c => parts.push(c.author, c.text));
+            if (item.notes) parts.push(stripHtml(item.notes));
+            return parts.filter(Boolean).join(' ').toLowerCase();
+        }
+
+        function itemMatches(item, terms) {
+            if (!terms.length) return true;
+            const text = itemSearchText(item);
+            return terms.every(t => text.includes(t));
+        }
+
+        function updateSearchUI() {
+            const terms = getSearchTerms();
+            const searching = terms.length > 0;
+            const counts = {
+                projects: localData.projects.filter(i => itemMatches(i, terms)).length,
+                active: localData.activeTasks.filter(i => itemMatches(i, terms)).length,
+                tasks: localData.dailyTasks.filter(i => itemMatches(i, terms)).length
+            };
+            Object.keys(counts).forEach(key => {
+                const el = document.getElementById('count-' + key);
+                el.textContent = counts[key];
+                el.style.display = searching ? 'inline-block' : 'none';
+                el.classList.toggle('has-hits', counts[key] > 0);
+            });
+            document.getElementById('dash-search-clear').style.display = searching ? 'inline-block' : 'none';
+            document.getElementById('dash-search-hint').style.display = searching ? 'inline' : 'none';
+        }
+
+        function clearDashSearch() {
+            document.getElementById('dash-search-input').value = '';
+            renderAll();
+        }
+
+        function noMatchHtml() {
+            const p = document.createElement('p');
+            p.style.cssText = 'color:#999; padding:10px; text-align:center;';
+            p.textContent = `No items match "${document.getElementById('dash-search-input').value.trim()}".`;
+            return p;
         }
 
         function renderDailyTasks() {
             const list = document.getElementById('daily-task-list');
             list.innerHTML = '';
+            const terms = getSearchTerms();
+            // Up/Down move within the full list, so they're off while results are filtered
+            const moveDisabled = terms.length ? 'disabled' : '';
+            let shown = 0;
             localData.dailyTasks.forEach((task, index) => {
+                if (!itemMatches(task, terms)) return;
+                shown++;
                 const li = document.createElement('li');
                 li.className = 'item-row';
                 // Show extra info snippet if available
@@ -898,14 +992,15 @@
                         ${extraHtml}
                     </div>
                     <div class="row-actions">
-                        <button class="btn btn-move" onclick="moveItem('daily', ${index}, -1)">Up</button>
-                        <button class="btn btn-move" onclick="moveItem('daily', ${index}, 1)">Down</button>
+                        <button class="btn btn-move" onclick="moveItem('daily', ${index}, -1)" ${moveDisabled}>Up</button>
+                        <button class="btn btn-move" onclick="moveItem('daily', ${index}, 1)" ${moveDisabled}>Down</button>
                         <button class="btn btn-edit" onclick="editItem('daily', ${index})">Edit</button>
                         <button class="btn btn-danger" onclick="deleteDailyTask(${index})">X</button>
                     </div>
                 `;
                 list.appendChild(li);
             });
+            if (terms.length && shown === 0) list.appendChild(noMatchHtml());
         }
 
         function renderItems(type, dataArray, containerId) {
@@ -915,7 +1010,12 @@
                 container.innerHTML = '<p style="color:#999; padding:10px; text-align:center;">No items found.</p>';
                 return;
             }
+            const terms = getSearchTerms();
+            const moveDisabled = terms.length ? 'disabled' : '';
+            let shown = 0;
             dataArray.forEach((item, index) => {
+                if (!itemMatches(item, terms)) return;
+                shown++;
                 const statusClass = 'st-' + (item.status || 'stable').toLowerCase().replace(' ', '-');
                 // Format dates for preview
                 let dates = [];
@@ -972,14 +1072,15 @@
                         </div>
                     </div>
                     <div class="row-actions">
-                        <button class="btn btn-move" onclick="moveItem('${type}', ${index}, -1)">Up</button>
-                        <button class="btn btn-move" onclick="moveItem('${type}', ${index}, 1)">Down</button>
+                        <button class="btn btn-move" onclick="moveItem('${type}', ${index}, -1)" ${moveDisabled}>Up</button>
+                        <button class="btn btn-move" onclick="moveItem('${type}', ${index}, 1)" ${moveDisabled}>Down</button>
                         <button class="btn btn-edit" onclick="editItem('${type}', ${index})">Edit</button>
                         <button class="btn btn-danger" onclick="deleteItem('${type}', ${index})">Delete</button>
                     </div>
                 `;
                 container.appendChild(div);
             });
+            if (terms.length && shown === 0) container.appendChild(noMatchHtml());
         }
 
         // --- ACTIONS ---
@@ -1318,6 +1419,8 @@
             const btns = document.getElementsByClassName('tab-btn');
             for (let b of btns) b.classList.remove('active');
             event.currentTarget.classList.add('active');
+            // Search covers the item lists only, so hide it on Settings
+            document.getElementById('dash-search').style.display = tabName === 'settings' ? 'none' : 'flex';
         }
         
         // --- ATTACHMENT LOGIC ---
