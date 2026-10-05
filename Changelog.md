@@ -5,6 +5,20 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.3] - 2026-10-05
+
+### Changed
+- **API Guide: clearer Claude setup.** A "Fill in your key" box puts the
+  reader's key into the Claude Code command and the Claude Desktop text, and
+  each has a Copy button. The key stays in the browser tab and is never sent
+  or saved. Claude Desktop steps now say exactly what to change: find the
+  one `"mcpServers": {},` line in `claude_desktop_config.json` and replace
+  it. Everything else in the file stays as it is. Added a Node.js check
+  (`node -v`), how to fully quit from the system tray, how to confirm it's
+  running (Settings → Developer), a table for files that look different (no
+  comma, no `mcpServers` line, other servers already there), and
+  troubleshooting.
+
 ## [1.28.2] - 2026-10-05
 
 ### Fixed

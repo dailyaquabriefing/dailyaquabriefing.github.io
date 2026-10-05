@@ -59,6 +59,9 @@
         .toc ol { margin: 4px 0 0; padding-left: 20px; }
         .toc a { color: #005a9e; text-decoration: none; }
         .toc a:hover { text-decoration: underline; }
+        .key-input { display: block; width: 100%; box-sizing: border-box; margin: 8px 0 4px; padding: 8px 10px; font-family: Consolas, monospace; font-size: 0.95em; border: 1px solid #b2dfdb; border-radius: 4px; }
+        .copy-btn { background: #0078D4; color: #fff; border: none; border-radius: 4px; padding: 5px 14px; font-weight: 600; cursor: pointer; margin: -6px 0 8px; }
+        .copy-btn:hover { background: #005a9e; }
         .back-link { display: inline-block; margin-top: 10px; text-decoration: none; color: #005a9e; font-weight: bold; }
         .back-link:hover { text-decoration: underline; }
         @media (max-width: 768px) {
@@ -298,14 +301,21 @@ curl -X POST -H "Authorization: Bearer %DAB_API_KEY%" -H "Content-Type: applicat
         <h2 id="claude">Connect Claude</h2>
         <p>The API includes an MCP connector, so Claude can work with a briefing directly. For example, you can ask it to "add a project for the OTD metric changes", "what's on hold?", or "mark the Publish milestone done". It provides five tools: <code>get_briefing</code>, <code>list_items</code>, <code>get_item</code>, <code>create_item</code>, and <code>update_item</code>.</p>
 
+        <div class="ok-box">
+            <strong>Fill in your key first.</strong> Paste your key in this box, and the steps below show it in place of <code>dab_paste_your_key_here</code>, ready to copy. The key stays in this browser tab: the page doesn't send it anywhere or save it.
+            <input type="text" id="claude-key" class="key-input" placeholder="dab_..." autocomplete="off" spellcheck="false" oninput="fillClaudeKey()">
+            <div id="claude-key-hint" style="display: none; color: #c0392b; font-size: 0.9em;">That doesn't look like a key. Keys start with <code>dab_</code>.</div>
+        </div>
+
         <h3>Claude Code</h3>
         <div class="step-box">
             <ol>
-                <li>Create a key named <em>Claude Code</em> (<a href="#create-key">Part 1</a>).</li>
-                <li>In Command Prompt, run (one command over three lines):
-<pre><code>claude mcp add --transport http daily-briefing ^
+                <li>Create a key named <em>Claude Code</em> (<a href="#create-key">Part 1</a>) and paste it in the box above.</li>
+                <li>In Command Prompt, run this. It's one command on three lines:
+<pre><code class="fill-key">claude mcp add --transport http daily-briefing ^
   https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/mcp ^
   --header "Authorization: Bearer dab_paste_your_key_here"</code></pre>
+                    <button class="copy-btn" onclick="copyBlock(this)">Copy</button>
                     In Git Bash, macOS, or Linux, use <code>\</code> instead of <code>^</code>.</li>
                 <li>Start Claude Code and type <code>/mcp</code>. <strong>daily-briefing</strong> should show as connected.</li>
                 <li>Try it: "Using daily-briefing, list my open projects."</li>
@@ -313,26 +323,47 @@ curl -X POST -H "Authorization: Bearer %DAB_API_KEY%" -H "Content-Type: applicat
         </div>
 
         <h3>Claude Desktop</h3>
+        <p>Claude Desktop runs the connector with Node.js. To check that Node.js is installed, open Command Prompt and run <code>node -v</code>. A version number (for example <code>v22.11.0</code>) means it's installed. If you get "not recognized", install it from <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a> or ask IT.</p>
         <div class="step-box">
             <ol>
-                <li>Install <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js</a> if it isn't installed.</li>
-                <li>Create a key named <em>Claude Desktop</em> (<a href="#create-key">Part 1</a>).</li>
-                <li>In Claude Desktop, open <strong>Settings → Developer → Edit Config</strong>. This opens <code>claude_desktop_config.json</code>.</li>
-                <li>Add this, keeping any servers already in the file:
-<pre><code>{
-  "mcpServers": {
+                <li>Create a key named <em>Claude Desktop</em> (<a href="#create-key">Part 1</a>) and paste it in the box above.</li>
+                <li>In Claude Desktop, open <strong>Settings → Developer</strong> and click <strong>Edit Config</strong>. This opens the settings file, or a folder with <code>claude_desktop_config.json</code> in it. Open that file in Notepad: right-click it and choose <strong>Open with → Notepad</strong>.</li>
+                <li>The file has many settings. You change only one line. Near the top, find:
+<pre><code>  "mcpServers": {},</code></pre></li>
+                <li>Select that one line and replace it with this text. Leave everything else in the file as it is.
+<pre><code class="fill-key">  "mcpServers": {
     "daily-briefing": {
       "command": "npx",
-      "args": ["-y", "mcp-remote",
+      "args": [
+        "-y",
+        "mcp-remote",
         "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/mcp",
-        "--header", "X-API-Key:dab_paste_your_key_here"]
+        "--header",
+        "X-API-Key:dab_paste_your_key_here"
+      ]
     }
-  }
-}</code></pre></li>
-                <li>Save the file, then quit Claude Desktop completely (from the system tray) and reopen it.</li>
-                <li>The tools appear under the connectors (plug) icon in a new chat.</li>
+  },</code></pre>
+                    <button class="copy-btn" onclick="copyBlock(this)">Copy</button></li>
+                <li>Save the file (Ctrl+S) and close Notepad.</li>
+                <li>Quit Claude Desktop completely. Closing the window isn't enough: right-click the Claude icon in the system tray (bottom-right of the taskbar) and choose <strong>Quit</strong>. Then open Claude Desktop again.</li>
+                <li>Check it: in <strong>Settings → Developer</strong>, <strong>daily-briefing</strong> should show as <strong>running</strong>. Then, in a new chat, ask: "Using daily-briefing, list my open projects."</li>
             </ol>
         </div>
+
+        <h3>If your file looks different</h3>
+        <table>
+            <tr><th>Your file has</th><th>Do this</th></tr>
+            <tr><td><code>"mcpServers": {}</code> with no comma after it</td><td>It's the last setting in the file. Paste the text above, then delete the comma after its final <code>}</code>.</td></tr>
+            <tr><td>No <code>"mcpServers"</code> line</td><td>Paste the text on a new line right after the first <code>{</code> at the top of the file.</td></tr>
+            <tr><td><code>"mcpServers"</code> with other servers in it</td><td>Copy the text above without its first line (<code>"mcpServers": {</code>) and last line (<code>},</code>). Paste it on a new line right after <code>"mcpServers": {</code>, and add a comma after the pasted block's last <code>}</code> so it's separated from the next server.</td></tr>
+        </table>
+
+        <h3>Troubleshooting Claude Desktop</h3>
+        <ul>
+            <li><strong>Claude Desktop shows an error about the config file when it opens:</strong> a comma or brace is out of place. Open the file again and compare it with the text above.</li>
+            <li><strong>daily-briefing shows "failed":</strong> run <code>node -v</code> in Command Prompt to check that Node.js is installed. Also check that the whole key is in the file, right after <code>X-API-Key:</code> with no space.</li>
+            <li>Still stuck? Contact Chuck Konkol (IT).</li>
+        </ul>
         <p>Claude on the web (claude.ai) can't connect with a key yet. It needs a sign-in flow this API doesn't have.</p>
 
         <!-- ============================================================ -->
@@ -426,5 +457,30 @@ curl -X POST -H "Authorization: Bearer %DAB_API_KEY%" -H "Content-Type: applicat
 
         <a href="howtouse.html" class="back-link">&larr; Back to Help Guide</a>
     </div>
+<script>
+    // Fill the reader's key into the Claude setup text. Runs only in this
+    // tab; the key is never sent or stored.
+    var KEY_PLACEHOLDER = "dab_paste_your_key_here";
+    document.querySelectorAll("code.fill-key").forEach(function (c) {
+        c.dataset.template = c.textContent;
+    });
+    function fillClaudeKey() {
+        var key = document.getElementById("claude-key").value.trim();
+        var valid = /^dab_[A-Za-z0-9_-]+$/.test(key);
+        document.getElementById("claude-key-hint").style.display = key && !valid ? "block" : "none";
+        document.querySelectorAll("code.fill-key").forEach(function (c) {
+            c.textContent = c.dataset.template.replace(KEY_PLACEHOLDER, valid ? key : KEY_PLACEHOLDER);
+        });
+    }
+    function copyBlock(btn) {
+        var code = btn.closest("li").querySelector("code.fill-key");
+        navigator.clipboard.writeText(code.textContent).then(function () {
+            btn.textContent = "Copied";
+            setTimeout(function () { btn.textContent = "Copy"; }, 1500);
+        }).catch(function () {
+            btn.textContent = "Select the text and press Ctrl+C";
+        });
+    }
+</script>
 </body>
 </html>
