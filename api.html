@@ -142,11 +142,14 @@
 
         <h3 id="store-key">Step 1. Store the key</h3>
         <p>Keep the key out of your code. Put it in an environment variable named <code>DAB_API_KEY</code>, or in your app's secrets store (Azure Key Vault, Power Automate secure inputs, and so on).</p>
-        <p>On Windows, in Command Prompt (applies to new windows, not the current one):</p>
+        <p>On Windows, in Command Prompt:</p>
 <pre><code>setx DAB_API_KEY "dab_paste_your_key_here"</code></pre>
+        <div class="warn-box">
+            <strong>Now close that Command Prompt and open a new one.</strong> <code>setx</code> saves the key for windows you open later, not the one you ran it in. If you skip this, the test below sends the text <code>%DAB_API_KEY%</code> instead of your key and fails.
+        </div>
 
         <h3>Step 2. Test the connection</h3>
-        <p>Open a <strong>new</strong> Command Prompt and run:</p>
+        <p>In the <strong>new</strong> Command Prompt, run:</p>
 <pre><code>curl -H "Authorization: Bearer %DAB_API_KEY%" https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/briefing</code></pre>
         <div class="ok-box">
             <strong>It works</strong> if you get JSON back with your <code>reportId</code> (your Aqua Network ID) and item counts, like this:
@@ -406,7 +409,7 @@ curl -X POST -H "Authorization: Bearer %DAB_API_KEY%" -H "Content-Type: applicat
         <table>
             <tr><th>Status</th><th>Meaning</th><th>What to do</th></tr>
             <tr><td>400</td><td>Something in the request isn't valid: bad status, date format, section name, or unknown field.</td><td>Read the error message; it names the field and the allowed values.</td></tr>
-            <tr><td>401</td><td>The key is missing, mistyped, or revoked.</td><td>Check the header is <code>Authorization: Bearer dab_...</code> with the whole key. If it was revoked, create a new one.</td></tr>
+            <tr><td>401</td><td>The key is missing, mistyped, or revoked.</td><td>Check the header is <code>Authorization: Bearer dab_...</code> with the whole key. If it was revoked, create a new one. If the message says <em>That is not an API key</em> and you used <code>%DAB_API_KEY%</code>, open a new Command Prompt (see <a href="#store-key">Step 1</a>).</td></tr>
             <tr><td>403</td><td>You tried to change someone else's briefing, the account is disabled, or the Network ID isn't linked yet.</td><td>Change only your own briefing. Sign in to the Dashboard once to link your Network ID. For a disabled account, contact IT.</td></tr>
             <tr><td>404</td><td>No item with that id in that section, or no briefing for that Network ID.</td><td>List the section again to get the current id. Check the section name.</td></tr>
             <tr><td>500</td><td>Server error.</td><td>Try again. If it keeps happening, contact Chuck Konkol (IT).</td></tr>

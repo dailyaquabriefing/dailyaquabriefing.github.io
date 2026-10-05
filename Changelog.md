@@ -5,6 +5,18 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.2] - 2026-10-05
+
+### Fixed
+- **Clearer error when the API gets something that isn't a key.** Running
+  the test right after `setx`, in the same Command Prompt, sends the literal
+  text `%DAB_API_KEY%`. The API used to answer "Sign-in token is not valid
+  or has expired". It now says "That is not an API key (keys start with
+  dab_). If you just ran setx, open a new Command Prompt and try again."
+  This needs a redeploy of `briefingApi`.
+- API Guide: a warning box after the `setx` step says to open a new Command
+  Prompt, and the errors table covers this message.
+
 ## [1.28.1] - 2026-10-05
 
 ### Changed
