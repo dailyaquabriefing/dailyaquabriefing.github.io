@@ -454,6 +454,25 @@
                 </div>
                 <p id="pw-msg" style="font-size: 0.9em; display: none;"></p>
                 <button class="btn btn-primary" id="pw-btn" onclick="changePassword()">Change Password</button>
+
+                <h3 style="color: var(--primary); margin-top: 40px;">API Access</h3>
+                <p style="color: #666; font-size: 0.9em;">
+                    Create a key so scripts, Power Automate, or Claude can read your briefing and add or update items in it.
+                    Treat a key like a password. See the <a href="api.html" target="_blank">API guide</a>.
+                </p>
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <input type="text" id="api-key-label" class="w-full" maxlength="60" placeholder="Key name (e.g. Power Automate)">
+                    <button class="btn btn-primary" id="api-key-btn" onclick="createApiKey()" style="white-space: nowrap;">Create Key</button>
+                </div>
+                <div id="api-key-new" style="display: none; background: #fff8e1; border: 1px solid #ffe08a; border-radius: 4px; padding: 10px; margin-bottom: 15px;">
+                    <strong>Copy your key now.</strong> It won't be shown again.
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <input type="text" id="api-key-value" class="w-full" readonly style="font-family: Consolas, monospace; font-size: 12px;">
+                        <button class="btn btn-secondary" onclick="copyApiKey()">Copy</button>
+                    </div>
+                </div>
+                <p id="api-key-msg" style="font-size: 0.9em; display: none;"></p>
+                <div id="api-key-list"></div>
             </div>
         </div>
     </div>
@@ -1421,6 +1440,96 @@
             event.currentTarget.classList.add('active');
             // Search covers the item lists only, so hide it on Settings
             document.getElementById('dash-search').style.display = tabName === 'settings' ? 'none' : 'flex';
+            if (tabName === 'settings') loadApiKeys();
+        }
+
+        // --- API KEYS (Settings > API Access) ---
+        // Keys are created and revoked by the briefingApi Cloud Function using
+        // the signed-in user's ID token. The full key is shown once, on create.
+        const BRIEFING_API_URL = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi";
+
+        async function briefingApiCall(method, path, body) {
+            const token = await currentUser.getIdToken();
+            const res = await fetch(BRIEFING_API_URL + path, {
+                method: method,
+                headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : undefined
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+            return data;
+        }
+
+        function showApiKeyMsg(text, ok) {
+            const msg = document.getElementById('api-key-msg');
+            msg.textContent = text;
+            msg.style.color = ok ? '#28a745' : '#dc3545';
+            msg.style.display = text ? 'block' : 'none';
+        }
+
+        function loadApiKeys() {
+            if (!currentUser) return;
+            const list = document.getElementById('api-key-list');
+            list.innerHTML = '<em style="color:#999; font-size:0.9em;">Loading keys...</em>';
+            briefingApiCall('GET', '/keys').then(data => {
+                list.innerHTML = '';
+                if (!data.keys.length) {
+                    list.innerHTML = '<em style="color:#999; font-size:0.9em;">No API keys yet.</em>';
+                    return;
+                }
+                data.keys.forEach(k => {
+                    const row = document.createElement('div');
+                    row.className = 'check-history-item';
+                    const info = document.createElement('div');
+                    const created = k.createdAt ? new Date(k.createdAt).toLocaleDateString() : '';
+                    const used = k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : 'never';
+                    info.innerHTML = '<strong></strong> <code style="color:#666;"></code><br>' +
+                        '<span style="color:#888;">Created ' + created + ' • Last used ' + used + '</span>';
+                    info.querySelector('strong').textContent = k.label;
+                    info.querySelector('code').textContent = k.prefix + '…';
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-del-comment';
+                    btn.textContent = 'Revoke';
+                    btn.onclick = () => revokeApiKey(k.id, k.label);
+                    row.appendChild(info);
+                    row.appendChild(btn);
+                    list.appendChild(row);
+                });
+            }).catch(e => {
+                list.innerHTML = '';
+                showApiKeyMsg('Could not load API keys: ' + e.message, false);
+            });
+        }
+
+        function createApiKey() {
+            const label = document.getElementById('api-key-label').value.trim();
+            const btn = document.getElementById('api-key-btn');
+            showApiKeyMsg('', true);
+            btn.disabled = true;
+            briefingApiCall('POST', '/keys', { label: label }).then(data => {
+                document.getElementById('api-key-value').value = data.key;
+                document.getElementById('api-key-new').style.display = 'block';
+                document.getElementById('api-key-label').value = '';
+                loadApiKeys();
+            }).catch(e => showApiKeyMsg('Could not create key: ' + e.message, false))
+              .finally(() => { btn.disabled = false; });
+        }
+
+        function copyApiKey() {
+            const input = document.getElementById('api-key-value');
+            input.select();
+            navigator.clipboard.writeText(input.value)
+                .then(() => showApiKeyMsg('Key copied.', true))
+                .catch(() => showApiKeyMsg('Copy failed. Select the key and press Ctrl+C.', false));
+        }
+
+        function revokeApiKey(id, label) {
+            if (!confirm('Revoke the key "' + label + '"? Anything using it will stop working.')) return;
+            briefingApiCall('DELETE', '/keys/' + encodeURIComponent(id)).then(() => {
+                document.getElementById('api-key-new').style.display = 'none';
+                showApiKeyMsg('Key revoked.', true);
+                loadApiKeys();
+            }).catch(e => showApiKeyMsg('Could not revoke key: ' + e.message, false));
         }
         
         // --- ATTACHMENT LOGIC ---

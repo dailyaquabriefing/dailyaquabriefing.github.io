@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Guide - AquaDailyBriefing</title>
+    <link rel="icon" href="favicon.ico">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 40px auto;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 { color: #005a9e; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h2 { color: #0078D4; margin-top: 36px; }
+        h3 { color: #444; margin-top: 22px; }
+        p, li { color: #555; font-size: 1.02em; }
+        code {
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: Consolas, monospace;
+            color: #d63384;
+        }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 14px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.88em;
+            line-height: 1.45;
+        }
+        pre code { background: none; color: inherit; padding: 0; }
+        table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 0.95em; }
+        th, td { border: 1px solid #e3e3e3; padding: 8px 10px; text-align: left; vertical-align: top; }
+        th { background: #f3f7fb; color: #004a80; }
+        .method { font-family: Consolas, monospace; font-weight: bold; color: #0078D4; white-space: nowrap; }
+        .step-box { background: #f8f9fa; border-left: 4px solid #0078D4; padding: 12px 15px; margin: 15px 0; }
+        .warn-box { background: #fff8e1; border-left: 4px solid #f0ad00; padding: 12px 15px; margin: 15px 0; }
+        .back-link { display: inline-block; margin-top: 10px; text-decoration: none; color: #005a9e; font-weight: bold; }
+        .back-link:hover { text-decoration: underline; }
+        @media (max-width: 768px) {
+            body { margin: 10px auto; padding: 10px; }
+            .container { padding: 20px; }
+            table { display: block; overflow-x: auto; }
+        }
+    </style>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+<script>
+    // Firebase Auth only — lets the shared nav bar (nav.js) show the
+    // signed-in user ID + Logout on this page like everywhere else.
+    firebase.initializeApp({
+        apiKey: "AIzaSyCtFf85MUkNSsSsT6Nv8M_09Fphm2DcQOU",
+        authDomain: "dailybriefing-fe7df.firebaseapp.com",
+        projectId: "dailybriefing-fe7df"
+    });
+</script>
+<script src="nav.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <a href="howtouse.html" class="back-link">&larr; Back to Help Guide</a>
+
+        <h1>Daily Aqua Briefing API</h1>
+        <p>Use the API to read your briefing and to add or update projects, quick tasks, and daily tasks from a script, a Power Automate flow, or Claude. The API changes only <strong>your own</strong> briefing. It can read anyone's briefing, because briefings are already viewable by link.</p>
+        <p>It does not delete items. Delete them on the Dashboard.</p>
+
+        <h2>1. Get an API key</h2>
+        <div class="step-box">
+            <ol style="margin: 0;">
+                <li>Open the <a href="admin.html">Dashboard</a> and go to <strong>Settings → API Access</strong>.</li>
+                <li>Type a name for the key (for example <em>Power Automate</em>) and click <strong>Create Key</strong>.</li>
+                <li>Copy the key. It starts with <code>dab_</code> and is shown only once.</li>
+            </ol>
+        </div>
+        <div class="warn-box">
+            Treat a key like a password: don't email it, paste it into chat, or commit it to a repo. Anyone with the key can change your briefing. If a key leaks, click <strong>Revoke</strong> next to it in Settings, and anything using it stops working. Each person can have up to 5 keys.
+        </div>
+
+        <h2>2. Send requests</h2>
+        <p>Base URL:</p>
+        <pre><code>https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi</code></pre>
+        <p>Send the key in a header on every request:</p>
+        <pre><code>Authorization: Bearer dab_your_key_here</code></pre>
+        <p>If a tool can't set an <code>Authorization</code> header, send <code>X-API-Key: dab_your_key_here</code> instead.</p>
+        <p>Send and receive JSON (<code>Content-Type: application/json</code>). Errors come back with an HTTP error status and <code>{"error": "what went wrong"}</code>.</p>
+
+        <h3>Endpoints</h3>
+        <table>
+            <tr><th>Request</th><th>What it does</th></tr>
+            <tr><td class="method">GET /briefing</td><td>Summary: owner, department, last update, item counts by section and status.</td></tr>
+            <tr><td class="method">GET /items/{section}</td><td>List items in a section (id, name, status, priority, owner, dates, milestone progress). Query options: <code>status=Planning</code>, <code>q=words to find</code>, <code>includeCompleted=false</code>, <code>full=1</code> for every field.</td></tr>
+            <tr><td class="method">GET /items/{section}/{id}</td><td>One item with notes, goal, milestones, attachments, comments, and recent daily checks.</td></tr>
+            <tr><td class="method">POST /items/{section}</td><td>Add an item to the top of the section. <code>name</code> is required.</td></tr>
+            <tr><td class="method">PATCH /items/{section}/{id}</td><td>Change an item. Only the fields you send change.</td></tr>
+            <tr><td class="method">POST /mcp</td><td>MCP connector endpoint for Claude (see section 4).</td></tr>
+        </table>
+        <p>Add <code>?report=mhevey</code> (any Aqua Network ID) to a <code>GET</code> to read someone else's briefing. Without it you get your own.</p>
+
+        <h3>Sections</h3>
+        <table>
+            <tr><th>{section}</th><th>Dashboard tab</th></tr>
+            <tr><td><code>projects</code></td><td>Active Projects</td></tr>
+            <tr><td><code>quickTasks</code></td><td>Quick Tasks</td></tr>
+            <tr><td><code>dailyTasks</code></td><td>Daily Tasks (no status, priority, or Assigned To)</td></tr>
+        </table>
+
+        <h3>Item fields</h3>
+        <table>
+            <tr><th>Field</th><th>Value</th></tr>
+            <tr><td><code>name</code></td><td>Text, up to 200 characters.</td></tr>
+            <tr><td><code>status</code></td><td>One of: Planning, Requirement Gathering, Training, In Progress, Development, Testing, Review, Delayed, Future, On-Hold, Completed, Follow-Up, Maintenance, On Track. New items default to On Track.</td></tr>
+            <tr><td><code>priority</code></td><td>High, Medium, or Low. Defaults to High.</td></tr>
+            <tr><td><code>assignedTo</code></td><td>Owner's name. Defaults to N/A.</td></tr>
+            <tr><td><code>goal</code>, <code>tester</code>, <code>collaborators</code></td><td>Text.</td></tr>
+            <tr><td><code>startDate</code>, <code>endDate</code></td><td><code>YYYY-MM-DD</code>, or <code>""</code> to clear.</td></tr>
+            <tr><td><code>notes</code></td><td>Plain text; each line becomes a paragraph. <strong>Replaces</strong> the existing notes, including any formatting.</td></tr>
+            <tr><td><code>appendNotes</code></td><td>Plain text added to the end of the notes (PATCH only). Use this for log-style updates.</td></tr>
+            <tr><td><code>milestones</code></td><td>The full milestone list (see below). It <strong>replaces</strong> the existing list, so GET the item first and send back every milestone you want to keep.</td></tr>
+        </table>
+        <p>Text fields can't contain <code>&lt;</code> or <code>&gt;</code>; the API removes them. <strong>Last Updated</strong> is set for you on every change.</p>
+
+        <h3>Milestone fields</h3>
+        <table>
+            <tr><th>Field</th><th>Value</th></tr>
+            <tr><td><code>name</code></td><td>Required. Milestones without a name are dropped.</td></tr>
+            <tr><td><code>baseDate</code></td><td>Base complete date, <code>YYYY-MM-DD</code>.</td></tr>
+            <tr><td><code>estActDate</code></td><td>Estimated or actual complete date, <code>YYYY-MM-DD</code>.</td></tr>
+            <tr><td><code>done</code></td><td><code>true</code> when complete.</td></tr>
+            <tr><td><code>inProgress</code>, <code>onHold</code>, <code>roadblock</code></td><td>At most one can be <code>true</code>.</td></tr>
+            <tr><td><code>holdReason</code>, <code>blockReason</code></td><td>Why it's on hold or blocked. The roadblock reason shows on the Status Report.</td></tr>
+        </table>
+
+        <h2>3. Examples</h2>
+        <h3>Python</h3>
+<pre><code>import os, requests
+
+API = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi"
+HEADERS = {"Authorization": "Bearer " + os.environ["DAB_API_KEY"]}
+
+# Open projects that mention "dashboard"
+r = requests.get(API + "/items/projects", headers=HEADERS,
+                 params={"q": "dashboard", "includeCompleted": "false"})
+r.raise_for_status()
+for item in r.json()["items"]:
+    print(item["id"], item["status"], item["name"])
+
+# Add a quick task
+r = requests.post(API + "/items/quickTasks", headers=HEADERS, json={
+    "name": "Renew SSL certificate",
+    "priority": "Medium",
+    "endDate": "2026-10-31",
+    "notes": "Requested by the web team.",
+})
+new_id = r.json()["item"]["id"]
+
+# Mark it in progress and add a note
+requests.patch(API + "/items/quickTasks/" + new_id, headers=HEADERS, json={
+    "status": "In Progress",
+    "appendNotes": "Ordered the certificate.",
+}).raise_for_status()</code></pre>
+        <p>Keep the key in an environment variable or a secrets store, not in the script.</p>
+
+        <h3>curl</h3>
+<pre><code>curl -H "Authorization: Bearer $DAB_API_KEY" \
+  "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/briefing"
+
+curl -X PATCH -H "Authorization: Bearer $DAB_API_KEY" -H "Content-Type: application/json" \
+  -d '{"status": "Review"}' \
+  "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/items/projects/item_123"</code></pre>
+
+        <h3>Power Automate</h3>
+        <p>Use the <strong>HTTP</strong> action:</p>
+        <ul>
+            <li><strong>Method:</strong> GET, POST, or PATCH.</li>
+            <li><strong>URI:</strong> the base URL plus the path, for example <code>.../briefingApi/items/quickTasks</code>.</li>
+            <li><strong>Headers:</strong> <code>Authorization</code> = <code>Bearer dab_...</code> and <code>Content-Type</code> = <code>application/json</code>.</li>
+            <li><strong>Body:</strong> the JSON fields, for example <code>{"name": "Follow up with vendor", "priority": "High"}</code>.</li>
+        </ul>
+        <p>Store the key in a secure input or an environment variable so it doesn't show in run history.</p>
+
+        <h2>4. Connect Claude (MCP connector)</h2>
+        <p>The <code>/mcp</code> endpoint is an MCP server, so Claude can work with your briefing directly ("add a project for the OTD metric changes", "what's on hold?", "mark the Publish milestone done"). It provides five tools: <code>get_briefing</code>, <code>list_items</code>, <code>get_item</code>, <code>create_item</code>, and <code>update_item</code>.</p>
+        <h3>Claude Code</h3>
+<pre><code>claude mcp add --transport http daily-briefing ^
+  https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/mcp ^
+  --header "Authorization: Bearer dab_your_key_here"</code></pre>
+        <p>That's for the Windows Command Prompt. On macOS, Linux, or Git Bash, use <code>\</code> instead of <code>^</code> at the end of each line. Run <code>/mcp</code> in Claude Code to confirm it shows as connected.</p>
+        <h3>Claude Desktop</h3>
+        <p>Add this to <code>claude_desktop_config.json</code> (Settings → Developer → Edit Config); it needs Node.js installed:</p>
+<pre><code>{
+  "mcpServers": {
+    "daily-briefing": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote",
+        "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/mcp",
+        "--header", "X-API-Key:dab_your_key_here"]
+    }
+  }
+}</code></pre>
+        <p>Claude on the web (claude.ai) can't connect with a key yet; it needs a sign-in flow that this API doesn't have.</p>
+
+        <h2>Good to know</h2>
+        <ul>
+            <li>New items go to the top of their tab, like items added on the Dashboard.</li>
+            <li>The Dashboard updates live, so changes made through the API appear right away if it's open.</li>
+            <li>A change made through the API is stored the same way as a Dashboard edit, so it shows on the briefing and the Status Report.</li>
+            <li>Every change is logged with the key's first few characters, so a misbehaving key can be traced and revoked.</li>
+            <li>Problems with the API? Contact Chuck Konkol (IT).</li>
+        </ul>
+
+        <a href="howtouse.html" class="back-link">&larr; Back to Help Guide</a>
+    </div>
+</body>
+</html>

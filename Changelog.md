@@ -5,6 +5,35 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.0] - 2026-10-05
+
+### Added
+- **Briefing API and Claude connector.** A new Cloud Function, `briefingApi`
+  (source in the Firebase functions project, `functions/briefing-api.js`),
+  lets scripts, Power Automate, and Claude read a briefing and create or
+  update its projects, quick tasks, and daily tasks. REST endpoints:
+  `GET /briefing`, `GET /items/{section}`, `GET /items/{section}/{id}`,
+  `POST /items/{section}`, `PATCH /items/{section}/{id}`. `POST /mcp` is an
+  MCP server with five tools (get_briefing, list_items, get_item,
+  create_item, update_item) for Claude Code and Claude Desktop.
+  - A key changes only its owner's own briefing; reading other briefings is
+    allowed (they're already public by link). There is no delete.
+  - Input is checked: statuses, priorities, `YYYY-MM-DD` dates, mutually
+    exclusive milestone flags. Angle brackets are stripped from text fields
+    and notes are taken as plain text, so the API can't inject HTML into
+    pages.
+  - Writes run in a Firestore transaction, keep the Dashboard's data shape
+    (item Last Updated, legacy `milestone` summary, per-milestone `updatedAt`
+    stamps, document counts), and are logged with the key's prefix.
+  - Older items without an `id` get one the first time the API reads that
+    owner's briefing.
+- **Settings → API Access** on the Dashboard: create (up to 5), list, and
+  revoke personal API keys. The full key is shown once. Keys are stored only
+  as SHA-256 hashes in the `api_keys` collection.
+- **API Guide** page (`api.html`): setup, endpoints, field reference, Python,
+  curl, and Power Automate examples, and Claude connector setup. Linked from
+  Settings and the Help Guide.
+
 ## [1.27.0] - 2026-10-05
 
 ### Added
