@@ -5,6 +5,14 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.5] - 2026-10-05
+
+### Fixed
+- **API Guide: the Claude Code command now adds the connector for every
+  folder.** `claude mcp add` defaults to the folder it's run in, so
+  daily-briefing went missing when Claude Code started in another project.
+  The command now includes `--scope user`, and the guide explains the flag.
+
 ## [1.28.4] - 2026-10-05
 
 ### Added
