@@ -5,6 +5,20 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.1] - 2026-10-05
+
+### Changed
+- **API Guide (`api.html`) rewritten as a step-by-step guide in two parts.**
+  Part 1, *Create an API key*, is for anyone with a Dashboard account:
+  prerequisites, steps in Settings → API Access, key safety, and revoking.
+  Part 2, *Connect to the API*, is for developers: store the key in
+  `DAB_API_KEY`, a one-line curl test with the expected response, and the
+  find-then-change pattern. It adds examples for Python, Node.js, C#, curl,
+  and Power Automate (including Secure inputs), numbered setup steps for
+  Claude Code and Claude Desktop, response samples, and an errors table that
+  says what to do for each status. A contents list at the top links to each
+  part.
+
 ## [1.28.0] - 2026-10-05
 
 ### Added

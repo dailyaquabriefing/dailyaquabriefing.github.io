@@ -22,8 +22,8 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         h1 { color: #005a9e; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        h2 { color: #0078D4; margin-top: 36px; }
-        h3 { color: #444; margin-top: 22px; }
+        h2 { color: #0078D4; margin-top: 44px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+        h3 { color: #444; margin-top: 26px; }
         p, li { color: #555; font-size: 1.02em; }
         code {
             background-color: #f0f0f0;
@@ -47,7 +47,18 @@
         th { background: #f3f7fb; color: #004a80; }
         .method { font-family: Consolas, monospace; font-weight: bold; color: #0078D4; white-space: nowrap; }
         .step-box { background: #f8f9fa; border-left: 4px solid #0078D4; padding: 12px 15px; margin: 15px 0; }
+        .step-box ol { margin: 0; padding-left: 22px; }
+        .step-box li { margin-bottom: 6px; }
         .warn-box { background: #fff8e1; border-left: 4px solid #f0ad00; padding: 12px 15px; margin: 15px 0; }
+        .ok-box { background: #e6fffa; border-left: 4px solid #20c997; padding: 12px 15px; margin: 15px 0; }
+        .part-label {
+            display: inline-block; background: #0078D4; color: #fff; font-size: 0.75em;
+            font-weight: bold; padding: 2px 8px; border-radius: 10px; vertical-align: middle; margin-right: 6px;
+        }
+        .toc { background: #f3f7fb; border-radius: 6px; padding: 12px 18px; margin: 20px 0; }
+        .toc ol { margin: 4px 0 0; padding-left: 20px; }
+        .toc a { color: #005a9e; text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
         .back-link { display: inline-block; margin-top: 10px; text-decoration: none; color: #005a9e; font-weight: bold; }
         .back-link:hover { text-decoration: underline; }
         @media (max-width: 768px) {
@@ -74,63 +85,290 @@
         <a href="howtouse.html" class="back-link">&larr; Back to Help Guide</a>
 
         <h1>Daily Aqua Briefing API</h1>
-        <p>Use the API to read your briefing and to add or update projects, quick tasks, and daily tasks from a script, a Power Automate flow, or Claude. The API changes only <strong>your own</strong> briefing. It can read anyone's briefing, because briefings are already viewable by link.</p>
-        <p>It does not delete items. Delete them on the Dashboard.</p>
+        <p>The API lets a script, a Power Automate flow, or Claude read your briefing and add or update your projects, quick tasks, and daily tasks.</p>
+        <ul>
+            <li>A key changes only <strong>your own</strong> briefing. It can read anyone's briefing, because briefings are already viewable by link.</li>
+            <li>The API does not delete items. Delete them on the Dashboard.</li>
+        </ul>
 
-        <h2>1. Get an API key</h2>
-        <div class="step-box">
-            <ol style="margin: 0;">
-                <li>Open the <a href="admin.html">Dashboard</a> and go to <strong>Settings → API Access</strong>.</li>
-                <li>Type a name for the key (for example <em>Power Automate</em>) and click <strong>Create Key</strong>.</li>
-                <li>Copy the key. It starts with <code>dab_</code> and is shown only once.</li>
+        <div class="toc">
+            <strong>On this page</strong>
+            <ol>
+                <li><a href="#create-key">Create an API key</a> (anyone with a Dashboard account)</li>
+                <li><a href="#connect">Connect to the API</a> (developers): store the key, test, make calls</li>
+                <li><a href="#examples">Code examples</a>: Python, Node.js, C#, curl, Power Automate</li>
+                <li><a href="#claude">Connect Claude</a>: Claude Code and Claude Desktop</li>
+                <li><a href="#reference">Reference</a>: endpoints, fields, responses, errors</li>
             </ol>
         </div>
-        <div class="warn-box">
-            Treat a key like a password: don't email it, paste it into chat, or commit it to a repo. Anyone with the key can change your briefing. If a key leaks, click <strong>Revoke</strong> next to it in Settings, and anything using it stops working. Each person can have up to 5 keys.
+
+        <!-- ============================================================ -->
+        <h2 id="create-key"><span class="part-label">PART 1</span>Create an API key</h2>
+        <p>Do this once for each app or flow that will use the API. Then give the key to the developer, or put it in your own tool.</p>
+
+        <h3>Before you start</h3>
+        <ul>
+            <li>You need a Dashboard sign-in. If you don't have one, ask IT.</li>
+            <li>You must have signed in to the Dashboard at least once and linked your Aqua Network ID (for example <code>jdoe</code>). The Dashboard asks for it the first time you sign in.</li>
+        </ul>
+
+        <h3>Steps</h3>
+        <div class="step-box">
+            <ol>
+                <li>Open the <a href="admin.html">Dashboard</a> and sign in.</li>
+                <li>Click the <strong>Settings</strong> tab.</li>
+                <li>Scroll down to <strong>API Access</strong>.</li>
+                <li>In <strong>Key name</strong>, type what the key is for, for example <em>Power Automate - weekly status</em> or <em>Claude Code</em>. The name helps you tell your keys apart later.</li>
+                <li>Click <strong>Create Key</strong>.</li>
+                <li>A yellow box shows the key. It starts with <code>dab_</code>. Click <strong>Copy</strong>.</li>
+                <li>Paste the key where it will be used (see <a href="#store-key">Store the key</a>). <strong>The key is shown only once.</strong> If you lose it, revoke it and create a new one.</li>
+            </ol>
         </div>
 
-        <h2>2. Send requests</h2>
-        <p>Base URL:</p>
-        <pre><code>https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi</code></pre>
-        <p>Send the key in a header on every request:</p>
-        <pre><code>Authorization: Bearer dab_your_key_here</code></pre>
-        <p>If a tool can't set an <code>Authorization</code> header, send <code>X-API-Key: dab_your_key_here</code> instead.</p>
-        <p>Send and receive JSON (<code>Content-Type: application/json</code>). Errors come back with an HTTP error status and <code>{"error": "what went wrong"}</code>.</p>
+        <div class="warn-box">
+            <strong>Treat a key like a password.</strong> Anyone who has it can change your briefing.
+            <ul style="margin: 6px 0 0;">
+                <li>Don't email it, put it in a Teams chat, paste it into a Claude chat, or commit it to a repo.</li>
+                <li>Use a separate key for each app, so you can turn one off without breaking the others.</li>
+                <li>You can have up to 5 keys.</li>
+            </ul>
+        </div>
+
+        <h3>Turn off a key</h3>
+        <p>In <strong>Settings → API Access</strong>, click <strong>Revoke</strong> next to the key. Anything using it stops working right away. The list also shows when each key was last used, which tells you which keys are still in use.</p>
+
+        <!-- ============================================================ -->
+        <h2 id="connect"><span class="part-label">PART 2</span>Connect to the API (developers)</h2>
+
+        <h3 id="store-key">Step 1. Store the key</h3>
+        <p>Keep the key out of your code. Put it in an environment variable named <code>DAB_API_KEY</code>, or in your app's secrets store (Azure Key Vault, Power Automate secure inputs, and so on).</p>
+        <p>On Windows, in Command Prompt (applies to new windows, not the current one):</p>
+<pre><code>setx DAB_API_KEY "dab_paste_your_key_here"</code></pre>
+
+        <h3>Step 2. Test the connection</h3>
+        <p>Open a <strong>new</strong> Command Prompt and run:</p>
+<pre><code>curl -H "Authorization: Bearer %DAB_API_KEY%" https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/briefing</code></pre>
+        <div class="ok-box">
+            <strong>It works</strong> if you get JSON back with your <code>reportId</code> (your Aqua Network ID) and item counts, like this:
+<pre><code>{
+  "reportId": "jdoe",
+  "displayName": "Jane Doe",
+  "department": "Information Technology",
+  "lastUpdated": "2026-10-05T15:39:54.920Z",
+  "briefingUrl": "https://dailyaquabriefing.github.io/index.html?report=jdoe",
+  "sections": {
+    "projects":   { "count": 4, "byStatus": { "On Track": 3, "Planning": 1 } },
+    "quickTasks": { "count": 2, "byStatus": { "In Progress": 2 } },
+    "dailyTasks": { "count": 0, "byStatus": {} }
+  }
+}</code></pre>
+        </div>
+        <p>If you get <code>{"error": ...}</code> instead, see <a href="#errors">Errors</a>.</p>
+
+        <h3>Step 3. Make calls</h3>
+        <p>Every request goes to the base URL, sends the key in a header, and uses JSON:</p>
+        <table>
+            <tr><th>Item</th><th>Value</th></tr>
+            <tr><td>Base URL</td><td><code>https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi</code></td></tr>
+            <tr><td>Auth header</td><td><code>Authorization: Bearer dab_...</code><br>If your tool can't set an Authorization header, send <code>X-API-Key: dab_...</code> instead.</td></tr>
+            <tr><td>Body</td><td>JSON, with <code>Content-Type: application/json</code></td></tr>
+        </table>
+        <p>The usual pattern for changing an item:</p>
+        <ol>
+            <li><strong>Find it:</strong> <code>GET /items/projects?q=dashboard</code> returns matching items with their <code>id</code>.</li>
+            <li><strong>Change it:</strong> <code>PATCH /items/projects/{id}</code> with only the fields that change, for example <code>{"status": "Review"}</code>.</li>
+        </ol>
+        <p>Item ids never change, so you can save an id and reuse it. See the <a href="#reference">Reference</a> for every endpoint and field.</p>
+
+        <!-- ============================================================ -->
+        <h2 id="examples">Code examples</h2>
+
+        <h3>Python</h3>
+        <p>Needs the <code>requests</code> package (<code>pip install requests</code>).</p>
+<pre><code>import os
+import requests
+
+API = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi"
+HEADERS = {"Authorization": "Bearer " + os.environ["DAB_API_KEY"]}
+
+def call(method, path, **kwargs):
+    r = requests.request(method, API + path, headers=HEADERS, timeout=30, **kwargs)
+    if not r.ok:
+        raise RuntimeError(f"{r.status_code}: {r.json().get('error')}")
+    return r.json()
+
+# Open projects that mention "dashboard"
+found = call("GET", "/items/projects", params={"q": "dashboard", "includeCompleted": "false"})
+for item in found["items"]:
+    print(item["id"], item["status"], item["name"])
+
+# Add a quick task
+created = call("POST", "/items/quickTasks", json={
+    "name": "Renew SSL certificate",
+    "priority": "Medium",
+    "endDate": "2026-10-31",
+    "notes": "Requested by the web team.",
+})
+task_id = created["item"]["id"]
+
+# Mark it in progress and add a line to its notes
+call("PATCH", f"/items/quickTasks/{task_id}", json={
+    "status": "In Progress",
+    "appendNotes": "Ordered the certificate.",
+})</code></pre>
+
+        <h3>Node.js (18 or later)</h3>
+<pre><code>const API = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi";
+
+async function call(method, path, body) {
+  const res = await fetch(API + path, {
+    method,
+    headers: {
+      Authorization: `Bearer ${process.env.DAB_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(`${res.status}: ${data.error}`);
+  return data;
+}
+
+const onHold = await call("GET", "/items/projects?status=On-Hold");
+console.log(onHold.items.map((i) =&gt; `${i.id}  ${i.name}`).join("\n"));
+
+await call("POST", "/items/projects", {
+  name: "OTD metric changes",
+  status: "Planning",
+  assignedTo: "Mike Hevey",
+  milestones: [{ name: "Requirements", baseDate: "2026-10-15" }],
+});</code></pre>
+        <p>Run it as an ES module (a <code>.mjs</code> file) so top-level <code>await</code> works. Don't put a key in browser JavaScript on a shared web page: anyone who opens the page could read it.</p>
+
+        <h3>C# (.NET 7 or later)</h3>
+<pre><code>using System.Net.Http.Headers;
+using System.Net.Http.Json;
+
+var http = new HttpClient {
+    BaseAddress = new Uri("https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/")
+};
+http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+    "Bearer", Environment.GetEnvironmentVariable("DAB_API_KEY"));
+
+// Read the summary (paths have no leading slash because of BaseAddress)
+string summary = await http.GetStringAsync("briefing");
+
+// Add a project
+var create = await http.PostAsJsonAsync("items/projects", new {
+    name = "Update Executive Dashboard",
+    priority = "High",
+    endDate = "2026-10-31"
+});
+create.EnsureSuccessStatusCode();
+
+// Change its status (replace item_123 with the id from the create response)
+var update = await http.PatchAsJsonAsync("items/projects/item_123", new { status = "Review" });
+update.EnsureSuccessStatusCode();</code></pre>
+
+        <h3>curl (Command Prompt)</h3>
+<pre><code>REM List quick tasks
+curl -H "Authorization: Bearer %DAB_API_KEY%" "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/items/quickTasks"
+
+REM Add a quick task (quotes inside the JSON are escaped with \ in Command Prompt)
+curl -X POST -H "Authorization: Bearer %DAB_API_KEY%" -H "Content-Type: application/json" ^
+  -d "{\"name\": \"Call vendor about quote\", \"priority\": \"High\"}" ^
+  "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/items/quickTasks"</code></pre>
+        <p>In Git Bash, macOS, or Linux, use <code>$DAB_API_KEY</code> instead of <code>%DAB_API_KEY%</code>, use <code>\</code> instead of <code>^</code> at line ends, and wrap the JSON in single quotes.</p>
+
+        <h3>Power Automate</h3>
+        <ol>
+            <li>Add an <strong>HTTP</strong> action. It's a premium connector.</li>
+            <li><strong>Method:</strong> <code>GET</code>, <code>POST</code>, or <code>PATCH</code>.</li>
+            <li><strong>URI:</strong> the base URL plus the path, for example <code>https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/items/quickTasks</code>.</li>
+            <li><strong>Headers:</strong> <code>Authorization</code> = <code>Bearer dab_...</code> and <code>Content-Type</code> = <code>application/json</code>.</li>
+            <li><strong>Body</strong> (POST and PATCH): the JSON fields, for example <code>{"name": "Follow up with vendor", "priority": "High"}</code>.</li>
+            <li>In the action's <strong>Settings</strong>, turn on <strong>Secure inputs</strong> so the key doesn't show in run history.</li>
+            <li>To use the response, add a <strong>Parse JSON</strong> action on the HTTP action's <strong>Body</strong>.</li>
+        </ol>
+
+        <!-- ============================================================ -->
+        <h2 id="claude">Connect Claude</h2>
+        <p>The API includes an MCP connector, so Claude can work with a briefing directly. For example, you can ask it to "add a project for the OTD metric changes", "what's on hold?", or "mark the Publish milestone done". It provides five tools: <code>get_briefing</code>, <code>list_items</code>, <code>get_item</code>, <code>create_item</code>, and <code>update_item</code>.</p>
+
+        <h3>Claude Code</h3>
+        <div class="step-box">
+            <ol>
+                <li>Create a key named <em>Claude Code</em> (<a href="#create-key">Part 1</a>).</li>
+                <li>In Command Prompt, run (one command over three lines):
+<pre><code>claude mcp add --transport http daily-briefing ^
+  https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/mcp ^
+  --header "Authorization: Bearer dab_paste_your_key_here"</code></pre>
+                    In Git Bash, macOS, or Linux, use <code>\</code> instead of <code>^</code>.</li>
+                <li>Start Claude Code and type <code>/mcp</code>. <strong>daily-briefing</strong> should show as connected.</li>
+                <li>Try it: "Using daily-briefing, list my open projects."</li>
+            </ol>
+        </div>
+
+        <h3>Claude Desktop</h3>
+        <div class="step-box">
+            <ol>
+                <li>Install <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js</a> if it isn't installed.</li>
+                <li>Create a key named <em>Claude Desktop</em> (<a href="#create-key">Part 1</a>).</li>
+                <li>In Claude Desktop, open <strong>Settings → Developer → Edit Config</strong>. This opens <code>claude_desktop_config.json</code>.</li>
+                <li>Add this, keeping any servers already in the file:
+<pre><code>{
+  "mcpServers": {
+    "daily-briefing": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote",
+        "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/mcp",
+        "--header", "X-API-Key:dab_paste_your_key_here"]
+    }
+  }
+}</code></pre></li>
+                <li>Save the file, then quit Claude Desktop completely (from the system tray) and reopen it.</li>
+                <li>The tools appear under the connectors (plug) icon in a new chat.</li>
+            </ol>
+        </div>
+        <p>Claude on the web (claude.ai) can't connect with a key yet. It needs a sign-in flow this API doesn't have.</p>
+
+        <!-- ============================================================ -->
+        <h2 id="reference">Reference</h2>
 
         <h3>Endpoints</h3>
         <table>
             <tr><th>Request</th><th>What it does</th></tr>
             <tr><td class="method">GET /briefing</td><td>Summary: owner, department, last update, item counts by section and status.</td></tr>
-            <tr><td class="method">GET /items/{section}</td><td>List items in a section (id, name, status, priority, owner, dates, milestone progress). Query options: <code>status=Planning</code>, <code>q=words to find</code>, <code>includeCompleted=false</code>, <code>full=1</code> for every field.</td></tr>
-            <tr><td class="method">GET /items/{section}/{id}</td><td>One item with notes, goal, milestones, attachments, comments, and recent daily checks.</td></tr>
+            <tr><td class="method">GET /items/{section}</td><td>List items in a section. Query options: <code>status=On-Hold</code>, <code>q=words</code> (every word must match), <code>includeCompleted=false</code>, <code>full=1</code> for every field.</td></tr>
+            <tr><td class="method">GET /items/{section}/{id}</td><td>One item with notes, goal, milestones, attachments, comments, and the 10 most recent daily checks.</td></tr>
             <tr><td class="method">POST /items/{section}</td><td>Add an item to the top of the section. <code>name</code> is required.</td></tr>
             <tr><td class="method">PATCH /items/{section}/{id}</td><td>Change an item. Only the fields you send change.</td></tr>
-            <tr><td class="method">POST /mcp</td><td>MCP connector endpoint for Claude (see section 4).</td></tr>
+            <tr><td class="method">POST /mcp</td><td>MCP connector endpoint for Claude.</td></tr>
         </table>
-        <p>Add <code>?report=mhevey</code> (any Aqua Network ID) to a <code>GET</code> to read someone else's briefing. Without it you get your own.</p>
+        <p>Add <code>?report=jdoe</code> (any Aqua Network ID) to a <code>GET</code> to read someone else's briefing. Without it, you get your own.</p>
 
         <h3>Sections</h3>
         <table>
             <tr><th>{section}</th><th>Dashboard tab</th></tr>
             <tr><td><code>projects</code></td><td>Active Projects</td></tr>
             <tr><td><code>quickTasks</code></td><td>Quick Tasks</td></tr>
-            <tr><td><code>dailyTasks</code></td><td>Daily Tasks (no status, priority, or Assigned To)</td></tr>
+            <tr><td><code>dailyTasks</code></td><td>Daily Tasks. These don't use status, priority, or assignedTo.</td></tr>
         </table>
 
-        <h3>Item fields</h3>
+        <h3>Item fields (POST and PATCH)</h3>
         <table>
             <tr><th>Field</th><th>Value</th></tr>
-            <tr><td><code>name</code></td><td>Text, up to 200 characters.</td></tr>
+            <tr><td><code>name</code></td><td>Text, up to 200 characters. Required on POST.</td></tr>
             <tr><td><code>status</code></td><td>One of: Planning, Requirement Gathering, Training, In Progress, Development, Testing, Review, Delayed, Future, On-Hold, Completed, Follow-Up, Maintenance, On Track. New items default to On Track.</td></tr>
             <tr><td><code>priority</code></td><td>High, Medium, or Low. Defaults to High.</td></tr>
             <tr><td><code>assignedTo</code></td><td>Owner's name. Defaults to N/A.</td></tr>
-            <tr><td><code>goal</code>, <code>tester</code>, <code>collaborators</code></td><td>Text.</td></tr>
+            <tr><td><code>goal</code>, <code>tester</code>, <code>collaborators</code></td><td>Text. Collaborators are team tags, for example "Design Team".</td></tr>
             <tr><td><code>startDate</code>, <code>endDate</code></td><td><code>YYYY-MM-DD</code>, or <code>""</code> to clear.</td></tr>
             <tr><td><code>notes</code></td><td>Plain text; each line becomes a paragraph. <strong>Replaces</strong> the existing notes, including any formatting.</td></tr>
             <tr><td><code>appendNotes</code></td><td>Plain text added to the end of the notes (PATCH only). Use this for log-style updates.</td></tr>
-            <tr><td><code>milestones</code></td><td>The full milestone list (see below). It <strong>replaces</strong> the existing list, so GET the item first and send back every milestone you want to keep.</td></tr>
+            <tr><td><code>milestones</code></td><td>The full milestone list (below). It <strong>replaces</strong> the existing list, so GET the item first and send back every milestone you want to keep.</td></tr>
         </table>
-        <p>Text fields can't contain <code>&lt;</code> or <code>&gt;</code>; the API removes them. <strong>Last Updated</strong> is set for you on every change.</p>
+        <p>Text fields can't contain <code>&lt;</code> or <code>&gt;</code>; the API removes them. <strong>Last Updated</strong> is set for you on every change. Unknown fields are rejected with a list of the allowed ones.</p>
 
         <h3>Milestone fields</h3>
         <table>
@@ -143,82 +381,44 @@
             <tr><td><code>holdReason</code>, <code>blockReason</code></td><td>Why it's on hold or blocked. The roadblock reason shows on the Status Report.</td></tr>
         </table>
 
-        <h2>3. Examples</h2>
-        <h3>Python</h3>
-<pre><code>import os, requests
-
-API = "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi"
-HEADERS = {"Authorization": "Bearer " + os.environ["DAB_API_KEY"]}
-
-# Open projects that mention "dashboard"
-r = requests.get(API + "/items/projects", headers=HEADERS,
-                 params={"q": "dashboard", "includeCompleted": "false"})
-r.raise_for_status()
-for item in r.json()["items"]:
-    print(item["id"], item["status"], item["name"])
-
-# Add a quick task
-r = requests.post(API + "/items/quickTasks", headers=HEADERS, json={
-    "name": "Renew SSL certificate",
-    "priority": "Medium",
-    "endDate": "2026-10-31",
-    "notes": "Requested by the web team.",
-})
-new_id = r.json()["item"]["id"]
-
-# Mark it in progress and add a note
-requests.patch(API + "/items/quickTasks/" + new_id, headers=HEADERS, json={
-    "status": "In Progress",
-    "appendNotes": "Ordered the certificate.",
-}).raise_for_status()</code></pre>
-        <p>Keep the key in an environment variable or a secrets store, not in the script.</p>
-
-        <h3>curl</h3>
-<pre><code>curl -H "Authorization: Bearer $DAB_API_KEY" \
-  "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/briefing"
-
-curl -X PATCH -H "Authorization: Bearer $DAB_API_KEY" -H "Content-Type: application/json" \
-  -d '{"status": "Review"}' \
-  "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/items/projects/item_123"</code></pre>
-
-        <h3>Power Automate</h3>
-        <p>Use the <strong>HTTP</strong> action:</p>
-        <ul>
-            <li><strong>Method:</strong> GET, POST, or PATCH.</li>
-            <li><strong>URI:</strong> the base URL plus the path, for example <code>.../briefingApi/items/quickTasks</code>.</li>
-            <li><strong>Headers:</strong> <code>Authorization</code> = <code>Bearer dab_...</code> and <code>Content-Type</code> = <code>application/json</code>.</li>
-            <li><strong>Body:</strong> the JSON fields, for example <code>{"name": "Follow up with vendor", "priority": "High"}</code>.</li>
-        </ul>
-        <p>Store the key in a secure input or an environment variable so it doesn't show in run history.</p>
-
-        <h2>4. Connect Claude (MCP connector)</h2>
-        <p>The <code>/mcp</code> endpoint is an MCP server, so Claude can work with your briefing directly ("add a project for the OTD metric changes", "what's on hold?", "mark the Publish milestone done"). It provides five tools: <code>get_briefing</code>, <code>list_items</code>, <code>get_item</code>, <code>create_item</code>, and <code>update_item</code>.</p>
-        <h3>Claude Code</h3>
-<pre><code>claude mcp add --transport http daily-briefing ^
-  https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/mcp ^
-  --header "Authorization: Bearer dab_your_key_here"</code></pre>
-        <p>That's for the Windows Command Prompt. On macOS, Linux, or Git Bash, use <code>\</code> instead of <code>^</code> at the end of each line. Run <code>/mcp</code> in Claude Code to confirm it shows as connected.</p>
-        <h3>Claude Desktop</h3>
-        <p>Add this to <code>claude_desktop_config.json</code> (Settings → Developer → Edit Config); it needs Node.js installed:</p>
+        <h3>Responses</h3>
+        <p><code>GET /items/{section}</code> returns a short form of each item:</p>
 <pre><code>{
-  "mcpServers": {
-    "daily-briefing": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote",
-        "https://us-central1-dailybriefing-fe7df.cloudfunctions.net/briefingApi/mcp",
-        "--header", "X-API-Key:dab_your_key_here"]
-    }
-  }
+  "reportId": "jdoe",
+  "section": "projects",
+  "count": 1,
+  "items": [{
+    "id": "item_1791214794883pmnhjmd",
+    "name": "Update Executive Dashboard",
+    "status": "On Track",
+    "priority": "High",
+    "assignedTo": "Jane Doe",
+    "endDate": "2026-10-31",
+    "lastUpdated": "10/5/2026, 8:10:11 AM",
+    "milestones": "1/2 complete",
+    "nextMilestone": { "name": "Publish", "date": "2026-10-06" }
+  }]
 }</code></pre>
-        <p>Claude on the web (claude.ai) can't connect with a key yet; it needs a sign-in flow that this API doesn't have.</p>
+        <p>POST, PATCH, and <code>GET /items/{section}/{id}</code> return <code>{"reportId", "section", "item"}</code>, where <code>item</code> has every field. Notes come back as plain text.</p>
 
-        <h2>Good to know</h2>
+        <h3 id="errors">Errors</h3>
+        <p>Errors return an HTTP error status and <code>{"error": "what went wrong"}</code>.</p>
+        <table>
+            <tr><th>Status</th><th>Meaning</th><th>What to do</th></tr>
+            <tr><td>400</td><td>Something in the request isn't valid: bad status, date format, section name, or unknown field.</td><td>Read the error message; it names the field and the allowed values.</td></tr>
+            <tr><td>401</td><td>The key is missing, mistyped, or revoked.</td><td>Check the header is <code>Authorization: Bearer dab_...</code> with the whole key. If it was revoked, create a new one.</td></tr>
+            <tr><td>403</td><td>You tried to change someone else's briefing, the account is disabled, or the Network ID isn't linked yet.</td><td>Change only your own briefing. Sign in to the Dashboard once to link your Network ID. For a disabled account, contact IT.</td></tr>
+            <tr><td>404</td><td>No item with that id in that section, or no briefing for that Network ID.</td><td>List the section again to get the current id. Check the section name.</td></tr>
+            <tr><td>500</td><td>Server error.</td><td>Try again. If it keeps happening, contact Chuck Konkol (IT).</td></tr>
+        </table>
+
+        <h3>Good to know</h3>
         <ul>
             <li>New items go to the top of their tab, like items added on the Dashboard.</li>
-            <li>The Dashboard updates live, so changes made through the API appear right away if it's open.</li>
+            <li>The Dashboard updates live, so API changes appear right away if it's open.</li>
             <li>A change made through the API is stored the same way as a Dashboard edit, so it shows on the briefing and the Status Report.</li>
-            <li>Every change is logged with the key's first few characters, so a misbehaving key can be traced and revoked.</li>
-            <li>Problems with the API? Contact Chuck Konkol (IT).</li>
+            <li>Every change is logged with the first few characters of the key, so a misbehaving key can be traced and revoked.</li>
+            <li>Questions or problems: contact Chuck Konkol (IT).</li>
         </ul>
 
         <a href="howtouse.html" class="back-link">&larr; Back to Help Guide</a>
