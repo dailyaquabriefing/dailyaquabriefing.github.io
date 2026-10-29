@@ -5,6 +5,27 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.29.0] - 2026-10-29
+
+### Added
+- **Status Report honors projects hidden by Team Hub admins.** When an admin
+  hides a project with 🙈 in the Team Hub (Manager Hub v1.14.0) with All
+  teams selected, it stays off every Status Report, personal and team. In
+  the **Projects…** panel it shows unchecked and locked, tagged
+  "🙈 Hidden by admin", and the Key Projects note counts it ("… hidden via
+  the Projects panel (1 by an admin in the Team Hub)"). Only a Team Hub
+  admin can bring it back. These hides are kept separate from your own
+  checkboxes, so **Save team** and **Save Personal Report** never copy them
+  in, and **Show all** leaves them in place.
+- Team-scoped hides from the Team Hub land in the team's saved selection,
+  so they show as unchecked boxes when the team is opened, the same as
+  unchecking and saving the team here.
+
+### Fixed
+- Projects-panel selections and the custom order now match project keys
+  regardless of upper/lower case in the owner ID. The Team Hub saves owners
+  in lower case, so its team hides and order now always apply here.
+
 ## [1.28.5] - 2026-10-05
 
 ### Fixed

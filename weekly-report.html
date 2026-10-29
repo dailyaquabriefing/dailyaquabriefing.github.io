@@ -94,6 +94,7 @@
   .pp-pri-medium{background:#e0a02f}
   .pp-pri-low{background:#57b45c}
   .pp-row.pp-hidden .pp-name{text-decoration:line-through;color:var(--muted)}
+  .pp-row .pp-admin{font-size:10.5px;font-weight:bold;border:1px solid var(--border);border-radius:3px;padding:1px 7px;color:var(--muted);white-space:nowrap}
   /* ---- Report document, template style ---- */
   #report{max-width:860px;margin:26px auto 60px;background:var(--paper);box-shadow:0 1px 8px rgba(30,50,70,.12);display:none}
   .doc{padding:30px 34px 40px}
@@ -355,6 +356,16 @@ try{
 function saveProjSel(){
   try{ localStorage.setItem("weeklyReportProjSel", JSON.stringify(PROJSEL)); }catch(e){}
 }
+/* Projects an admin hid for everyone with 🙈 in the Team Hub (with "All
+   teams" selected there; read from briefings/_teams hub.hidden). They stay
+   off every report, personal and team, and show unchecked and locked in the
+   Projects panel. They are kept apart from PROJSEL so saving a team or a
+   personal view never copies them in — only a Team Hub admin brings them
+   back. Team-scoped Team Hub hides land in the team's projSel.hidden, so
+   they arrive through applyTeam like any saved selection.
+   Keys are lower-cased "<owner>||<project name>". */
+let ADMIN_HIDDEN = new Set();
+const hiddenKeySet = ()=> new Set((PROJSEL.hidden||[]).map(k=>String(k).toLowerCase()));
 
 /* ---------- live Firestore connection ---------- */
 const firebaseConfig = {
@@ -740,9 +751,12 @@ function saveReportView(){
 
 function loadTeams(){
   return db.collection("briefings").doc("_teams").get().then(doc=>{
-    TEAMS = doc.exists ? (doc.data().teams || []) : [];
+    const d = doc.exists ? doc.data() : {};
+    TEAMS = d.teams || [];
+    ADMIN_HIDDEN = new Set(((d.hub || {}).hidden || []).map(h=>String((h && h.key) || "").toLowerCase()).filter(Boolean));
     renderTeamChips();
     fillTeamSel();
+    if(REPORTS.length) buildReport(); /* reports may have loaded first */
     return TEAMS;
   }).catch(()=>{ TEAMS = []; return TEAMS; });
 }
@@ -838,15 +852,18 @@ function renderProjPanel(){
     return;
   }
   /* Keep the saved order, appending any new projects at the end */
-  const idx = new Map((PROJSEL.order||[]).map((k,i)=>[k,i]));
-  entries.sort((a,b)=>(idx.has(a.key)?idx.get(a.key):99999)-(idx.has(b.key)?idx.get(b.key):99999));
+  const idx = new Map((PROJSEL.order||[]).map((k,i)=>[String(k).toLowerCase(),i]));
+  const rank = e => { const r = idx.get(e.key.toLowerCase()); return r == null ? 99999 : r; };
+  entries.sort((a,b)=>rank(a)-rank(b));
   PROJSEL.order = entries.map(e=>e.key);
   saveProjSel();
 
-  const hiddenSet = new Set(PROJSEL.hidden||[]);
+  const hiddenSet = hiddenKeySet();
   entries.forEach((e, i)=>{
+    const kl = e.key.toLowerCase();
+    const locked = ADMIN_HIDDEN.has(kl);
     const row = document.createElement("div");
-    row.className = "pp-row" + (hiddenSet.has(e.key) ? " pp-hidden" : "");
+    row.className = "pp-row" + (locked || hiddenSet.has(kl) ? " pp-hidden" : "");
     const up = document.createElement("button");
     up.type = "button"; up.textContent = "▲"; up.title = "Move up";
     up.disabled = i === 0;
@@ -857,8 +874,9 @@ function renderProjPanel(){
     down.onclick = ()=> moveProj(i, 1);
     const chk = document.createElement("input");
     chk.type = "checkbox";
-    chk.checked = !hiddenSet.has(e.key);
-    chk.title = "Show on the report";
+    chk.checked = !locked && !hiddenSet.has(kl);
+    chk.disabled = locked;
+    chk.title = locked ? "Hidden by an admin in the Team Hub" : "Show on the report";
     chk.onchange = ()=> toggleProjHidden(e.key, chk.checked);
     const name = document.createElement("span");
     name.className = "pp-name";
@@ -873,6 +891,13 @@ function renderProjPanel(){
       pri.className = "pp-pri pp-pri-" + e.priority.toLowerCase();
       pri.textContent = e.priority;
       row.appendChild(pri);
+    }
+    if(locked){
+      const tag = document.createElement("span");
+      tag.className = "pp-admin";
+      tag.textContent = "🙈 Hidden by admin";
+      tag.title = "An admin hid this project for everyone in the Team Hub. Only an admin can bring it back (Team Hub → ⚙ Admin → Hidden projects).";
+      row.appendChild(tag);
     }
     list.appendChild(row);
   });
@@ -896,7 +921,7 @@ function moveProj(i, dir){
 }
 
 function toggleProjHidden(key, shown){
-  PROJSEL.hidden = (PROJSEL.hidden||[]).filter(k=>k !== key);
+  PROJSEL.hidden = (PROJSEL.hidden||[]).filter(k=>String(k).toLowerCase() !== key.toLowerCase());
   if(!shown) PROJSEL.hidden.push(key);
   saveProjSel();
   renderProjPanel();
@@ -1088,9 +1113,11 @@ function buildUserReport(data){
   let visible = anyFilter ? projects.filter(matchesFilters) : projects;
 
   /* Projects panel: report-only show/hide and custom order */
-  const keyOf = p => (p.Owner || info.user || "") + "||" + (p.Name || "");
-  const hiddenSet = new Set(PROJSEL.hidden || []);
+  const keyOf = p => ((p.Owner || info.user || "") + "||" + (p.Name || "")).toLowerCase();
+  const hiddenSet = hiddenKeySet();
+  ADMIN_HIDDEN.forEach(k=>hiddenSet.add(k)); /* Team Hub admin hides count as unchecked */
   const hiddenCount = hiddenSet.size ? projects.filter(p=>hiddenSet.has(keyOf(p))).length : 0;
+  const adminHiddenCount = ADMIN_HIDDEN.size ? projects.filter(p=>ADMIN_HIDDEN.has(keyOf(p))).length : 0;
   if(hiddenCount) visible = visible.filter(p=>!hiddenSet.has(keyOf(p)));
 
   /* Future projects get full rows too (grey N/S code, "Future" stage label) */
@@ -1119,7 +1146,7 @@ function buildUserReport(data){
 
   /* Custom order from the Projects panel */
   if(FILTERS.sort === "custom"){
-    const orderIdx = new Map((PROJSEL.order||[]).map((k,i)=>[k,i]));
+    const orderIdx = new Map((PROJSEL.order||[]).map((k,i)=>[String(k).toLowerCase(),i]));
     const byCustom = (a,b)=>
       (orderIdx.has(keyOf(a)) ? orderIdx.get(keyOf(a)) : 99999) -
       (orderIdx.has(keyOf(b)) ? orderIdx.get(keyOf(b)) : 99999);
@@ -1269,7 +1296,7 @@ function buildUserReport(data){
     h += `<p class="legend">Also active: ${rest.map(p=>esc(p.Name)+(p.Owner ? " ("+esc(p.Owner)+")" : "")).join("; ")}.</p>`;
   }
   }
-  if(SECTIONS.key && hiddenCount) h += `<p class="legend">${hiddenCount} project(s) hidden via the Projects panel.</p>`;
+  if(SECTIONS.key && hiddenCount) h += `<p class="legend">${hiddenCount} project(s) hidden via the Projects panel${adminHiddenCount ? " (" + adminHiddenCount + " by an admin in the Team Hub)" : ""}.</p>`;
   if(SECTIONS.key || (SECTIONS.tasks && openTasks.length)) h += `<p class="legend"><b>Status:</b> C = Complete &middot; G = In progress, on track &middot; T = In testing &middot; Y = On hold / delayed / blocked &middot; N/S = Not started. The small label under each code is the project's current stage in the Daily Aqua Briefing, colored to match the Status of Projects key above.</p>`;
   if(SECTIONS.key && top.some(p=>(p.MilestoneList||[]).length)){
     h += `<p class="legend"><b>Milestones</b> (indented rows): C = complete (marked done, or both dates entered) &middot; G = in progress &middot; Y = roadblock or on hold (reason shown) or past its date &middot; N/S = not started &middot; Base = baseline complete date &middot; Est/Act = estimated (open) or actual (complete) date</p>`;
