@@ -473,6 +473,15 @@
                 </div>
                 <p id="api-key-msg" style="font-size: 0.9em; display: none;"></p>
                 <div id="api-key-list"></div>
+
+                <h3 style="color: #b71c1c; margin-top: 40px;">Reset Focus Rankings</h3>
+                <p style="color: #666; font-size: 0.9em;">
+                    Clears the Steering Focus number from <strong>all</strong> of your projects so every
+                    project becomes "Not a focus project". Your projects, tasks, comments, attachments, and
+                    profile are <strong>not</strong> touched.
+                </p>
+                <button class="btn btn-danger" style="margin-top: 15px;" onclick="resetBriefing()">Reset Focus Rankings</button>
+                <p id="reset-msg" style="font-size: 0.9em; margin-top: 8px; display: none;"></p>
             </div>
         </div>
     </div>
@@ -845,6 +854,22 @@
                 projects_count: localData.projects.length,
                 activeTasks_count: localData.activeTasks.length
             }, { merge: true }).catch(e => console.error("Save error", e));
+        }
+
+        // Clear the Steering Focus number from every project. Nothing else is
+        // touched. Confirmed with the user before any change is saved.
+        function resetBriefing() {
+            const msg = document.getElementById('reset-msg');
+            const focusCount = localData.projects.filter(p => parseInt(p.focusRank, 10) >= 1).length;
+
+            if (!confirm('Reset focus rankings?\n\nThis will remove the Steering Focus number from all ' +
+                focusCount + ' focus project(s) so every project becomes "Not a focus project".\n\n' +
+                'No projects, tasks, or other data are deleted.')) return;
+
+            localData.projects.forEach(p => { delete p.focusRank; });
+            pushData();
+            renderAll();
+            if (msg) { msg.style.display = 'block'; msg.style.color = '#1b5e20'; msg.textContent = 'Focus rankings reset — all projects are now "Not a focus project".'; }
         }
 
         function saveSettings() {

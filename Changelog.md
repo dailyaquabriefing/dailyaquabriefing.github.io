@@ -5,6 +5,23 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.0] - 2026-11-05
+
+### Added
+- **Set Steering Focus straight from the Dashboard list (`admin.html`).**
+  The 🎯 focus indicator on each project row is now a working dropdown (not
+  just a badge): pick **Not a focus project**, keep the project's **current
+  number**, or **Add as Focus #N** (next free, capped at 20) — no need to open
+  **Edit**. Changing a number renumbers the rest of the focus list to stay
+  contiguous.
+- **Reset Focus Rankings (`admin.html`).** New **Reset Focus Rankings** button
+  at the bottom of the **Settings** tab. After a confirmation it clears the
+  Steering Focus number from **all** projects so every one becomes *Not a
+  focus project*. It touches nothing else — no projects, tasks, comments,
+  attachments, or profile changes.
+- **How-to guide (`howtouse.html`):** documented the new inline **Steering
+  Focus** selector and the **Reset Focus Rankings** button.
+
 ## [1.31.0] - 2026-11-05
 
 ### Changed
