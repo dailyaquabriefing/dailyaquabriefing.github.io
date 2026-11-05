@@ -1078,7 +1078,9 @@
                     msStr = `<strong>Milestone:</strong> ${item.milestone}`;
                 }
 
-                const focusBadge = (parseInt(item.focusRank, 10) >= 1) ? `<span style="color:#8a6d00; margin-left:10px; font-weight:bold;" title="Steering Focus — shows first in the weekly Status Report">🎯 Focus #${item.focusRank}</span>` : '';
+                // Inline focus selector: set / change / clear a project's Steering
+                // Focus number directly from the list row (no need to open Edit).
+                const focusBadge = (type === 'project') ? inlineFocusSelect(item, index) : '';
                 const div = document.createElement('div');
                 div.className = 'item-row';
                 div.innerHTML = `
@@ -1273,6 +1275,32 @@
                 else { const o = new Option('Focus list full (' + FOCUS_MAX + ' max)', ''); o.disabled = true; sel.appendChild(o); }
                 sel.value = '';
             }
+        }
+
+        // Inline focus selector for a list row (projects only). Mirrors the modal's
+        // dropdown so a project's focus number can be set, changed, or cleared right
+        // from the list without opening Edit.
+        function inlineFocusSelect(item, index) {
+            const curRank = (item.status !== 'Completed' && parseInt(item.focusRank, 10) >= 1) ? parseInt(item.focusRank, 10) : 0;
+            let opts = '<option value="">🎯 Not a focus project</option>';
+            if (curRank >= 1) {
+                opts += `<option value="${curRank}" selected>🎯 Focus #${curRank}</option>`;
+            } else {
+                const used = localData.projects.filter((p, i) => i !== index && p.status !== 'Completed' && parseInt(p.focusRank, 10) >= 1).length;
+                const next = used + 1;
+                if (next <= FOCUS_MAX) opts += `<option value="${next}">➕ Add as Focus #${next}</option>`;
+                else opts += `<option value="" disabled>Focus list full (${FOCUS_MAX} max)</option>`;
+            }
+            return `<select style="margin-left:10px; font-size:0.82em; padding:2px 4px;" title="Steering Focus — shows first in the weekly Status Report" onchange="setInlineFocus(${index}, this.value)">${opts}</select>`;
+        }
+
+        function setInlineFocus(index, value) {
+            const item = localData.projects[index];
+            const v = parseInt(value, 10);
+            if (!isNaN(v) && v >= 1) item.focusRank = v; else delete item.focusRank;
+            // Changing the rank renumbers the rest of the focus list.
+            normalizeFocusRanks(localData.projects);
+            pushData();
         }
 
         // --- EDIT MODAL LOGIC ---
