@@ -533,6 +533,16 @@
                         <option value="Low">Low</option>
                     </select>
                 </div>
+                <div class="form-group project-only" style="background:#fff8e6; padding:10px; border-radius:5px; border:1px solid #f5e3ae;">
+                    <label>🎯 Steering Focus (committee's top projects)</label>
+                    <select id="m-focus" class="w-full">
+                        <option value="">Not a focus project</option>
+                        <option value="1">#1 — top priority</option>
+                        <option value="2">#2</option>
+                        <option value="3">#3</option>
+                    </select>
+                    <small style="color:#8a6d00;">Shows first in the weekly Status Report. Saving the project as Completed clears the rank.</small>
+                </div>
             </div>
 
             <div class="form-group complex-only">
@@ -1071,6 +1081,7 @@
                     msStr = `<strong>Milestone:</strong> ${item.milestone}`;
                 }
 
+                const focusBadge = (parseInt(item.focusRank, 10) >= 1) ? `<span style="color:#8a6d00; margin-left:10px; font-weight:bold;" title="Steering Focus — shows first in the weekly Status Report">🎯 Focus #${item.focusRank}</span>` : '';
                 const div = document.createElement('div');
                 div.className = 'item-row';
                 div.innerHTML = `
@@ -1079,6 +1090,7 @@
                         <div style="font-size:0.9em; margin-top:4px;">
                             <span class="badge ${statusClass}">${item.status}</span>
                             <span style="color:#666; margin-left:10px;">Prior: ${item.priority}</span>
+                            ${focusBadge}
                             <span style="color:#666; margin-left:10px;">👤 ${item.assignedTo || 'N/A'}</span>
                         </div>
                         <div style="font-size:0.85em; color:#555; margin-top:4px;">
@@ -1256,6 +1268,11 @@
                 complexOnlyFields.forEach(el => el.style.removeProperty('display'));
             }
 
+            // Steering focus only applies to projects
+            const projectOnlyFields = modal.querySelectorAll('.project-only');
+            if (type !== 'project') projectOnlyFields.forEach(el => el.style.display = 'none');
+            else projectOnlyFields.forEach(el => el.style.removeProperty('display'));
+
             let item = {name: '', status: 'On Track', priority: 'High', assignedTo: 'N/A', milestone: '', milestones: [], notes: '', tester: '', startDate: '', lastUpdated: '', endDate: '', goal: '', attachments: []};
             
             if (!isNew) {
@@ -1294,6 +1311,7 @@
             document.getElementById('m-name').value = item.name || '';
             document.getElementById('m-status').value = item.status || 'On Track';
             document.getElementById('m-priority').value = item.priority || 'High';
+            document.getElementById('m-focus').value = (type === 'project' && parseInt(item.focusRank, 10) >= 1) ? String(item.focusRank) : '';
             setAssignedFields(item.assignedTo);
             
             // RICH TEXT POPULATION
@@ -1327,6 +1345,7 @@
                 name: document.getElementById('m-name').value,
                 status: document.getElementById('m-status').value,
                 priority: document.getElementById('m-priority').value,
+                focus: document.getElementById('m-focus').value,
                 assigned: getAssignedValue(),
                 goal: document.getElementById('m-goal').value,
                 tester: document.getElementById('m-tester').value,
@@ -1420,6 +1439,17 @@
                     Object.assign(existingItem, complexData);
                 }
                 list[editIndex] = existingItem;
+            }
+
+            // Steering focus rank (1–3) for the weekly report's Steering Focus block.
+            // A project saved as Completed loses its rank — a done project has
+            // nothing left to focus on and belongs under Recently Completed.
+            const focusVal = (type === 'project') ? parseInt(document.getElementById('m-focus').value, 10) : NaN;
+            const savedItem = editIndex === -1 ? list[0] : list[editIndex];
+            if (type === 'project' && focusVal >= 1 && complexData.status !== 'Completed') {
+                savedItem.focusRank = focusVal;
+            } else {
+                delete savedItem.focusRank;
             }
 
             // No auto-sort on save: the list keeps the order set with Up/Down,

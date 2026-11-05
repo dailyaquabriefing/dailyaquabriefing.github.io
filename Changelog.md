@@ -5,6 +5,36 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.0] - 2026-11-05
+
+### Added
+- **🎯 Steering Focus — call out each person's top 2–3 projects.** The
+  steering committee wants to see "these first," not scan a 20-row Key
+  Projects table. A project can now be ranked **#1–#3** in the Dashboard
+  (owner or admin), and that rank drives the Status Report and the Team Hub.
+  - **Dashboard (`admin.html`):** new **🎯 Steering Focus** field in the
+    project editor (None / #1 / #2 / #3), stored as `focusRank` on the
+    project. A **🎯 Focus #n** badge shows on the project row. Saving a
+    project as **Completed** clears its rank automatically — a done project
+    is not a focus project.
+  - **Status Report (`weekly-report.html`):** a **🎯 Steering Focus** block
+    renders first, above Key Projects, listing the ranked projects (#1→#3;
+    Completed ones drop out). Focus projects are pulled out of the Key
+    Projects table so nothing is listed twice. The block appears on screen
+    and in the PDF, and rolls up across people in a team/merged report.
+- **🏁 Ready to close** line at the top of *Recently Completed*: projects
+  whose milestones are all done but that are not yet marked Completed, folded
+  into one line with a one-click **✔** to complete them (which also clears
+  the focus rank). The one-click close shows only for a manager
+  (lead/admin/ckonkol) or the briefing's own owner; a blocked write falls
+  back to "complete it in the Dashboard." Shown on screen and in the PDF.
+
+### Notes
+- Companion change in the Team Hub (Manager Hub v1.15.0): a **🎯 Steering
+  Focus** card rolls up each person's **top 3** focus projects across the hub.
+- Focus data is read from live briefing data (`structuredProjects[].focusRank`);
+  file-based (XLSX) reports do not carry it.
+
 ## [1.29.0] - 2026-10-29
 
 ### Added

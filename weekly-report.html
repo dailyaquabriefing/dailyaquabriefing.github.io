@@ -64,6 +64,12 @@
   .sectionbar .mergelbl{opacity:.95}
   hr.user-sep{border:0;border-top:4px double var(--border);margin:38px 0 30px}
   .ownertag{display:inline-block;background:#eef3f8;color:#215a8f;border:1px solid #9db8d2;border-radius:3px;font-size:10.5px;padding:0 5px;margin-left:6px;font-weight:bold;vertical-align:middle;white-space:nowrap}
+  /* ---- Ready to close (close-out line in Recently Completed) ---- */
+  .readytoclose{background:#fff8e6;border:1px solid #f0d888;border-radius:6px;padding:9px 12px;margin:0 0 10px;font-size:13px;line-height:1.9}
+  .readytoclose .rct-btn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:3px;padding:0;border:1px solid #2f9e44;background:#2f9e44;color:#fff;border-radius:4px;font-size:12px;line-height:1;cursor:pointer;vertical-align:middle}
+  .readytoclose .rct-btn:hover{background:#268a3a}
+  .readytoclose .rct-off{display:inline-block;margin-left:3px;color:#b7b099;vertical-align:middle;cursor:default}
+  @media print{.readytoclose .rct-btn,.readytoclose .rct-off{display:none}}
   /* ---- Drop zone / connect card ---- */
   #dropzone{max-width:860px;margin:40px auto;background:var(--paper);border:2px dashed var(--border);border-radius:8px;padding:40px 32px;text-align:center;transition:border-color .15s, background .15s}
   #dropzone.drag{border-color:var(--bar);background:#f4f8fc}
@@ -413,7 +419,8 @@ function itemToRow(item){
     Start: item.startDate || "",
     End: item.endDate || "",
     Updated: item.lastUpdated || "",
-    MilestoneList: Array.isArray(item.milestones) ? item.milestones : []
+    MilestoneList: Array.isArray(item.milestones) ? item.milestones : [],
+    FocusRank: parseInt(item.focusRank, 10) >= 1 ? item.focusRank : 0
   };
 }
 
@@ -1085,6 +1092,58 @@ function hasAttentionMilestone(p){
   });
 }
 
+/* Steering focus: rank 1-3 set in the Dashboard (owner or admin) for the
+   report's Steering Focus block. 0 = not a focus project. */
+function focusRankOf(p){ const r = parseInt(p.FocusRank,10); return r>=1 ? r : 0; }
+
+/* One milestone's "complete" test — same rule as the milestone table rows:
+   marked done, or both dates in without in-progress/on-hold/roadblock flags. */
+function msComplete(ms){
+  const b = toDate(ms.baseDate), e = toDate(ms.estActDate);
+  return !!(ms.done || (b && e && !ms.inProgress && !ms.onHold && !ms.roadblock));
+}
+
+/* Ready to close: every milestone complete, but the project is not yet
+   marked Completed (maintenance/future close on their own terms). */
+function isReadyToClose(p){
+  const ms = p.MilestoneList || [];
+  if(!ms.length) return false;
+  if(p.Status === "Completed" || p.Status === "Maintenance" || p.Status === "Future") return false;
+  return ms.every(msComplete);
+}
+
+/* Who may close a project from the report: managers (lead/admin/ckonkol),
+   or the owner of that briefing. */
+function canComplete(ownerId){
+  if(CAN_MANAGE_TEAMS) return true;
+  return !!(MY_NETWORK_ID && MY_NETWORK_ID.toLowerCase() === String(ownerId||"").toLowerCase());
+}
+
+/* One-click "Ready to close" action: mark the project Completed.
+   A completed project loses its steering focus rank. */
+function completeProject(ownerId, name){
+  if(!window.confirm('Mark "' + name + '" as Completed for ' + ownerId + '?\n\nIts steering focus rank will be cleared.')) return;
+  db.collection("briefings").doc(ownerId).get().then(doc=>{
+    if(!doc.exists) throw new Error("briefing not found");
+    const d = doc.data();
+    const listKey = Array.isArray(d.structuredProjects) ? "structuredProjects" : (Array.isArray(d.projects) ? "projects" : null);
+    if(!listKey) throw new Error("no project list in that briefing");
+    const list = d[listKey];
+    const idx = list.findIndex(it => it && typeof it === "object" && String(it.name||"").trim().toLowerCase() === String(name).trim().toLowerCase());
+    if(idx < 0) throw new Error("project not found in that briefing");
+    const it = list[idx];
+    it.status = "Completed";
+    it.lastUpdated = new Date().toLocaleString();
+    delete it.focusRank;
+    list[idx] = it;
+    return db.collection("briefings").doc(ownerId).update({[listKey]: list, lastUpdated: new Date().toISOString()});
+  }).then(()=>{
+    fetchReport(ownerId).then(r => { addOrReplaceReport(r); buildReport(); });
+  }).catch(ex=>{
+    window.alert('Could not mark it completed (' + ex.message + ').\nMark it Completed in the Dashboard for ' + ownerId + ' instead.');
+  });
+}
+
 /* ---------- report ---------- */
 const PRI = {High:0, Medium:1, Low:2, "":3};
 
@@ -1120,6 +1179,16 @@ function buildUserReport(data){
   const adminHiddenCount = ADMIN_HIDDEN.size ? projects.filter(p=>ADMIN_HIDDEN.has(keyOf(p))).length : 0;
   if(hiddenCount) visible = visible.filter(p=>!hiddenSet.has(keyOf(p)));
 
+  /* Steering Focus: this person's top projects for the committee this week
+     (rank 1-3, set with 🎯 in the Dashboard). Completed projects drop out of
+     the block — a done project belongs under close-out, and completing it
+     clears the rank. All ranks shown; the Team Hub rolls up the top 3. */
+  const focusList = projects
+    .filter(p=>focusRankOf(p) && !hiddenSet.has(keyOf(p)) && p.Status !== "Completed")
+    .sort((a,b)=>focusRankOf(a)-focusRankOf(b) || (PRI[a.Priority]??3)-(PRI[b.Priority]??3));
+  /* Ready to close: every milestone done, not yet marked Completed */
+  const readyToClose = projects.filter(p=>!hiddenSet.has(keyOf(p)) && isReadyToClose(p));
+
   /* Future projects get full rows too (grey N/S code, "Future" stage label) */
   const active = visible.filter(p=>ACTIVE_STATUSES.includes(p.Status) || p.Status === "Future");
   /* Attention-first sort: Delayed/roadblocked projects first, then priority,
@@ -1137,8 +1206,9 @@ function buildUserReport(data){
     return (toDate(b.Updated)||0)-(toDate(a.Updated)||0);
   });
   /* Every active project gets a full row — no top-10 cut (it hid projects
-     when merging multiple users; "Also active" only listed the overflow). */
-  const top = active;
+     when merging multiple users; "Also active" only listed the overflow).
+     Focus projects get their own block above, so keep them out of this table. */
+  const top = active.filter(p=>!focusRankOf(p));
   const rest = [];
 
   const onHold = visible.filter(p=>p.Status==="On-Hold");
@@ -1243,6 +1313,27 @@ function buildUserReport(data){
   if(SECTIONS.status && statusKeys.length) h += `<div class="bar center">Status of Projects</div>
   <div class="statusgrid">${statusKeys.map(s=>statusChip(s, s + ": " + statusCounts[s], FILTERS.status)).join("")}</div>
   <p class="legend" style="text-align:center">Tap any status above to filter the report; tap it again (or Clear, in the toolbar) to show everything.</p>`;
+
+  if(SECTIONS.key && focusList.length){
+  h += `<div class="bar" style="background:#8a6d00;color:#fff;">\u{1F3AF} Steering Focus — top ${focusList.length} this week</div>
+  <table class="tpl">
+  <thead><tr><th style="text-align:center;width:34px">#</th><th>Project</th><th style="text-align:center">Status</th><th>Assigned To</th><th>Est Complete</th></tr></thead><tbody>`;
+  for(const p of focusList){
+    const [cls,code] = statusCode(p);
+    const est = toDate(p.End);
+    const block = looksBlocked(p);
+    h += `<tr class="projrow">
+      <td style="text-align:center;font-weight:bold;color:var(--muted)">#${focusRankOf(p)}</td>
+      <td><b>${esc(p.Name)}</b>${ownerTag(p)}${p.Goal ? `<br><span style="font-size:12.5px;color:var(--muted)">${esc(firstLine(p.Goal))}</span>`:""}</td>
+      <td class="st ${cls}"><span>${code}</span>${stageLabel(p.Status)}</td>
+      <td class="asgncol">${esc(p.Assigned||"N/A")}</td>
+      <td class="datecol">${est ? esc(fmtShort(est)) : "TBD"}</td>
+    </tr>`;
+    if(block) h += `<tr class="note"><td colspan="5">${esc(block)}</td></tr>`;
+  }
+  h += `</tbody></table>
+  <p class="legend">This person's top projects for the steering committee this week — set with the \u{1F3AF} Steering Focus rank in the Dashboard (owner or admin). Completed projects drop out of this block and appear under close-out.</p>`;
+  }
 
   if(SECTIONS.key){
   h += `<div class="bar">${anyFilter ? "Projects \u2014 filtered (" + top.length + ")" : "Key Projects (" + top.length + ")"}</div>
@@ -1357,6 +1448,19 @@ function buildUserReport(data){
   const doneTitle = FILTERS.doneDays ? "Recently Completed (last " + FILTERS.doneDays + " days)" : "Recently Completed (all time)";
   if(SECTIONS.done && (!anyFilter || doneProjWk.length + doneTasksWk.length)){
   h += `<div class="bar">${doneTitle}</div>`;
+  if(readyToClose.length){
+    /* Escape for a single-quoted JS string inside a double-quoted onclick:
+       backslash-escape \ and ', then HTML-escape (matches manager-hub.html). */
+    const whoAttr = s => esc(String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'"));
+    h += `<div class="readytoclose"><b>\u{1F3C1} Ready to close</b> (all milestones done, not yet marked Completed): ` +
+      readyToClose.map(p=>{
+        const owner = p.Owner || info.user || "";
+        const btn = canComplete(owner)
+          ? ` <button class="rct-btn" onclick="completeProject('${whoAttr(owner)}','${whoAttr(p.Name)}')" title="Mark Completed${owner ? " for " + esc(owner) : ""} — clears its focus rank">✔</button>`
+          : ` <span class="rct-off" title="Sign in as this person or as a manager to close it">✔</span>`;
+        return `<b>${esc(p.Name)}</b>${p.Owner ? " ("+esc(p.Owner)+")" : ""}${btn}`;
+      }).join(" &middot; ") + `</div>`;
+  }
   if(doneProjWk.length + doneTasksWk.length === 0){
     h += `<table class="tpl"><tbody><tr><td>No items were closed in this window.</td></tr></tbody></table>`;
   } else {
@@ -1378,6 +1482,7 @@ function buildUserReport(data){
 
   const model = {
     info, top, onHold, maint, future, daily, activeTasks: openTasks,
+    focusList, readyToClose,
     hasProjects: projects.length > 0, staleDays: staleDays, deptLine: info.deptLine || "",
     statusKeys, statusCounts, anyFilter, doneTasksWk, doneProjWk, doneTitle, pct,
     pctSmall: allCompleted.length + " of " + denom + " tracked projects completed \u00b7 " + allMaint.length + " in ongoing maintenance, " + allFuture.length + " future (excluded)",
@@ -1866,6 +1971,27 @@ function saveAsPdf(){
 
   }
 
+  /* steering focus */
+  if(SECTIONS.key && m.focusList && m.focusList.length){
+    bar("\u{1F3AF} Steering Focus — top " + m.focusList.length + " this week");
+    table({
+      head:[["#","Project","Status","Assigned To","Est Complete"]],
+      body: m.focusList.map(p=>{
+        const [cls, code] = statusCode(p);
+        const est = toDate(p.End);
+        return [
+          {content:"#" + focusRankOf(p), styles:{fontStyle:"bold", halign:"center", textColor:MUTED}},
+          {content: p.Name + ownerTxt(p) + (p.Goal ? "\n" + firstLine(p.Goal) : ""), styles:{fontStyle:"bold", textColor:[33,90,143]}},
+          stCell(cls, code + "\n" + (p.Status||"")),
+          {content: p.Assigned || "N/A", styles:{fontStyle:"bold"}},
+          est ? fmtShort(est) : "TBD"
+        ];
+      }),
+      columnStyles:{0:{cellWidth:28, halign:"center"}, 2:{cellWidth:78, halign:"center"}, 3:{cellWidth:70}, 4:{cellWidth:80}}
+    });
+    small("This person's top projects for the steering committee this week — set with the Steering Focus rank in the Dashboard. Completed projects move to close-out.");
+  }
+
   /* key projects */
   if(SECTIONS.key){
   const kpCols = {1:{cellWidth:78, halign:"center"}, 2:{cellWidth:70}, 3:{cellWidth:58}, 4:{cellWidth:80}};
@@ -1994,6 +2120,13 @@ function saveAsPdf(){
   /* recently completed */
   if(SECTIONS.done && (!m.anyFilter || m.doneProjWk.length + m.doneTasksWk.length)){
     bar(m.doneTitle);
+    if(m.readyToClose && m.readyToClose.length){
+      table({
+        body:[[{content:"\u{1F3C1} Ready to close (all milestones done, not yet marked Completed): " +
+          m.readyToClose.map(p=>p.Name + (p.Owner ? " (" + p.Owner + ")" : "")).join("  ·  "),
+          styles:{fontStyle:"bold", fontSize:9, textColor:[122,97,0], fillColor:[255,248,230]}}]]
+      });
+    }
     if(m.doneProjWk.length + m.doneTasksWk.length === 0){
       table({ body:[["No items were closed in this window."]] });
     } else {
