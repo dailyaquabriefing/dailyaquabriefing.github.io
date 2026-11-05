@@ -5,6 +5,24 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.0] - 2026-11-05
+
+### Changed
+- **Steering Focus is now a single ranked list, 1–20, not three fixed slots.**
+  - **Dashboard (`admin.html`):** the 🎯 Steering Focus dropdown is built per
+    project — **Not a focus project**, plus either the project's **current
+    number** (to keep it) or **"Add as Focus #N"**, where N is the next free
+    number. The list caps at 20 ("Focus list full" past that).
+  - **Numbers stay contiguous.** Freeing a number renumbers the rest so there
+    are never gaps — e.g. with #1–#10 assigned, releasing #8 makes 9→8 and
+    10→9. A number is freed when a project is set back to *Not a focus*, saved
+    as **Completed**, or **deleted**. The one-click ✔ close on the Status
+    Report's "Ready to close" line renumbers the same way.
+  - Legacy projects that shared a rank (from the old #1–#3 model) are cleaned
+    up to a unique 1..N the first time any project is saved.
+- **Team Hub** shows each person's **top 3** focus projects; the weekly Status
+  Report lists all of them (1–20).
+
 ## [1.30.0] - 2026-11-05
 
 ### Added

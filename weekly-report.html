@@ -1136,6 +1136,11 @@ function completeProject(ownerId, name){
     it.lastUpdated = new Date().toLocaleString();
     delete it.focusRank;
     list[idx] = it;
+    /* Completing frees this project's focus number — renumber the rest
+       contiguously 1..N (max 20), matching the Dashboard's behavior. */
+    list.filter(x=>x && typeof x==="object" && x.status!=="Completed" && parseInt(x.focusRank,10)>=1)
+        .sort((a,b)=>parseInt(a.focusRank,10)-parseInt(b.focusRank,10))
+        .forEach((x,i)=>{ if(i<20) x.focusRank=i+1; else delete x.focusRank; });
     return db.collection("briefings").doc(ownerId).update({[listKey]: list, lastUpdated: new Date().toISOString()});
   }).then(()=>{
     fetchReport(ownerId).then(r => { addOrReplaceReport(r); buildReport(); });
