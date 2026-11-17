@@ -5,6 +5,20 @@ All notable changes to the Daily Aqua Briefing app are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.0] - 2026-11-17
+
+### Added
+- **Reorder your Steering Focus list from the Dashboard (`admin.html`).**
+  The 🎯 dropdown on each project row, and the one in the Edit window, now
+  list every focus number, the same way admins set ranks in Team Hub. Pick
+  a number to move the project there; the projects in between shift by one.
+  Example: choosing **Focus #2** on your #5 makes it #2, and the old #2–#4
+  become #3–#5. A project that isn't a focus yet can be added at any number
+  (**➕ Add as Focus #N**). The 20-project cap still applies: once the list
+  is full, only projects already on it can move. Completed projects get no
+  numbers.
+- **How-to guide (`howtouse.html`):** explains how to reorder focus projects.
+
 ## [1.32.0] - 2026-11-05
 
 ### Added
