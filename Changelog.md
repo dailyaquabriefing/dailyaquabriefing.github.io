@@ -19,6 +19,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   numbers.
 - **How-to guide (`howtouse.html`):** explains how to reorder focus projects.
 
+### Changed
+- **Help Guide rewritten (`howtouse.html`) to be easier to read and find
+  things in.**
+  - A side menu stays on screen and highlights the section you're reading,
+    and a search box hides the sections that don't match what you type.
+  - An **I want to…** box links straight to common jobs (add a project,
+    rank focus projects, share a briefing, build a team report, change a
+    password).
+  - Sections are grouped by job, with short numbered steps, tables for the
+    edit-window fields and Settings, and new **Questions and fixes** and
+    **Words used here** sections. Long Weekly Status Report details are in
+    panels you click to open.
+  - Page names now match the nav bar (🏠 My Briefing, 📋 Team Status,
+    👥 Team Hub, 📊 Dashboard, 🔐 Admin Panel). The **NEW**/**IMPROVED**
+    tags on almost every item are replaced by one short **What's new** box.
+  - Printing opens every panel so nothing is cut off.
+
+### Fixed
+- **Help Guide:** the "Step 1" heading showed as plain text because the
+  line above it had a broken `<hr` tag.
+- **Help Guide:** said 📊 Analytics and 📥 Export to Excel were in the top
+  navigation bar. They're in the Briefing page's own action bar.
+
 ## [1.32.0] - 2026-11-05
 
 ### Added

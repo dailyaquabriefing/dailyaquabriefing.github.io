@@ -3,81 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>How to Use - AquaDailyBriefing</title>
+    <title>Help Guide - Aqua Daily Briefing</title>
+    <link rel="icon" href="favicon.ico">
     <style>
+        :root {
+            --blue: #005a9e;
+            --blue-2: #0078d4;
+            --ink: #1f2933;
+            --muted: #52606d;
+            --line: #e3e8ee;
+            --bg: #f4f7fa;
+            --card: #ffffff;
+            --tip-bg: #e8f6f1;
+            --tip-line: #20a77a;
+            --warn-bg: #fff8e6;
+            --warn-line: #e0b33a;
+            --focus-bg: #fdf6e3;
+            --focus-ink: #8a6d00;
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; scroll-padding-top: 16px; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px 16px 60px;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+            font-size: 16px;
             line-height: 1.6;
-            padding: 20px;
-            max-width: 800px;
-            margin: 40px auto;
-            background-color: #f9f9f9;
-            color: #333;
         }
-        .container {
-            background: #ffffff;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h1 {
-            color: #005a9e;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
-        }
-        h2 {
-            color: #0078D4;
-            margin-top: 30px;
-        }
-        h3 {
-            color: #444;
-            margin-top: 20px;
-        }
-        p, li {
-            color: #555;
-            font-size: 1.05em;
-        }
+        .page { max-width: 1100px; margin: 0 auto; }
+        a { color: var(--blue-2); }
         code {
-            background-color: #f0f0f0;
-            padding: 2px 5px;
+            background: #eef2f6;
+            padding: 1px 6px;
             border-radius: 4px;
             font-family: Consolas, monospace;
-            color: #d63384;
+            font-size: 0.9em;
+            color: #a3195b;
+            word-break: break-word;
         }
-        .back-link {
-            display: inline-block;
-            margin-top: 30px;
-            text-decoration: none;
-            color: #005a9e;
-            font-weight: bold;
-        }
-        .back-link:hover { text-decoration: underline; }
-        
-        .step-box {
-            background: #f8f9fa;
-            border-left: 4px solid #0078D4;
-            padding: 15px;
-            margin: 15px 0;
-        }
-        .new-feature {
-            background: #e6fffa;
-            color: #004d40;
-            padding: 2px 6px;
+        kbd {
+            border: 1px solid #c8d0d8;
+            border-bottom-width: 2px;
             border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-            border: 1px solid #b2f5ea;
-            vertical-align: middle;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: #eee;
+            padding: 0 5px;
             font-size: 0.85em;
-            font-weight: bold;
-            color: #333;
-            margin: 0 2px;
+            background: #fff;
+        }
+
+        /* ---------- Top: title + how the pages fit together ---------- */
+        .hero {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 28px 32px;
+            box-shadow: 0 2px 10px rgba(16, 42, 74, 0.06);
+            margin-bottom: 20px;
+        }
+        .hero h1 { margin: 0 0 6px; color: var(--blue); font-size: 1.8rem; line-height: 1.25; }
+        .hero .lead { margin: 0 0 18px; color: var(--muted); font-size: 1.05rem; max-width: 760px; }
+        .flow { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; }
+        .flow .box {
+            flex: 1 1 180px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px 14px;
+            background: #f9fbfd;
+        }
+        .flow .box b { display: block; color: var(--blue); }
+        .flow .box span { color: var(--muted); font-size: 0.9rem; }
+        .flow .arrow { align-self: center; color: #9aa5b1; font-size: 1.4rem; }
+
+        /* ---------- Two columns: sticky menu + content ---------- */
+        .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 20px; align-items: start; }
+        .sidebar {
+            position: sticky;
+            top: 12px;
+            max-height: calc(100vh - 24px);
+            overflow: auto;
+            background: var(--card);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 10px rgba(16, 42, 74, 0.06);
+        }
+        .search-label { display: block; font-weight: 600; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+        #help-search {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #c8d0d8;
+            border-radius: 8px;
+            font: inherit;
+            font-size: 0.95rem;
+        }
+        #help-search:focus { outline: 2px solid var(--blue-2); outline-offset: 1px; }
+        #search-status { min-height: 1.2em; margin: 6px 0 10px; font-size: 0.82rem; color: var(--muted); }
+        .toc-h { margin: 0 0 6px; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: #7b8794; font-weight: 700; }
+        .toc ol { list-style: none; margin: 0; padding: 0; }
+        .toc a {
+            display: block;
+            padding: 5px 10px;
+            border-radius: 6px;
+            color: var(--ink);
+            text-decoration: none;
+            font-size: 0.92rem;
+            border-left: 3px solid transparent;
+        }
+        .toc a:hover { background: #eef4fa; }
+        .toc a.active { background: #e6f0fa; border-left-color: var(--blue-2); color: var(--blue); font-weight: 600; }
+        .toc a.dim { opacity: 0.35; }
+
+        /* ---------- Content cards ---------- */
+        main > section, .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px 28px;
+            box-shadow: 0 2px 10px rgba(16, 42, 74, 0.06);
+            margin-bottom: 20px;
+        }
+        main h2 { margin: 0 0 6px; color: var(--blue); font-size: 1.4rem; line-height: 1.3; }
+        main h3 { margin: 24px 0 6px; font-size: 1.08rem; color: var(--ink); }
+        main p { margin: 0 0 12px; }
+        main ul, main ol { margin: 0 0 12px; padding-left: 22px; }
+        main li { margin-bottom: 6px; }
+        .intro { color: var(--muted); }
+        .num { display: inline-block; min-width: 1.6em; color: #9aa5b1; font-weight: 600; }
+
+        /* "I want to…" quick links */
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin-top: 10px; }
+        .task-grid a {
+            display: block;
+            padding: 10px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--ink);
+            background: #f9fbfd;
+            font-size: 0.95rem;
+        }
+        .task-grid a:hover { border-color: var(--blue-2); background: #eef6fd; }
+
+        /* Numbered steps */
+        ol.steps { counter-reset: step; list-style: none; padding-left: 0; }
+        ol.steps > li { counter-increment: step; position: relative; padding-left: 40px; margin-bottom: 12px; }
+        ol.steps > li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 1px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--blue-2);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Callouts */
+        .tip, .warn, .example {
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin: 12px 0;
+            border-left: 4px solid;
+        }
+        .tip { background: var(--tip-bg); border-color: var(--tip-line); }
+        .warn { background: var(--warn-bg); border-color: var(--warn-line); }
+        .example { background: var(--focus-bg); border-color: var(--focus-ink); }
+        .tip > :last-child, .warn > :last-child, .example > :last-child { margin-bottom: 0; }
+
+        /* Tables */
+        .tbl-wrap { overflow-x: auto; margin: 8px 0 14px; }
+        table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+        th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+        th { background: #f3f6f9; color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        td:first-child { white-space: nowrap; font-weight: 600; }
+
+        /* Expandable panels */
+        details {
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            margin: 10px 0;
+            background: #fbfcfd;
+        }
+        details > summary {
+            cursor: pointer;
+            padding: 10px 14px;
+            font-weight: 600;
+            list-style: none;
+            position: relative;
+            padding-left: 34px;
+        }
+        details > summary::-webkit-details-marker { display: none; }
+        details > summary::before {
+            content: "▸";
+            position: absolute;
+            left: 14px;
+            color: var(--blue-2);
+            transition: transform 0.15s;
+        }
+        details[open] > summary::before { transform: rotate(90deg); }
+        details > summary:hover { background: #eef4fa; border-radius: 8px; }
+        details > .body { padding: 2px 16px 12px 34px; }
+
+        /* Glossary */
+        dl.terms { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; }
+        dl.terms dt { font-weight: 600; }
+        dl.terms dd { margin: 0; color: var(--muted); }
+
+        .whatsnew { background: #f2f8ff; border: 1px solid #cfe3f6; }
+        .whatsnew h2 { font-size: 1.1rem; }
+        .whatsnew ul { margin-bottom: 0; }
+        .date { color: #7b8794; font-size: 0.85rem; font-weight: 600; margin-right: 6px; }
+
+        .to-top {
+            display: inline-block;
+            margin-top: 6px;
+            font-size: 0.85rem;
+            text-decoration: none;
+            color: #7b8794;
+        }
+        .to-top:hover { color: var(--blue-2); }
+        .no-match { display: none; }
+
+        @media (max-width: 900px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; max-height: none; }
+            .toc ol { columns: 2; column-gap: 12px; }
+            .hero { padding: 22px 20px; }
+            main > section, .card { padding: 20px 18px; }
+            .flow .arrow { display: none; }
+        }
+        @media (max-width: 520px) {
+            .toc ol { columns: 1; }
+            dl.terms { grid-template-columns: 1fr; }
+            dl.terms dd { margin-bottom: 8px; }
+            td:first-child { white-space: normal; }
+        }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .sidebar, .to-top, .task-grid { display: none; }
+            .layout { display: block; }
+            main > section, .card, .hero { box-shadow: none; border: 1px solid var(--line); break-inside: avoid-page; }
         }
     </style>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
@@ -94,205 +263,556 @@
 <script src="nav.js" defer></script>
 </head>
 <body>
-    <div class="container">
-        <a href="index.html" class="back-link">&larr; Back to Report</a>
-        
-        <h1>How to Use Aqua Daily Briefing</h1>
-        <p>👋 Say goodbye to juggling multiple apps! The <strong>Aqua Daily Briefing</strong> is your personalized work dashboard. It combines your <strong>Active Projects</strong>, <strong>Quick Tasks</strong>, and <strong>Daily Tasks</strong> into one shareable briefing — plus a one-click <strong>Weekly Status Report</strong> for the steering committee.</p>
-        
-        <div class="step-box">
-            <h3>Quick Navigation Guide</h3>
-            <p>This app has 5 main sections:</p>
-            <ul>
-                <li><strong>🏠 Briefing</strong>: Your personal daily report</li>
-                <li><strong>📋 Status Report</strong>: Team-wide status view</li>
-                <li><strong>📊 Analytics</strong>: Visual data on your work</li>
-                <li><strong>Dashboard</strong>: Admin interface to manage your content</li>
-                <li><strong>Help</strong>: This guide for using the app</li>
-            </ul>
+<div class="page" id="top">
+
+    <header class="hero">
+        <h1>How to use Aqua Daily Briefing</h1>
+        <p class="lead">Aqua Daily Briefing keeps your projects and tasks in one place. You type your updates once, and they show up everywhere they're needed.</p>
+        <div class="flow" aria-label="How the pages fit together">
+            <div class="box"><b>📊 Dashboard</b><span>You sign in here to add and update your projects and tasks.</span></div>
+            <div class="arrow" aria-hidden="true">→</div>
+            <div class="box"><b>🏠 My Briefing</b><span>Anyone with your link can read your work and leave comments.</span></div>
+            <div class="arrow" aria-hidden="true">→</div>
+            <div class="box"><b>📋 Team Status</b><span>Builds the weekly status report for the steering committee.</span></div>
         </div>
-        
-        <div class="step-box" style="background: #fff8e1; border-left: 4px solid #ffc107;">
-            <h3>First Time User? Here's What to Do Next</h3>
-            <ol>
-                <li><strong>Sign in to the Dashboard</strong>: Click "Log In to Dashboard" or go to the Dashboard tab</li>
-                <li><strong>Link Your Account</strong>: Enter your Aqua Network User ID (e.g., 'jdoe')</li>
-                <li><strong>Start Adding Content</strong>: Use the tabs in the Dashboard to add your projects and tasks</li>
-                <li><strong>View Your Report</strong>: Return to the Briefing tab to see your personalized dashboard</li>
-            </ol>
-        </div>
+    </header>
 
-        <h2>Finding Your Way Around <span class="new-feature">NEW</span></h2>
-        <p>Every page shares a navigation bar at the top: <strong>🏠 Briefing</strong>, <strong>Dashboard</strong>, <strong>Status Report</strong>, <strong>Help</strong>, and <strong>Admin</strong>. While you're signed in, the <strong>Briefing</strong> and <strong>Status Report</strong> links point at <em>your own</em> report (your linked Network ID), and opening the Status Report page directly loads your report automatically; signed-out visitors get the plain pages.</p>
+    <div class="layout">
+        <aside class="sidebar">
+            <label class="search-label" for="help-search">Search this guide</label>
+            <input id="help-search" type="search" placeholder="e.g. focus, password, PDF" autocomplete="off">
+            <p id="search-status" aria-live="polite"></p>
+            <nav class="toc" aria-label="On this page">
+                <p class="toc-h">On this page</p>
+                <ol>
+                    <li><a href="#start">Get started</a></li>
+                    <li><a href="#pages">The pages</a></li>
+                    <li><a href="#dashboard">Add and update work</a></li>
+                    <li><a href="#focus">Steering Focus</a></li>
+                    <li><a href="#milestones">Milestones and roadblocks</a></li>
+                    <li><a href="#checks">Daily checks</a></li>
+                    <li><a href="#briefing">Your Briefing page</a></li>
+                    <li><a href="#report">Weekly Status Report</a></li>
+                    <li><a href="#teamhub">Team Hub (managers)</a></li>
+                    <li><a href="#settings">Settings</a></li>
+                    <li><a href="#faq">Questions and fixes</a></li>
+                    <li><a href="#terms">Words used here</a></li>
+                </ol>
+            </nav>
+        </aside>
 
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;"
+        <main>
+            <div class="card" id="quick">
+                <h2>I want to…</h2>
+                <div class="task-grid">
+                    <a href="#start">🚀 Set up my account</a>
+                    <a href="#add-item">➕ Add a project or task</a>
+                    <a href="#focus">🎯 Rank or reorder my focus projects</a>
+                    <a href="#milestones">🚧 Add milestones or flag a roadblock</a>
+                    <a href="#share">🔗 Share my briefing</a>
+                    <a href="#report">📋 Make my weekly status report</a>
+                    <a href="#report-team">👥 Put several people in one report</a>
+                    <a href="#excel">📥 Export my work to Excel</a>
+                    <a href="#settings">🔑 Change my password</a>
+                </div>
+            </div>
 
-        <h2>Step 1: Admin Dashboard & First-Time Login</h2>
-        <p>Use the Admin Dashboard to manage what appears on your report. There is no software to install — everything runs in the browser.</p>
-        <div class="step-box">
-            <ol>
-                <li>Go to the <a href="admin.html" target="_blank"><strong>Admin Dashboard</strong></a> (or click <strong>Dashboard</strong> in the navigation bar).</li>
-                <li><strong>Logging In:</strong> Sign in with the email and default password provided by IT.</li>
-                <li><strong>First Time?</strong> After your first sign-in, you'll be prompted to link your account to your <strong>Aqua Network User ID</strong> (e.g., <code>jdoe</code>). That ID becomes your report address, and your (empty) briefing and status report pages start working immediately.</li>
-                <li><strong>Recommended:</strong> change the default password right away on the <strong>Settings</strong> tab (see "Change Password" below).</li>
-            </ol>
-        </div>
+            <div class="card whatsnew" id="whats-new">
+                <h2>What's new</h2>
+                <ul>
+                    <li><span class="date">Nov 17, 2026</span>Reorder your Steering Focus list by picking any number. <a href="#focus">How it works</a></li>
+                    <li><span class="date">Nov 5, 2026</span>Set a focus number right from the project row, and clear them all with Reset Focus Rankings.</li>
+                    <li><span class="date">Nov 5, 2026</span>Steering Focus became one ranked list of up to 20 projects.</li>
+                </ul>
+            </div>
 
-        <h2>Step 2: Managing Your Content</h2>
-        <p>The Admin Dashboard is organized into four tabs — <strong>Active Projects</strong>, <strong>Quick Tasks</strong>, <strong>Daily Tasks</strong>, and <strong>Settings</strong> — in the same order the briefing shows them. Content supports <strong>Rich Text</strong> (Bold, Bullets, Headers) via the editor.</p>
-        <p><strong>🔍 Search <span class="new-feature">NEW</span>:</strong> Type in the search box under the tabs to filter all three lists at once. It looks at names, status, priority, Assigned To, goals, notes, milestones (including on-hold and roadblock reasons), attachment names, comments, and dates. Each word you type must match, so <em>chuck publish</em> finds items that mention both. Each tab shows how many items match. Up/Down is turned off while you search; press <strong>Clear</strong> or <strong>Esc</strong> to show everything and reorder again.</p>
+            <!-- ===================== GET STARTED ===================== -->
+            <section class="topic" id="start">
+                <h2>Get started</h2>
+                <p class="intro">This takes about five minutes. There's nothing to install. Everything runs in your web browser.</p>
+                <ol class="steps">
+                    <li><b>Sign in.</b> Open the <a href="admin.html">📊 Dashboard</a> and sign in with the email and password IT gave you.</li>
+                    <li><b>Link your Network ID.</b> The first time you sign in, a box asks for your Aqua Network User ID, for example <code>jdoe</code>. It fills in a guess from your email. This ID becomes the address of your Briefing and Status Report.</li>
+                    <li><b>Change your password.</b> Open the <b>Settings</b> tab, go to <b>Change Password</b>, and replace the password from IT.</li>
+                    <li><b>Add your name and department.</b> On the same tab, fill in <b>Display Name</b> and <b>Department</b>, then click <b>Save Settings</b>. Your name then shows on the Status Report in place of your ID.</li>
+                    <li><b>Add your projects.</b> On the <b>Active Projects</b> tab, click <b>+ Add New Project</b>. See <a href="#add-item">Add or edit an item</a>.</li>
+                </ol>
+                <div class="warn">
+                    <p><b>If the setup box warns that your ID already has a briefing, stop.</b> That briefing may belong to someone else, and linking to it would let you edit their report. Only continue if the ID really is yours. If you're not sure, email <a href="mailto:ITHelpdesk@aqua-aerobic.com">ITHelpdesk@aqua-aerobic.com</a>.</p>
+                </div>
+                <div class="tip">
+                    <p><b>The minimum:</b> keep your <b>Active Projects</b> up to date. They feed the Weekly Status Report and the charts. Quick Tasks and Daily Tasks are optional.</p>
+                </div>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
 
-        <div class="step-box">
-            <h3>1. Active Projects & Quick Tasks Tabs</h3>
-            <p style="background:#e6fffa; border-left:4px solid #20c997; padding:10px 12px; border-radius:4px;">
-                <strong>Minimal usage suggestion:</strong> at a minimum, keep your <strong>Active Projects</strong> up to date — they are what feeds the <strong>Weekly Status Report</strong> (Key Projects, On Hold, completion %) and the <strong>Project Milestones</strong> analytics. <strong>Quick Tasks</strong> (smaller one-off work items) and <strong>Daily Tasks</strong> are optional.
-            </p>
-            <p>These sections support rich data. When adding or editing an item:</p>
-            <ul>
-                <li><strong>Rich Text Notes <span class="new-feature">NEW</span>:</strong> Use the editor to format your notes with bullet points, bold text, and headers.</li>
-                <li><strong>Multiple Attachments <span class="new-feature">NEW</span>:</strong> You can now upload multiple files or add manual links (e.g., SharePoint URLs) to a single task.</li>
-                <li><strong>Assigned To <span class="new-feature">NEW</span>:</strong> Pick who owns the item from the dropdown, or choose "Other" to type a name. Unassigned items show as N/A on the Weekly Report.</li>
-                <li><strong>Neutral statuses <span class="new-feature">NEW</span>:</strong> Alongside the original stages, items can be <strong>Planning</strong>, <strong>In Progress</strong>, or <strong>Review</strong> — friendlier wording for non-IT departments.</li>
-                <li><strong>Collaborators:</strong> Tag teams (e.g., "Design Team") to display a yellow Team badge.</li>
-                <li><strong>Milestones <span class="new-feature">IMPROVED</span>:</strong> Add multiple milestones (🏁) per item, each with a Base Complete date, an Est/Act Complete date, and In Progress / On-Hold flags (with an on-hold reason). Check <strong>🚧 Roadblock</strong> on a milestone (with a reason) to flag it as blocked — it shows red on the reports and pushes the project to the top of Key Projects. Reorder milestones with the ▲/▼ buttons on each row. Progress like "2/5 complete" shows on the report.</li>
-                <li><strong>Dates:</strong> Set Start and End dates. The <strong>Last Updated</strong> field updates automatically.</li>
-                <li><strong>Steering Focus <span class="new-feature">IMPROVED</span>:</strong> Tag up to 20 of your projects as the committee's top focus — they rank 1&ndash;20 and show first in the Weekly Status Report. Set the number right on the project row in the Dashboard (the 🎯 dropdown) <em>without opening Edit</em>, or from the item's editor. <strong>Reorder your focus list</strong> by picking any number: choose <strong>Focus #1</strong> on your current #3 and it becomes #1, while the old #1 and #2 move down to #2 and #3. A project that isn't a focus yet can be added at any number with <strong>➕ Add as Focus #N</strong>. Picking <strong>"🎯 Not a focus project"</strong> removes the number and closes the gap. To clear every focus number at once, use <strong>Reset Focus Rankings</strong> in the Settings tab (below).</li>
-            </ul>
+            <!-- ===================== THE PAGES ===================== -->
+            <section class="topic" id="pages">
+                <h2>The pages in the navigation bar</h2>
+                <p class="intro">The blue bar at the top of every page links to these. While you're signed in, <b>🏠 My Briefing</b> and <b>📋 Team Status</b> open your own report.</p>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Page</th><th>What it's for</th><th>Who uses it</th></tr></thead>
+                        <tbody>
+                            <tr><td>🏠 My Briefing</td><td>Your work, read-only. Share the link so others can see it and leave comments. <a href="#briefing">More</a></td><td>Everyone</td></tr>
+                            <tr><td>📋 Team Status</td><td>The Weekly Status Report for you, several people, or a saved team. Save it as a PDF or copy it into an email. <a href="#report">More</a></td><td>Everyone</td></tr>
+                            <tr><td>👥 Team Hub</td><td>Every team's projects on one board, with comments, priorities, and a risk board. Opens its own site. <a href="#teamhub">More</a></td><td>Managers</td></tr>
+                            <tr><td>📊 Dashboard</td><td>Where you sign in to add and change your projects and tasks. <a href="#dashboard">More</a></td><td>Everyone with an account</td></tr>
+                            <tr><td>❓ Help Guide</td><td>This page.</td><td>Everyone</td></tr>
+                            <tr><td>🔐 Admin Panel</td><td>Add users, reset passwords, and remove saved teams.</td><td>Department leads and admins</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
 
-            <h3>2. Daily Tasks Tab</h3>
-            <ul>
-                <li>Add your top 3-5 focus items for the day.</li>
-                <li>Use the <strong>Up/Down</strong> buttons to prioritize them.</li>
-            </ul>
+            <!-- ===================== DASHBOARD ===================== -->
+            <section class="topic" id="dashboard">
+                <h2>Add and update your work (Dashboard)</h2>
+                <p class="intro">The <a href="admin.html">📊 Dashboard</a> has four tabs, in the same order your Briefing shows them.</p>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Tab</th><th>Use it for</th></tr></thead>
+                        <tbody>
+                            <tr><td>Active Projects</td><td>Larger work with a goal, milestones, and dates. The Status Report is built from these.</td></tr>
+                            <tr><td>Quick Tasks</td><td>Smaller one-off jobs that still need a status.</td></tr>
+                            <tr><td>Daily Tasks</td><td>A short list of today's top 3–5 items. Type a name and click <b>Add</b>.</td></tr>
+                            <tr><td>Settings</td><td>Your name, department, password, API keys, and Reset Focus Rankings. <a href="#settings">More</a></td></tr>
+                        </tbody>
+                    </table>
+                </div>
 
-            <h3>3. Settings Tab</h3>
-            <ul>
-                <li><strong>Profile:</strong> Set your <strong>Display Name</strong> and <strong>Department</strong> — they replace your user ID on the Weekly Status Report header and group you correctly in team reports.</li>
-                <li><strong>API Access <span class="new-feature">NEW</span>:</strong> Create a personal API key so scripts, Power Automate, or Claude can read your briefing and add or update items in it. The key is shown once; revoke it here if it leaks. See the <a href="api.html">API Guide</a>.</li>
-                <li><strong>Change Password:</strong> Update your dashboard sign-in password yourself — enter your current password, the new one twice, and click <strong>Change Password</strong>. Do this after your first login to replace the default password from IT. (Forgot your password? IT can reset it from the Users page.)</li>
-                <li><strong>Reset Focus Rankings <span class="new-feature">NEW</span>:</strong> One click (with a confirmation) clears the Steering Focus number from all your projects so every one becomes "Not a focus project". It touches <strong>nothing else</strong> — no projects, tasks, comments, attachments, or profile changes.</li>
-            </ul>
-        </div>
+                <h3 id="add-item">Add or edit an item</h3>
+                <ol class="steps">
+                    <li>Click <b>+ Add New Project</b> or <b>+ Add New Quick Task</b>. To change an item you already have, click <b>Edit</b> on its row.</li>
+                    <li>Fill in at least the <b>Name</b>, <b>Status</b>, and <b>Priority</b>. Everything else is optional.</li>
+                    <li>Click <b>Save</b>. Open or refresh your Briefing to see the change.</li>
+                </ol>
 
-        <h2>Step 3: Daily Operational Checks <span class="new-feature">NEW</span></h2>
-        <p>Track the health of your systems or routine tasks directly within any Project or Quick Task.</p>
-        <div class="step-box">
-            <ul>
-                <li><strong>How to Log:</strong> Open any item in the Admin Dashboard. Look for the <strong>"📋 Daily Operational Check"</strong> box.</li>
-                <li><strong>Status Options:</strong>
-                    <ul>
-                        <li>✅ <strong>Verified:</strong> System is healthy.</li>
-                        <li>⚠️ <strong>Issues Found:</strong> Requires attention (Note required).</li>
-                        <li>⚪ <strong>Not Checked:</strong> Placeholder status.</li>
-                    </ul>
-                </li>
-                <li><strong>History:</strong> A log of previous checks is saved automatically, so you can track stability over time.</li>
-            </ul>
-        </div>
+                <details id="fields">
+                    <summary>What each field in the edit window does</summary>
+                    <div class="body">
+                        <div class="tbl-wrap">
+                            <table>
+                                <thead><tr><th>Field</th><th>What it does</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Name / Description</td><td>The title people see.</td></tr>
+                                    <tr><td>🎯 Goal / Expected Result</td><td>One line on what "done" looks like. Shows under the name on reports.</td></tr>
+                                    <tr><td>Status</td><td>Where the work stands: Planning, Requirement Gathering, Training, In Progress, Development, Testing, Review, On Track, Delayed, Future, On-Hold, Follow-Up, Maintenance, or Completed. Pick <b>Completed</b> when the work is done.</td></tr>
+                                    <tr><td>Priority</td><td>High, Medium, or Low.</td></tr>
+                                    <tr><td>🎯 Steering Focus</td><td>Projects only. Puts the project on your ranked focus list. <a href="#focus">More</a></td></tr>
+                                    <tr><td>Assigned To</td><td>Who owns the item. Pick <b>Other (Enter Name)</b> to type a name. Left empty, it shows as N/A on the Status Report.</td></tr>
+                                    <tr><td>Tester / Assignee</td><td>Optional second person, such as whoever tests the work.</td></tr>
+                                    <tr><td>Collaborators and teams</td><td>Teams that help, for example "Design Team". They show as a yellow Team badge.</td></tr>
+                                    <tr><td>Start Date / End Date</td><td>When the work starts and when it should finish. <b>Last Updated</b> fills in by itself.</td></tr>
+                                    <tr><td>🏁 Milestones</td><td>Steps along the way, each with its own dates. <a href="#milestones">More</a></td></tr>
+                                    <tr><td>📎 Attachments</td><td>Upload files or paste links, such as a SharePoint link. Add as many as you need.</td></tr>
+                                    <tr><td>💬 Public Comments</td><td>Questions people left on your Briefing. Read or delete them here.</td></tr>
+                                    <tr><td>📋 Daily Operational Check</td><td>A daily health check for a system or routine. <a href="#checks">More</a></td></tr>
+                                    <tr><td>Notes</td><td>Longer notes. Use the toolbar for bold text, bullets, and headings.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </details>
 
-        <h2>Step 4: Smart Visual Indicators <span class="new-feature">NEW</span></h2>
-        <p>The dashboard now visually highlights fresh content so viewers know what's new.</p>
-        <div class="step-box">
-            <ul>
-                <li><span class="badge" style="background:#e8f5e9; color:#2e7d32;">✨ Updated Today</span>: Appears on items edited or commented on <strong>today</strong>.</li>
-                <li><span class="badge" style="background:#e3f2fd; color:#0277bd;">🔄 Updated Recently</span>: Appears on items active within the <strong>last 7 days</strong>.</li>
-                <li><strong>No Badge:</strong> Items older than 7 days appear standard.</li>
-            </ul>
-        </div>
+                <h3 id="order">Put items in order</h3>
+                <ul>
+                    <li>Click <b>Up</b> or <b>Down</b> on a row to move it. The Status Report can use this order (pick <b>My dashboard order</b> there).</li>
+                    <li>Click <b>↕ Sort by Status</b> to sort the whole tab by status in one step. Saving an item never re-sorts your list.</li>
+                    <li>Click <b>Delete</b> to remove an item. You'll be asked to confirm.</li>
+                </ul>
 
-        <h2>Step 5: Comments</h2>
-        <p>Stakeholders can ask questions right on your briefing.</p>
-        <div class="step-box">
-            <ul>
-                <li><strong>Public Comments:</strong> Viewers can click <strong>"💬 View/Add Comments"</strong> to chat. The editor supports <strong>Rich Text</strong> formatting.</li>
-                <li><strong>Managing Comments:</strong> Open the item in the Admin Dashboard to review or delete comments.</li>
-            </ul>
-        </div>
+                <h3 id="search">Search your items</h3>
+                <ul>
+                    <li>Type in the search box under the tabs. It searches all three lists at once: names, status, priority, people, goals, notes, milestones, attachment names, comments, and dates.</li>
+                    <li>Every word you type has to match. <code>chuck publish</code> finds items that mention both words.</li>
+                    <li>Each tab shows how many items match. <b>Up</b> and <b>Down</b> are turned off while you search. Click <b>Clear</b> or press <kbd>Esc</kbd> to see everything again.</li>
+                </ul>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
 
-        <h2>Step 6: Export to Excel <span class="new-feature">IMPROVED</span></h2>
-        <p>Need a hard copy? The export feature has been upgraded.</p>
-        <div class="step-box">
-            <ul>
-                <li><strong>Where:</strong> Click <strong style="color:#27ae60;">&#128229; Export to Excel</strong> in the top nav.</li>
-                <li><strong>What's Included:</strong>
-                    <ul>
-                        <li>One sheet per section — <strong>Projects</strong>, <strong>Quick Tasks</strong>, and <strong>Daily Tasks</strong> — in the same order as the briefing.</li>
-                        <li>Includes the <strong>Assigned To</strong> column and the full <strong>Milestones</strong> list.</li>
-                        <li>Includes the full <strong>Daily Check History</strong> log.</li>
-                        <li>Includes <strong>Analytics Overview</strong> (workload, status breakdown, and <strong>project milestone summary</strong>) as the first sheet.</li>
-                        <li>Automatically strips HTML for clean, readable text cells.</li>
-                        <li>Adjusts column widths automatically for readability.</li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
+            <!-- ===================== STEERING FOCUS ===================== -->
+            <section class="topic" id="focus">
+                <h2>🎯 Steering Focus: rank your top projects</h2>
+                <p class="intro">Steering Focus is your ranked list of the projects the steering committee should look at first. You can rank up to 20 projects. #1 is the most important.</p>
+                <p>Your focus projects show up in two places:</p>
+                <ul>
+                    <li>At the top of your <a href="#report">Weekly Status Report</a>, in the <b>🎯 Steering Focus</b> block.</li>
+                    <li>In <a href="#teamhub">Team Hub</a>, which shows each person's top 3.</li>
+                </ul>
 
-        <h2>Step 7: Visual Analytics <span class="new-feature">IMPROVED</span></h2>
-        <p>Switch instantly between list view and visual charts.</p>
-        <div class="step-box">
-            <ul>
-                <li><strong>How to Access:</strong> Click <strong>"📊 Analytics"</strong> in the top nav.</li>
-                <li><strong>Charts Included:</strong>
-                    <ol>
-                        <li><strong>Project & Task Status:</strong> Doughnut chart of every status in play.</li>
-                        <li><strong>Priority Breakdown:</strong> Bar chart of High/Med/Low items.</li>
-                        <li><strong>Workload Distribution:</strong> Pie chart of how work is split across Projects/Quick Tasks/Daily Tasks.</li>
-                        <li><strong>Project Milestones <span class="new-feature">NEW</span>:</strong> Doughnut chart of milestone states (Completed, In Progress, Overdue, On-Hold, Roadblock, Not Started) across all your projects.</li>
-                    </ol>
-                </li>
-                <li><strong>Milestone Progress by Project <span class="new-feature">NEW</span>:</strong> A table under the charts shows each project's progress bar (e.g. 2/5 complete), its next milestone with the Est/Act date, and flags any Overdue, Roadblock, or On-Hold milestones in red.</li>
-            </ul>
-        </div>
+                <h3>Set, move, or remove a number</h3>
+                <p>Use the 🎯 dropdown on the project's row in the Dashboard. You don't need to open Edit. The edit window has the same dropdown.</p>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>To do this</th><th>Pick</th><th>What happens to the others</th></tr></thead>
+                        <tbody>
+                            <tr><td>Add a project</td><td>➕ Add as Focus #N</td><td>Projects at that number and below move down one.</td></tr>
+                            <tr><td>Move a project</td><td>🎯 Focus #N</td><td>The projects in between shift by one to make room.</td></tr>
+                            <tr><td>Remove a project</td><td>🎯 Not a focus project</td><td>The projects below it move up one.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="example">
+                    <p><b>Example.</b> Your list is #1 Website, #2 CRM, #3 Shipping Report. On Shipping Report, pick <b>🎯 Focus #1</b>. Your list is now #1 Shipping Report, #2 Website, #3 CRM.</p>
+                </div>
 
-        <h2>Step 8: Viewing & Sharing Reports</h2>
-        <p>You have two views available based on your needs:</p>
+                <h3>Rules</h3>
+                <ul>
+                    <li>Numbers never skip. Remove #2 and the old #3 becomes #2.</li>
+                    <li>Marking a project <b>Completed</b>, or deleting it, takes it off the list.</li>
+                    <li>Once 20 projects are ranked, you can still move them, but you can't add another until one comes off.</li>
+                    <li>To clear the whole list at once, use <b>Reset Focus Rankings</b> on the <a href="#settings">Settings</a> tab.</li>
+                    <li>Team Hub admins can also set your numbers. Their changes show on your Dashboard right away.</li>
+                </ul>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
 
-        <div class="step-box">
-            <h3>🏠 Briefing</h3>
-            <p><strong>URL:</strong> <code>/?report=YOUR_ID</code></p>
-            <ul>
-                <li><strong>Includes:</strong> Active Projects, Quick Tasks, Daily Tasks, and Public Comments — with Analytics and Export one click away.</li>
-                <li><strong>Navigation:</strong> Active Projects opens expanded; use <strong>Expand All / Collapse All</strong> in the action bar to see everything at once, and the status filter chips to narrow a section.</li>
-            </ul>
+            <!-- ===================== MILESTONES ===================== -->
+            <section class="topic" id="milestones">
+                <h2>🏁 Milestones and roadblocks</h2>
+                <p class="intro">Split a project into milestones so people can see how far along it is. Reports show progress as, for example, "2/5 complete".</p>
+                <ol class="steps">
+                    <li>Open the project and find <b>🏁 Milestones</b>. Click <b>+ Add Milestone</b>.</li>
+                    <li>Enter a <b>Base Complete</b> date (the original plan) and an <b>Est/Act Complete</b> date (your current estimate, or the date it actually finished).</li>
+                    <li>Tick the box at the left of the milestone when it's done.</li>
+                </ol>
+                <ul>
+                    <li><b>In Progress</b> and <b>On-Hold</b> flags show what you're working on now and what's paused. Give a reason when you put one on hold.</li>
+                    <li><b>🚧 Roadblock:</b> tick it, and give a reason, when something blocks the milestone. It shows red on the reports and moves the project to the top of Key Projects.</li>
+                    <li>Use <b>▲</b> and <b>▼</b> to put milestones in order.</li>
+                    <li>When every milestone is done but the project isn't marked Completed, the Status Report lists it under <b>🏁 Ready to close</b>. Click its <b>✔</b> button to mark it Completed.</li>
+                </ul>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
 
-            <h3>📋 Weekly Status Report Builder <span class="new-feature">NEW</span></h3>
-            <p><strong>URL:</strong> <code>weekly-report.html?report=YOUR_ID</code> (or click <strong>Status Report</strong> in the navigation bar)</p>
-            <ul>
-                <li><strong>Minimum to get value:</strong> the report is built mainly from your <strong>Active Projects</strong>, so keep those current. Daily Tasks (shown as Recurring Daily Workload) and Quick Tasks are optional — hide their sections with the toolbar toggles if you don't use them.</li>
-                <li>Builds a steering-committee style status report straight from your live briefing data: overall completion %, status chips, Key Projects with milestones and <strong>Assigned To</strong>, On Hold, <strong>Quick Tasks</strong>, Recurring Daily Workload, and Recently Completed.</li>
-                <li><strong>Save Personal Report <span class="new-feature">NEW</span>:</strong> Click <strong>💾 Save Personal Report</strong> in the toolbar to keep your selected <strong>sections</strong>, <strong>order</strong>, and <strong>Projects-panel choices</strong> with your report — it opens the same way next time, on any device. Enabled only when you're <strong>signed in and viewing your own report</strong> (it never changes anyone else's saved view), and not on team reports, where the layout comes from the team's saved settings (saving a team doesn't touch individual users' saved views either).</li>
-                <li><strong>Open a team <span class="new-feature">NEW</span>:</strong> Everyone can open a saved team from the <strong>👥 Teams…</strong> dropdown in the top toolbar (or the chips on the connect screen) — selecting one jumps to <code>weekly-report.html?team=&lt;name&gt;</code> and loads it with its saved settings.</li>
-                <li><strong>Multiple users <span class="new-feature">NEW</span>:</strong> Enter several User IDs separated by commas (e.g. <code>jdoe, msmith</code>), or pick a name from the <strong>"Add user…"</strong> dropdown in the toolbar (shown to signed-in leads/admins) — it lists everyone with a briefing and adds them the moment you select. Each user's report appears as its own section; use the ▲/▼ buttons on the user chips to set the order (× removes one). The PDF starts each user on a new page. <code>weekly-report.html?report=jdoe,msmith</code> auto-connects the whole team.</li>
-                <li><strong>Saved teams <span class="new-feature">NEW</span>:</strong> After loading a group of users, click <strong>💾 Create Team</strong> in the toolbar and give it a name (e.g. "Engineering") — with a team already open the button reads <strong>💾 Save team</strong> and updates it in place. Creating or updating teams requires signing in (on the Dashboard or Admin page) with a lead/admin account or as ckonkol — for everyone else the button is hidden. Teams can be removed on the <strong>Admin</strong> page (same permission). A team saves its <strong>members, the "Merge into one report" setting, and the section checkboxes</strong> — opening the team restores all three. With a team open, Save team prefills its name so you update it in place. Saved teams appear as one-click chips on the connect screen and home page, and <code>weekly-report.html?team=Engineering</code> opens one directly. The "Add user…" dropdown is grouped by department and shows display names.</li>
-                <li><strong>Freshness warnings <span class="new-feature">NEW</span>:</strong> If a briefing hasn't been updated in over 7 days, its report section (and the PDF) shows a red "Last updated N days ago" warning so stale numbers are obvious.</li>
-                <li><strong>Merge into one report <span class="new-feature">NEW</span>:</strong> With two or more users loaded, check <strong>"Merge into one report"</strong> in the toolbar to combine everyone into a single report — one completion %, one status band, and one Key Projects table sorted across the whole team. Each row gets a small tag showing whose briefing it came from. Uncheck to go back to one section per user.</li>
-                <li><strong>Filters <span class="new-feature">NEW</span>:</strong> Tap a status chip, or filter by priority — including <strong>High + Medium</strong> together — and focus (needs attention, due within 30 days, overdue, no est. date).</li>
-                <li><strong>Project order <span class="new-feature">NEW</span>:</strong> The <strong>Order</strong> dropdown (under ⚙ Options) picks between <strong>"Needs attention first"</strong> (delayed/roadblocked, then priority, then dates), <strong>"My dashboard order"</strong> — the exact order you arranged with the Up/Down buttons on your Dashboard — and <strong>"Custom (Projects panel)"</strong>. Your choice is remembered. (The Dashboard no longer re-sorts your list when you save an item — use its "↕ Sort by Status" button if you want that sort.)</li>
-                <li><strong>Projects panel <span class="new-feature">NEW</span>:</strong> Click <strong>📂 Projects…</strong> (under ⚙ Options) to open a list of every loaded project. Untick a project to hide it from the report, and use ▲/▼ to build a custom order (used when Order is set to "Custom"). The report notes how many projects are hidden. Selections are remembered — and <strong>💾 Save team</strong> stores them with the team, along with the order choice, merge setting, and sections, so a steering-committee team reopens with the exact same curated view.</li>
-                <li><strong>Toolbar <span class="new-feature">NEW</span>:</strong> Filters, user chips, and section toggles live under the <strong>⚙ Options</strong> button (collapsed by default). <strong>⛶ Full width</strong> stretches the report across the screen (remembered), and <strong>⤢ Full screen</strong> presents it (Esc to exit).</li>
-                <li><strong>Show/hide sections <span class="new-feature">NEW</span>:</strong> The <strong>Sections</strong> row in the toolbar (under ⚙ Options) has a checkbox per section (Completion %, Status of Projects, Key Projects, On Hold, Quick Tasks, Daily Workload, Maintenance, Recently Completed). Uncheck what you don't want — the PDF, web download, and copied email text follow the same choices, and they're remembered for next time.</li>
-                <li><strong>Outputs:</strong> Download as a <strong>PDF</strong>, download a standalone web page, or <strong>copy as email text</strong>. An <code>.xlsx</code> export can also be dropped on the page as an offline fallback.</li>
-            </ul>
-        </div>
+            <!-- ===================== DAILY CHECKS ===================== -->
+            <section class="topic" id="checks">
+                <h2>📋 Daily operational checks</h2>
+                <p class="intro">Use these for systems or routines you check every day. They work on any project or quick task.</p>
+                <ol class="steps">
+                    <li>Open the item and find <b>📋 Daily Operational Check</b>.</li>
+                    <li>Pick a result: <b>✅ Verified</b> (all good), <b>⚠️ Issues Found</b> (add a note saying what's wrong; the note is required), or <b>⚪ Not Checked</b>.</li>
+                    <li>Click <b>Log Check</b>. Each check is saved under <b>Check History</b>, so you can see how the system has held up over time.</li>
+                </ol>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
 
-        <h2>Step 9: Team Hub (for managers) <span class="new-feature">NEW</span></h2>
-        <p>One live page — <strong>Team Hub</strong> in the navigation bar — that pulls every team member's status report together for management review.</p>
-        <div class="step-box">
-            <ul>
-                <li><strong>All Projects board:</strong> every project across all briefings with owner, status, and milestone progress. Use the <strong>search box</strong> and the team/status/sort filters to find anything fast.</li>
-                <li><strong>Comment &amp; prioritize:</strong> signed-in leads/admins can post comments on any project and tag it <strong>P1/P2/P3</strong>. These live in the hub only — they never change the owner's briefing.</li>
-                <li><strong>Project Ideas:</strong> add a new project idea, vote 👍 on others, and move ideas through New → Reviewing → Approved/Dropped.</li>
-                <li><strong>Live Manager Chat:</strong> a real-time chat panel for the leadership group.</li>
-                <li><strong>Notifications:</strong> the 🔔 bell shows unread chat/comments/ideas since your last visit; enable desktop alerts to get a pop-up while the page is open.</li>
-                <li><strong>Analytics &amp; risk:</strong> KPI tiles, status and milestone-health charts, projects-per-owner, and a <strong>Risk &amp; Focus board</strong> that lists every delayed, roadblocked, or overdue project with the reason.</li>
-                <li><strong>Windows sign-in:</strong> the hub lives at <a href="https://managerhub.aquatools.app/"><strong>managerhub.aquatools.app</strong></a> and signs you in with your <strong>Windows account</strong> — enter your username (e.g. <code>jsmith</code>) and your normal computer password; Windows itself checks them. Sessions last a year per browser. On the office network, <code>http://aqua94:5096/</code> also works with the one-click "Sign in with Windows" button.</li>
-                <li><strong>Roles:</strong> a first-time sign-in automatically creates a hub account with <strong>general</strong> (read-only) access and emails ckonkol@aqua-aerobic.com. <strong>Manager</strong> unlocks comments, priorities, ideas, and chat; <strong>admin</strong> also opens the Admin panel. The ckonkol account always counts as admin.</li>
-                <li><strong>⚙ Admin panel:</strong> user account management (change roles, enable/disable accounts) and a full <strong>activity log</strong> — sign-ups, role changes, comments, priorities, and idea activity with who/when.</li>
-            </ul>
-        </div>
+            <!-- ===================== BRIEFING PAGE ===================== -->
+            <section class="topic" id="briefing">
+                <h2>🏠 Your Briefing page</h2>
+                <p class="intro">Your Briefing is the read-only view of your work. Anyone with the link can open it without signing in.</p>
 
-        <br>
-        <a href="index.html" class="back-link">&larr; Back to Report</a>
+                <h3 id="share">Share it</h3>
+                <ul>
+                    <li>Your link is <code>https://dailyaquabriefing.github.io/?report=YOUR_ID</code>. Replace <code>YOUR_ID</code> with your Network ID, for example <code>?report=jdoe</code>.</li>
+                    <li>While you're signed in, <b>🏠 My Briefing</b> in the navigation bar opens your own.</li>
+                </ul>
+
+                <h3>Read it</h3>
+                <ul>
+                    <li><b>Active Projects</b> opens expanded. <b>Quick Tasks</b> and <b>Daily Tasks</b> start closed. Click a section heading to open or close it, or use <b>➕ Expand All</b> and <b>➖ Collapse All</b>.</li>
+                    <li>Active Projects and Quick Tasks have a row of status buttons, such as <b>In Progress (4)</b>. Click one to show only items with that status. Click <b>ALL</b> to see everything again.</li>
+                    <li>Badges point out recent work: <b>✨ Updated Today</b> means the item was changed or commented on today. <b>🔄 Updated Recently</b> means within the last 7 days.</li>
+                </ul>
+
+                <h3 id="comments">Comments</h3>
+                <ul>
+                    <li>Anyone can click <b>💬 Add Question/Comment</b> on an item. Once comments exist, the button reads <b>💬 View/Add Comments</b> with a count.</li>
+                    <li>You read and delete comments in the Dashboard, in the item's edit window.</li>
+                </ul>
+
+                <h3 id="analytics">Charts</h3>
+                <p>Click <b>📊 Analytics</b> in the bar at the top of the Briefing. You get four charts: <b>Project &amp; Task Status</b>, <b>Priority Breakdown</b>, <b>Workload Distribution</b>, and <b>Project Milestones</b>. A table under them shows each project's milestone progress and its next milestone, and marks overdue, roadblocked, and on-hold milestones in red.</p>
+
+                <h3 id="excel">Export to Excel</h3>
+                <ul>
+                    <li>Click <b>📥 Export to Excel</b>. The first sheet is an <b>Analytics Overview</b>, followed by one sheet each for <b>Projects</b>, <b>Quick Tasks</b>, and <b>Daily Tasks</b>.</li>
+                    <li>The file includes Assigned To, every milestone, and the full daily check history. Columns are sized to fit and formatting is removed so the cells read cleanly.</li>
+                    <li>The file also makes a good backup of your work.</li>
+                </ul>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
+
+            <!-- ===================== WEEKLY STATUS REPORT ===================== -->
+            <section class="topic" id="report">
+                <h2>📋 Weekly Status Report</h2>
+                <p class="intro">The Status Report builds a steering-committee report from your briefing. There's nothing extra to type. Just keep your Active Projects current.</p>
+
+                <h3>Make your report</h3>
+                <ol class="steps">
+                    <li>Click <b>📋 Team Status</b> in the navigation bar. If you're signed in, it opens your own report. You can also open <code>weekly-report.html?report=YOUR_ID</code>.</li>
+                    <li>Optional: click <b>⚙ Options</b> to choose sections, filters, and the project order.</li>
+                    <li>Share it: click <b>Save PDF</b>, <b>Download web report</b>, or <b>Copy as email text</b>.</li>
+                </ol>
+
+                <h3>What's in it</h3>
+                <ul>
+                    <li><b>🎯 Steering Focus</b>: your ranked focus projects. It shows when the Key Projects section is on.</li>
+                    <li><b>Completion %</b>: how far along your projects are overall.</li>
+                    <li><b>Status of Projects</b>: how many projects are in each status. Click a status to show only those projects.</li>
+                    <li><b>Key Projects</b>: a table with each project's status, milestones, owner, and dates.</li>
+                    <li><b>On Hold</b>, <b>Quick Tasks</b>, <b>Daily Workload</b>, <b>Maintenance</b>, and <b>Recently Completed</b> (including <b>🏁 Ready to close</b>).</li>
+                </ul>
+                <p>Status codes in the tables: <b>C</b> = complete, <b>G</b> = in progress and on track, <b>T</b> = in testing, <b>Y</b> = on hold, delayed, or blocked, <b>N/S</b> = not started.</p>
+                <div class="warn">
+                    <p>A red <b>"Last updated N days ago"</b> warning means that briefing hasn't changed in more than 7 days. Update any item in the Dashboard to clear it.</p>
+                </div>
+
+                <h3>More options</h3>
+                <details id="report-sections">
+                    <summary>Choose which sections appear</summary>
+                    <div class="body">
+                        <p>Click <b>⚙ Options</b>. The <b>Sections</b> row has a checkbox for each section: Completion %, Status of Projects, Key Projects, On Hold, Quick Tasks, Daily Workload, Maintenance, and Recently Completed. Untick what you don't need.</p>
+                        <p>The PDF, web download, and email text use the same choices, and your choices are remembered for next time.</p>
+                    </div>
+                </details>
+                <details id="report-filters">
+                    <summary>Filter projects and set their order</summary>
+                    <div class="body">
+                        <ul>
+                            <li><b>Filters</b> (under ⚙ Options): status, priority (including <b>High + Medium</b> together), what needs attention (needs attention, due within 30 days, overdue, no est. date), and how far back to show completed work (last 7 days up to all time).</li>
+                            <li><b>Order</b>:
+                                <ul>
+                                    <li><b>Needs attention first</b>: delayed and roadblocked projects first, then by priority, then by date.</li>
+                                    <li><b>My dashboard order</b>: the order you set with Up and Down on your Dashboard.</li>
+                                    <li><b>Custom (Projects panel)</b>: the order you set in the Projects panel.</li>
+                                </ul>
+                            </li>
+                            <li><b>📂 Projects…</b> opens a list of every project in the report. Untick a project to hide it, and use ▲ and ▼ to set a custom order. The report notes how many projects are hidden.</li>
+                        </ul>
+                    </div>
+                </details>
+                <details id="report-team">
+                    <summary>Put several people in one report</summary>
+                    <div class="body">
+                        <ul>
+                            <li>Type several Network IDs separated by commas, for example <code>jdoe, msmith</code>. Leads and admins can also pick names from the <b>Add user…</b> dropdown.</li>
+                            <li>Each person gets their own section, and the PDF starts each person on a new page. Use ▲ and ▼ on the name chips to change the order, and × to remove someone.</li>
+                            <li>Tick <b>Merge into one report</b> to combine everyone into one completion %, one status summary, and one Key Projects table. A small tag on each row shows whose project it is.</li>
+                            <li>A link like <code>weekly-report.html?report=jdoe,msmith</code> opens the same group directly.</li>
+                        </ul>
+                    </div>
+                </details>
+                <details id="report-teams">
+                    <summary>Saved teams</summary>
+                    <div class="body">
+                        <ul>
+                            <li><b>Open a team:</b> anyone can pick one from the <b>👥 Teams…</b> dropdown, or open a link like <code>weekly-report.html?team=Engineering</code>.</li>
+                            <li><b>Create a team</b> (department leads and admins, signed in): load the people you want, click <b>💾 Create Team</b>, and give it a name. With a team open, the button reads <b>💾 Save team</b> and updates that team.</li>
+                            <li>A team remembers its members, the Merge setting, the sections, the order, and your Projects panel choices, so it opens exactly the same way every time.</li>
+                            <li>Remove a team on the <b>🔐 Admin Panel</b> page.</li>
+                        </ul>
+                    </div>
+                </details>
+                <details id="report-save">
+                    <summary>Save your own report layout</summary>
+                    <div class="body">
+                        <p>Click <b>💾 Save Personal Report</b> to keep your sections, order, and Projects panel choices with your report. It then opens the same way on any computer.</p>
+                        <p>The button only works when you're signed in and looking at your own report. It never changes anyone else's report, and it doesn't apply to team reports.</p>
+                    </div>
+                </details>
+                <details id="report-view">
+                    <summary>Viewing and sharing tools</summary>
+                    <div class="body">
+                        <ul>
+                            <li><b>⛶ Full width</b> stretches the report across the screen. The setting is remembered.</li>
+                            <li><b>⤢ Full screen</b> is for presenting. Press <kbd>Esc</kbd> to leave it.</li>
+                            <li><b>Save PDF</b>, <b>Download web report</b>, and <b>Copy as email text</b> share the report.</li>
+                            <li>Can't connect? Drop a <b>Briefing_….xlsx</b> file (from <a href="#excel">📥 Export to Excel</a>) onto the report's start screen to build the report from that file.</li>
+                        </ul>
+                    </div>
+                </details>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
+
+            <!-- ===================== TEAM HUB ===================== -->
+            <section class="topic" id="teamhub">
+                <h2>👥 Team Hub (for managers)</h2>
+                <p class="intro">Team Hub puts everyone's projects on one board for management review. It runs on its own site, <a href="https://managerhub.aquatools.app/">managerhub.aquatools.app</a>.</p>
+                <ul>
+                    <li><b>Sign in</b> with your Windows username (for example <code>jsmith</code>) and your normal computer password. You stay signed in for a year on that browser. On the office network, <code>http://aqua94:5096/</code> also works with the one-click <b>Sign in with Windows</b> button.</li>
+                    <li><b>Access:</b> your first sign-in gives you read-only access and emails ckonkol@aqua-aerobic.com. The <b>manager</b> role adds comments, P1/P2/P3 priorities, project ideas, and chat. The <b>admin</b> role adds the Admin panel.</li>
+                    <li><b>What you see:</b> every project with its owner, status, and milestones; search and filters; a Risk &amp; Focus board of delayed, roadblocked, and overdue projects; and each person's top 3 Steering Focus projects.</li>
+                    <li><b>Your briefing stays yours.</b> Comments and priorities in Team Hub never change anyone's briefing. The one exception: admins can set a person's Steering Focus numbers.</li>
+                    <li>For full instructions, see the <a href="https://managerhub.aquatools.app/help.html">Team Hub help page</a>.</li>
+                </ul>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
+
+            <!-- ===================== SETTINGS ===================== -->
+            <section class="topic" id="settings">
+                <h2>⚙ Settings tab</h2>
+                <p class="intro">Open the <a href="admin.html">📊 Dashboard</a> and click the <b>Settings</b> tab.</p>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+                        <tbody>
+                            <tr><td>User Mapping</td><td>Shows the Network ID your account is linked to. You can't change it here.</td></tr>
+                            <tr><td>Profile</td><td>Your <b>Display Name</b> and <b>Department</b>. Click <b>Save Settings</b>. They show on the Status Report and group you in team reports.</td></tr>
+                            <tr><td>Change Password</td><td>Enter your current password, then the new one twice (at least 6 characters), and click <b>Change Password</b>.</td></tr>
+                            <tr><td>API Access</td><td>For developers. Creates a personal key so scripts, Power Automate, or Claude can read and update your briefing. The key is shown once. Revoke it here if it leaks. See the <a href="api.html">API Guide</a>.</td></tr>
+                            <tr><td>Reset Focus Rankings</td><td>After you confirm, clears every Steering Focus number from your projects. Nothing else changes: no projects, tasks, comments, attachments, or profile details.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
+
+            <!-- ===================== FAQ ===================== -->
+            <section class="topic" id="faq">
+                <h2>Questions and fixes</h2>
+                <details>
+                    <summary>I forgot my password.</summary>
+                    <div class="body"><p>Email <a href="mailto:ITHelpdesk@aqua-aerobic.com">ITHelpdesk@aqua-aerobic.com</a> or ask your department lead. They can reset it from the Admin Panel.</p></div>
+                </details>
+                <details>
+                    <summary>The Up and Down buttons are grayed out.</summary>
+                    <div class="body"><p>The search box has text in it. Click <b>Clear</b> or press <kbd>Esc</kbd>, and the buttons come back.</p></div>
+                </details>
+                <details>
+                    <summary>I can't add another focus project.</summary>
+                    <div class="body"><p>The focus list holds 20 projects. Remove one (<b>🎯 Not a focus project</b>) or mark one Completed, then add the new one.</p></div>
+                </details>
+                <details>
+                    <summary>A project dropped off my Steering Focus list.</summary>
+                    <div class="body"><p>Projects leave the list when they're marked Completed or deleted, or when someone clicks Reset Focus Rankings. A Team Hub admin may also have changed it. The other projects move up to fill the gap.</p></div>
+                </details>
+                <details>
+                    <summary>My change doesn't show on my Briefing.</summary>
+                    <div class="body"><p>Make sure you clicked <b>Save</b> in the edit window, then refresh the Briefing page.</p></div>
+                </details>
+                <details>
+                    <summary>The 💾 Save Personal Report button is grayed out.</summary>
+                    <div class="body"><p>It only works when you're signed in and looking at your own report. Sign in on the Dashboard, then click <b>📋 Team Status</b> in the navigation bar.</p></div>
+                </details>
+                <details>
+                    <summary>I don't see the 💾 Create Team button.</summary>
+                    <div class="body"><p>Only department leads and admins can create teams, and they have to be signed in. Anyone can open a saved team from the <b>👥 Teams…</b> dropdown.</p></div>
+                </details>
+                <details>
+                    <summary>The report shows a red "Last updated N days ago" warning.</summary>
+                    <div class="body"><p>That briefing hasn't changed in more than 7 days. Update any item in the Dashboard and the warning goes away.</p></div>
+                </details>
+                <details>
+                    <summary>The setup box says my ID already has a briefing.</summary>
+                    <div class="body"><p>Don't link to it unless it really is your Network ID. Linking would let you edit that person's report. If you're not sure, email <a href="mailto:ITHelpdesk@aqua-aerobic.com">ITHelpdesk@aqua-aerobic.com</a>.</p></div>
+                </details>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
+
+            <!-- ===================== GLOSSARY ===================== -->
+            <section class="topic" id="terms">
+                <h2>Words used here</h2>
+                <dl class="terms">
+                    <dt>Briefing</dt><dd>Your read-only page. Anyone with the link can open it.</dd>
+                    <dt>Dashboard</dt><dd>The page you sign in to so you can add and change your work.</dd>
+                    <dt>Network ID</dt><dd>Your Aqua network user name, for example <code>jdoe</code>. It's the address of your Briefing and Status Report.</dd>
+                    <dt>Active Project</dt><dd>A larger piece of work with a goal, milestones, and dates.</dd>
+                    <dt>Quick Task</dt><dd>A smaller one-off job.</dd>
+                    <dt>Daily Task</dt><dd>One of today's top items.</dd>
+                    <dt>Milestone</dt><dd>One step in a project, with its own dates.</dd>
+                    <dt>Roadblock</dt><dd>A milestone that something is blocking. It shows red on reports.</dd>
+                    <dt>Steering Focus</dt><dd>Your ranked list (1–20) of the projects the steering committee should see first.</dd>
+                    <dt>Team</dt><dd>A saved group of people for the Status Report.</dd>
+                    <dt>Lead</dt><dd>A department lead account. Leads can add users, reset passwords, and save teams.</dd>
+                </dl>
+                <a class="to-top" href="#top">↑ Back to top</a>
+            </section>
+
+            <div class="card no-match" id="no-match">
+                <p>Nothing in this guide matches your search. Try a shorter word, or email <a href="mailto:ITHelpdesk@aqua-aerobic.com">ITHelpdesk@aqua-aerobic.com</a>.</p>
+            </div>
+        </main>
     </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    var sections = Array.prototype.slice.call(document.querySelectorAll('main section.topic'));
+    var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var linkFor = {};
+    tocLinks.forEach(function (a) { linkFor[a.getAttribute('href').slice(1)] = a; });
+    var allDetails = Array.prototype.slice.call(document.querySelectorAll('main details'));
+    var input = document.getElementById('help-search');
+    var status = document.getElementById('search-status');
+    var noMatch = document.getElementById('no-match');
+    var extras = [document.getElementById('quick'), document.getElementById('whats-new')];
+
+    // --- Search: show only the sections (and open the panels) that match ---
+    function runSearch() {
+        var terms = input.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        var matches = function (el) {
+            var text = el.textContent.toLowerCase();
+            return terms.every(function (t) { return text.indexOf(t) !== -1; });
+        };
+        var shown = 0;
+        sections.forEach(function (sec) {
+            var hit = !terms.length || matches(sec);
+            sec.hidden = !hit;
+            if (hit) shown++;
+            var link = linkFor[sec.id];
+            if (link) link.classList.toggle('dim', !hit);
+        });
+        allDetails.forEach(function (d) {
+            d.open = terms.length ? matches(d) : false;
+        });
+        extras.forEach(function (el) { if (el) el.hidden = terms.length > 0; });
+        noMatch.style.display = (terms.length && !shown) ? 'block' : 'none';
+        status.textContent = !terms.length ? '' :
+            (shown ? shown + (shown === 1 ? ' section matches' : ' sections match') : 'No matches');
+    }
+    function clearSearch() {
+        if (!input.value) return;
+        input.value = '';
+        runSearch();
+    }
+    input.addEventListener('input', runSearch);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Escape') clearSearch(); });
+
+    // --- Jumping to a link: clear any search that hides the target, and
+    //     open the panel the link points at (or sits inside) ---
+    function openTarget(id) {
+        var el = id && document.getElementById(id);
+        if (!el) return;
+        var sec = el.closest('section.topic');
+        if (sec && sec.hidden) clearSearch();
+        var d = el.tagName === 'DETAILS' ? el : el.closest('details');
+        if (d) d.open = true;
+    }
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href^="#"]');
+        if (a) openTarget(a.getAttribute('href').slice(1));
+    });
+    window.addEventListener('hashchange', function () { openTarget(location.hash.slice(1)); });
+    if (location.hash) openTarget(location.hash.slice(1));
+
+    // --- Highlight the menu item for the section on screen ---
+    if ('IntersectionObserver' in window) {
+        var visible = {};
+        var spy = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) { visible[en.target.id] = en.isIntersecting; });
+            var current = null;
+            for (var i = 0; i < sections.length; i++) {
+                if (visible[sections[i].id] && !sections[i].hidden) { current = sections[i].id; break; }
+            }
+            tocLinks.forEach(function (a) { a.classList.toggle('active', a.getAttribute('href') === '#' + current); });
+        }, { rootMargin: '0px 0px -60% 0px', threshold: 0 });
+        sections.forEach(function (s) { spy.observe(s); });
+    }
+
+    // --- Printing: open every panel so nothing is cut off, then put them back ---
+    var openBeforePrint = [];
+    window.addEventListener('beforeprint', function () {
+        openBeforePrint = allDetails.map(function (d) { return d.open; });
+        allDetails.forEach(function (d) { d.open = true; });
+    });
+    window.addEventListener('afterprint', function () {
+        allDetails.forEach(function (d, i) { d.open = openBeforePrint[i]; });
+    });
+})();
+</script>
 </body>
 </html>
